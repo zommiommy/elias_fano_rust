@@ -20,9 +20,9 @@ impl EliasFano {
         let low_size  = 2 + (values.len() as u64 * 8 * size_of::<u64>() as u64 / (WORD_SIZE as u64 * low_bit_count));
 
         let mut result  = EliasFano{
+            low_bit_count,
+            low_bit_mask,
             n_of_elements: values.len() as u64,
-            low_bit_count: low_bit_count,
-            low_bit_mask: low_bit_mask,
             high_bits: BitVector::new(),
             low_bits: vec![0; low_size as usize],
         };
@@ -37,7 +37,7 @@ impl EliasFano {
 
             result.high_bits.push(true);
             
-            let low = value & ((1 << low_bit_count + 1) - 1);
+            let low = value & ((1 << (low_bit_count + 1)) - 1);
             lowbit_write(&mut result.low_bits, index as u64, low, low_bit_count);
             
             last_high_value = high;

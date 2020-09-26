@@ -17,7 +17,7 @@ pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64)
 }
 
 #[inline(always)]
-pub fn safe_read(array: &Vec<u64>, index: u64,  value_size: u64) -> u64 {
+pub fn safe_read(array: &[u64], index: u64,  value_size: u64) -> u64 {
     let pos = index * value_size;
     let base = pos  as usize / WORD_SIZE  as usize;
     let o1 = pos % WORD_SIZE;
@@ -27,7 +27,7 @@ pub fn safe_read(array: &Vec<u64>, index: u64,  value_size: u64) -> u64 {
     let lower  = shr(array[base], o1) & mask;
     let higher  = shl(array[base + 1], o2);
 
-    return (higher | lower) & mask
+    (higher | lower) & mask
 }
 
 #[inline(always)]
@@ -47,7 +47,7 @@ pub fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u6
 }
 
 #[inline(always)]
-pub fn unsafe_read(array: &Vec<u64>, index: u64, value_size: u64) -> u64 {
+pub fn unsafe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
     let pos = index * value_size;
     let base = pos  as usize / WORD_SIZE  as usize;
     let o1 = pos % WORD_SIZE;
@@ -57,6 +57,6 @@ pub fn unsafe_read(array: &Vec<u64>, index: u64, value_size: u64) -> u64 {
     unsafe {
         let lower  = shr(*array.get_unchecked(base), o1) & mask;
         let higher  = shl(*array.get_unchecked(base + 1), o2);
-        return (higher | lower) & mask
+        (higher | lower) & mask
     }
 }

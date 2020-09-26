@@ -1,5 +1,7 @@
 use super::*;
 
+const WORD_SIZE: u64 = 64;
+
 #[inline(always)]
 pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
     let pos = index * value_size;

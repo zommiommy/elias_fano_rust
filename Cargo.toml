@@ -8,3 +8,7 @@ edition = "2018"
 
 [dependencies]
 vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
+fid = "0.1.5"
+
+[dev-dependencies]
+rand = {version="0.7", features = ["small_rng"] }

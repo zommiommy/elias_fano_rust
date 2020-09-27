@@ -1,7 +1,7 @@
 use super::*;
 use std::mem;
 use fid::{BitVector, FID};
-
+#[derive(Clone)]
 pub struct EliasFano {
     n_of_elements: u64,
     low_bit_count: u64,

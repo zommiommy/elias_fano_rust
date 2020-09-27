@@ -223,6 +223,10 @@ impl EliasFano {
             print!("{}", self.high_bits.get(i) as u64);
         }
         print!("\n");
-        println!("\t----------------------------------------");
+        println!("\t--------------values---------------------");
+        for i in 0..self.n_of_elements {
+            print!("{}, ", self.select(i).unwrap());
+        }
+        print!("\n");
     }
 }

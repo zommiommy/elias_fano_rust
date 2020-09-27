@@ -1,6 +1,11 @@
 use super::*;
+use std::mem::size_of;
 
-const WORD_SIZE: u64 = 64;
+const WORD_SIZE: u64 = 8 * size_of::<u64>() as u64;
+
+pub fn get_vec_size(n_bits: u64, size: usize) -> u64 {
+    2 + (size as u64 * n_bits / WORD_SIZE)
+}
 
 #[inline(always)]
 pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {

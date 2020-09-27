@@ -1,39 +1,30 @@
 use elias_fano_rust::EliasFano;
-use rand::rngs::SmallRng;
-use rand::RngCore;
-use rand::SeedableRng;
+use rayon::prelude::*;
+mod utils;
+use utils::*;
 
-const TRIALS: u64 = 1_000;
-const MAX: u64 = 10_000;
+/// Test that we can build successfully run all methods in elias fano.
+fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
+    let vector = build_random_sorted_vector(size, max);
+    let ef = EliasFano::from_vec(&vector)?;
+    vector.iter().enumerate().for_each(|(i, v)| {
+        assert_eq!(*v, ef.select(i as u64).unwrap());
+        assert_eq!(*v, ef.unchecked_select(i as u64));
+        assert_eq!(ef.select(ef.rank(*v).unwrap()).unwrap(), *v);
+        assert_eq!(ef.unchecked_select(ef.unchecked_rank(*v)), *v);
+    });
 
-const SEED: [u8; 16] = [
-    0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe,
-];
-
-/// Test that everything runs properly in the PPI graph.
-fn build_random_sorted_vector() -> Vec<u64> {
-    let mut rng: SmallRng = SmallRng::from_seed(SEED);
-    let mut vector = Vec::new();
-    for _ in 0..TRIALS {
-        let t = rng.next_u64() % MAX;
-        vector.push(t);
-    }
-    vector.sort();
-    vector
+    Ok(())
 }
 
 #[test]
-/// Test that everything runs properly in the PPI graph.
-fn test_build() {
-    let vector = build_random_sorted_vector();
-
-    let max = vector[vector.len() - 1];
-    let ef = EliasFano::new(vector.clone(), max);
-
-    for (i, v) in vector.iter().enumerate() {
-        println!("Select: {} {}", *v, ef.select(i as u64).unwrap());
-        assert_eq!(*v, ef.select(i as u64).unwrap());
-        println!("Rank: {} {}", i as u64, ef.rank(*v).unwrap());
-        assert_eq!(i as u64, ef.rank(*v).unwrap());
-    }
+/// Check that elias fano runs considering a lot of possible combinations.
+fn test_with_fuzzing() {
+    (0..10).into_par_iter().for_each(|size| {
+        let size:usize = (size as usize)*100;
+        for max in (size..1_000).step_by(100){
+            let result = default_test_suite(size, max as u64);
+            assert!(size!=0 || result.is_err());            
+        }
+    });
 }

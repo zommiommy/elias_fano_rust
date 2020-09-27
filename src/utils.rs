@@ -1,5 +1,3 @@
-pub const WORD_SIZE: u64 = 64;
-
 #[inline(always)]
 pub fn shl(value: u64, offset: u64) -> u64 {
     value.checked_shl(offset as u32).unwrap_or(0)

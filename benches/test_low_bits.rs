@@ -1,7 +1,7 @@
 #![feature(asm)]
 #![feature(test)]
 extern crate test;
-use test::Bencher;
+use test::{Bencher, black_box};
 
 extern crate elias_fano_rust;
 use elias_fano_rust::*;
@@ -23,7 +23,7 @@ fn bench_safe_read(b: &mut Bencher) {
 
     b.iter(|| {
         for i in 0..NUMBER {
-            safe_read(&array, i as u64, VALUE_SIZE);
+            black_box(safe_read(&array, i as u64, VALUE_SIZE));
         }
     });
 }
@@ -40,7 +40,7 @@ fn bench_unsafe_read(b: &mut Bencher) {
 
     b.iter(|| {
         for i in 0..NUMBER {
-            unsafe_read(&array, i as u64, VALUE_SIZE);
+            black_box(unsafe_read(&array, i as u64, VALUE_SIZE));
         }
     });
 }
@@ -52,7 +52,7 @@ fn bench_unsafe_write(b: &mut Bencher) {
     b.iter(|| {
         for (i, v) in values.iter().enumerate() {
             let rnd = v & ((1 << VALUE_SIZE) - 1);
-            unsafe_write(&mut array, i as u64, rnd, VALUE_SIZE);
+            black_box(unsafe_write(&mut array, i as u64, rnd, VALUE_SIZE));
         }
     });
 }
@@ -64,7 +64,7 @@ fn bench_safe_write(b: &mut Bencher) {
     b.iter(|| {
         for (i, v) in values.iter().enumerate() {
             let rnd = v & ((1 << VALUE_SIZE) - 1);
-            safe_write(&mut array, i as u64, rnd, VALUE_SIZE);
+            black_box(safe_write(&mut array, i as u64, rnd, VALUE_SIZE));
         }
     });
 }

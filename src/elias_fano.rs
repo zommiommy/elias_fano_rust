@@ -208,25 +208,26 @@ impl EliasFano {
     }
 
     pub fn debug(&self) {
-        println!("EliasFano:");
+        println!("------------ELIAS-FANO------------------");
         println!("\tuniverse: {}", self.universe);
         println!("\tn_of_elements: {}", self.n_of_elements);
         println!("\tlow_bit_count: {}", self.low_bit_count);
         println!("\tlow_bit_mask: {}", self.low_bit_mask);
-        print!("\t---------------low-bits-----------------\n\t");
+        println!("---------------low-bits-----------------");
         for i in 0..self.n_of_elements {
             print!("{}, ", self.read_lowbits(i));
         }
         print!("\n");
-        print!("\t--------------high-bits-----------------\n\t");
+        println!("--------------high-bits-----------------");
         for i in 0..self.high_bits.len() {
             print!("{}", self.high_bits.get(i) as u64);
         }
         print!("\n");
-        println!("\t--------------values---------------------");
+        println!("--------------values--------------------");
         for i in 0..self.n_of_elements {
             print!("{}, ", self.select(i).unwrap());
         }
         print!("\n");
+        println!("----------------END---------------------");
     }
 }

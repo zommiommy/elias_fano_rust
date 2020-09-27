@@ -1,6 +1,8 @@
 use super::*;
 use std::mem;
 use fid::{BitVector, FID};
+use std::ops::Index;
+
 #[derive(Clone)]
 pub struct EliasFano {
     universe: u64,
@@ -10,6 +12,7 @@ pub struct EliasFano {
     low_bits: Vec<u64>,
     high_bits: BitVector,
 }
+
 
 impl EliasFano {
     /// Create a new elias-fano from an iterable of **sorted values**.
@@ -27,11 +30,12 @@ impl EliasFano {
         if n_of_elements == 0 {
             return Err("Cannot create an Elias Fano with 0 values.".to_string());
         }
-        if universe < n_of_elements as u64 {
-            return Err("The maximum must be bigger than the number of elements.".to_string());
-        }
         // Compute the size of the low bits.
-        let low_bit_count = (universe as f64 / n_of_elements as f64).log2().floor() as u64;
+        let low_bit_count = if universe >= n_of_elements as u64 {
+            (universe as f64 / n_of_elements as f64).log2().floor() as u64 
+        } else {
+            0
+        };
 
         // add 2 to do the ceil and have brenchless primitives.
         let low_size = get_vec_size(low_bit_count, n_of_elements);

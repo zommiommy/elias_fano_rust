@@ -3,6 +3,7 @@ use std::mem;
 use fid::{BitVector, FID};
 #[derive(Clone)]
 pub struct EliasFano {
+    universe: u64,
     n_of_elements: u64,
     low_bit_count: u64,
     low_bit_mask: u64,
@@ -22,20 +23,21 @@ impl EliasFano {
     /// let vector = [5, 8, 8, 15, 32];
     /// let ef = EliasFano::from_iter(vector.iter().cloned(), *vector.last().unwrap(), vector.len()).unwrap();
     /// ```
-    pub fn from_iter(values: impl Iterator<Item = u64>, max: u64, n_of_elements: usize) -> Result<EliasFano, String> {
+    pub fn from_iter(values: impl Iterator<Item = u64>, universe: u64, n_of_elements: usize) -> Result<EliasFano, String> {
         if n_of_elements == 0 {
             return Err("Cannot create an Elias Fano with 0 values.".to_string());
         }
-        if max < n_of_elements as u64 {
+        if universe < n_of_elements as u64 {
             return Err("The maximum must be bigger than the number of elements.".to_string());
         }
         // Compute the size of the low bits.
-        let low_bit_count = (max as f64 / n_of_elements as f64).log2().floor() as u64;
+        let low_bit_count = (universe as f64 / n_of_elements as f64).log2().floor() as u64;
 
         // add 2 to do the ceil and have brenchless primitives.
         let low_size = get_vec_size(low_bit_count, n_of_elements);
 
         let mut result = EliasFano {
+            universe,
             low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
             low_bit_mask: (1 << low_bit_count) - 1,
@@ -117,7 +119,9 @@ impl EliasFano {
         lowbit_read(&self.low_bits, index, self.low_bit_count)
     }
 
-    /// Return the index (rank) of the first instance of the given value.
+    /// Return the number of elements <= to the given value.
+    /// If the element is in the set, this is equivalent to the 
+    /// index of the first instance of the given value.
     /// 
     /// This means that if in the vector there are multiple equal values,
     /// the index returned will always be the one of the first.
@@ -135,60 +139,30 @@ impl EliasFano {
     /// let vector = [5, 8, 8, 15, 32];
     /// let ef = EliasFano::from_vec(&vector).unwrap();
     /// 
-    /// assert_eq!(ef.rank(15).unwrap(), 3);
-    /// assert_eq!(ef.rank(8).unwrap(), 1);
-    /// assert!(ef.rank(17).is_none());
+    /// assert_eq!(ef.rank(15), 3);
+    /// assert_eq!(ef.rank(8), 1);
+    /// assert_eq!(ef.rank(17), 4);
     /// ```
     /// 
-    pub fn rank(&self, value: u64) -> Option<u64> {
+    pub fn rank(&self, value: u64) -> u64 {
+        if value  > self.universe {
+            return self.n_of_elements;
+        }
+        // split into high and low
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
             false => self.high_bits.select0(high - 1) + 1
         };
+        // get the first guess
         let mut ones = self.high_bits.rank1(index);
-        while self.high_bits.get(index) {
-            if self.read_lowbits(ones) == low {
-                return Some(ones);
-            }
+        // handle the case where 
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
-        None
-    }
-    
-    /// Return rank of the given value without executing checks.
-    /// 
-    /// # Arguments
-    /// 
-    /// * `value`: u64 - Value whose rank is to be extracted.
-    /// 
-    /// # Usage example
-    /// 
-    /// Let's see an example. If I have the vector:
-    /// 
-    /// ```rust
-    /// # use elias_fano_rust::EliasFano;
-    /// let vector = [5, 8, 8, 15, 32];
-    /// let ef = EliasFano::from_vec(&vector).unwrap();
-    /// 
-    /// assert_eq!(ef.unchecked_rank(15), 3);
-    /// assert_eq!(ef.unchecked_rank(8), 1);
-    /// ```
-    ///
-    pub fn unchecked_rank(&self, value: u64) -> u64 {
-        let (high, low) = self.extract_high_low_bits(value);
-        let index = match high == 0 {
-            true => 0,
-            false => self.high_bits.select0(high - 1) + 1
-        };
-        let mut ones = self.high_bits.rank1(index);
-        loop {
-            if self.read_lowbits(ones) == low {
-                return ones;
-            }
-            ones += 1;
-        }
+        
+        ones
     }
 
     /// Return the value of the chosen index.
@@ -205,7 +179,7 @@ impl EliasFano {
         match index < self.n_of_elements {
             true => Ok(self.unchecked_select(index)),
             false => Err(format!(
-                "Given index {} is not less than maximal indixed element {}.",
+                "Given index {} is out of bound on a collection with {} elements.",
                 index,
                 self.n_of_elements
             ))
@@ -227,5 +201,24 @@ impl EliasFano {
     /// Return the number of **bits** used by the structure
     pub fn size(&self) -> u64 {
         mem::size_of::<u64>() as u64 * (3 + 2 + self.low_bits.len()) as u64 + self.high_bits.size() as u64
+    }
+
+    pub fn debug(&self) {
+        println!("EliasFano:");
+        println!("\tuniverse: {}", self.universe);
+        println!("\tn_of_elements: {}", self.n_of_elements);
+        println!("\tlow_bit_count: {}", self.low_bit_count);
+        println!("\tlow_bit_mask: {}", self.low_bit_mask);
+        print!("\t---------------low-bits-----------------\n\t");
+        for i in 0..self.n_of_elements {
+            print!("{}, ", self.read_lowbits(i));
+        }
+        print!("\n");
+        print!("\t--------------high-bits-----------------\n\t");
+        for i in 0..self.high_bits.len() {
+            print!("{}", self.high_bits.get(i) as u64);
+        }
+        print!("\n");
+        println!("\t----------------------------------------");
     }
 }

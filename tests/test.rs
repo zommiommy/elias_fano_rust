@@ -15,6 +15,8 @@ fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
         assert_eq!(ef.select(ef.rank(*v)).unwrap(), *v);
     });
 
+    ef.debug();
+
     Ok(())
 }
 

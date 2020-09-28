@@ -123,6 +123,12 @@ impl EliasFano {
         lowbit_read(&self.low_bits, index, self.low_bit_count)
     }
 
+    /// Return iterator for the values in elias fano.
+    pub fn iter(&self) -> impl Iterator<Item= u64> + '_ {
+        (0..self.n_of_elements).into_iter()
+            .map(move |index| self.unchecked_select(index))
+    }
+
     /// Return the number of elements <= to the given value.
     /// If the element is in the set, this is equivalent to the 
     /// index of the first instance of the given value.
@@ -224,8 +230,8 @@ impl EliasFano {
         }
         print!("\n");
         println!("--------------values--------------------");
-        for i in 0..self.n_of_elements {
-            print!("{}, ", self.select(i).unwrap());
+        for v in self.iter() {
+            print!("{}, ", v);
         }
         print!("\n");
         println!("----------------END---------------------");

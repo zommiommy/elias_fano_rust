@@ -221,6 +221,27 @@ impl EliasFano {
         (high_bits << self.low_bit_count) | low_bits
     }
 
+    pub fn contains(&self, value: u64) -> bool {
+        if value > self.universe {
+            return false;
+        }
+        // split into high and low
+        let (high, low) = self.extract_high_low_bits(value);
+        let mut index = match high == 0 {
+            true => 0,
+            false => self.high_bits.select0(high - 1) + 1,
+        };
+        // get the first guess
+        let mut ones = self.high_bits.rank1(index);
+        // handle the case where
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+            ones += 1;
+            index += 1;
+        }
+
+        self.high_bits.get(index) && self.read_lowbits(ones) == low
+    }
+
     /// Return the number of **bits** used by the structure
     pub fn size(&self) -> u64 {
         mem::size_of::<u64>() as u64 * (3 + 2 + self.low_bits.len()) as u64

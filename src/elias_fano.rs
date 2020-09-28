@@ -1,43 +1,45 @@
 use super::*;
 use fid::{BitVector, FID};
-use rayon::prelude::*;
 use rayon::iter::ParallelIterator;
+use rayon::prelude::*;
 use std::mem;
 
 #[derive(Clone)]
 pub struct EliasFano {
     universe: u64,
-    n_of_elements: u64,
+    number_of_elements: u64,
     low_bit_count: u64,
     low_bit_mask: u64,
     low_bits: Vec<u64>,
     high_bits: BitVector,
     last_high_value: u64,
     last_value: u64,
+    current_number_of_elements: usize,
 }
 
 impl EliasFano {
-    pub fn new(universe: u64, n_of_elements: usize) -> EliasFano {
+    pub fn new(universe: u64, number_of_elements: usize) -> EliasFano {
         // Compute the size of the low bits.
-        let low_bit_count = if universe >= n_of_elements as u64 {
-            (universe as f64 / n_of_elements as f64).log2().floor() as u64
+        let low_bit_count = if universe >= number_of_elements as u64 {
+            (universe as f64 / number_of_elements as f64).log2().floor() as u64
         } else {
             0
         };
 
         // add 2 to do the ceil and have brenchless primitives.
-        let low_size = get_vec_size(low_bit_count, n_of_elements);
+        let low_size = get_vec_size(low_bit_count, number_of_elements);
 
         EliasFano {
             universe,
             low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
             low_bit_mask: (1 << low_bit_count) - 1,
-            n_of_elements: n_of_elements as u64,
+            number_of_elements: number_of_elements as u64,
             high_bits: BitVector::new(),
             low_bits: vec![0; low_size as usize],
             last_high_value: 0,
             last_value: 0,
+            current_number_of_elements: 0,
         }
     }
 
@@ -55,13 +57,13 @@ impl EliasFano {
     pub fn from_iter(
         values: impl Iterator<Item = u64>,
         universe: u64,
-        n_of_elements: usize,
+        number_of_elements: usize,
     ) -> Result<EliasFano, String> {
-        if n_of_elements == 0 {
+        if number_of_elements == 0 {
             return Err("Cannot create an Elias Fano with 0 values.".to_string());
         }
 
-        let mut result = EliasFano::new(universe, n_of_elements);
+        let mut result = EliasFano::new(universe, number_of_elements);
 
         result.build_low_high_bits(values)?;
 
@@ -113,6 +115,7 @@ impl EliasFano {
             ));
         }
         self.last_value = value;
+        self.current_number_of_elements += 1;
 
         // split into high and low bits
         let (high, low) = self.extract_high_low_bits(value);
@@ -131,6 +134,14 @@ impl EliasFano {
         Ok(())
     }
 
+    pub fn len(&self) -> usize {
+        self.current_number_of_elements
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.current_number_of_elements == 0
+    }
+
     fn build_low_high_bits(&mut self, values: impl Iterator<Item = u64>) -> Result<(), String> {
         self.last_high_value = 0;
         self.last_value = 0;
@@ -147,12 +158,12 @@ impl EliasFano {
 
     /// Return iterator for the values in elias fano.
     pub fn iter(&self) -> impl Iterator<Item = u64> + '_ {
-        (0..self.n_of_elements).map(move |index| self.unchecked_select(index))
+        (0..self.number_of_elements).map(move |index| self.unchecked_select(index))
     }
 
     /// Return iterator for the values in elias fano.
     pub fn par_iter(&self) -> impl ParallelIterator<Item = u64> + '_ {
-        (0..self.n_of_elements)
+        (0..self.number_of_elements)
             .into_par_iter()
             .map(move |index| self.unchecked_select(index))
     }
@@ -184,7 +195,7 @@ impl EliasFano {
     ///
     pub fn rank(&self, value: u64) -> u64 {
         if value > self.universe {
-            return self.n_of_elements;
+            return self.number_of_elements;
         }
         // split into high and low
         let (high, low) = self.extract_high_low_bits(value);
@@ -214,11 +225,11 @@ impl EliasFano {
     ///
     /// * index: u64 - Index of the value to be extract.
     pub fn select(&self, index: u64) -> Result<u64, String> {
-        match index < self.n_of_elements {
+        match index < self.number_of_elements {
             true => Ok(self.unchecked_select(index)),
             false => Err(format!(
                 "Given index {} is out of bound on a collection with {} elements.",
-                index, self.n_of_elements
+                index, self.number_of_elements
             )),
         }
     }
@@ -265,11 +276,11 @@ impl EliasFano {
     pub fn debug(&self) {
         println!("------------ELIAS-FANO------------------");
         println!("\tuniverse: {}", self.universe);
-        println!("\tn_of_elements: {}", self.n_of_elements);
+        println!("\tnumber_of_elements: {}", self.number_of_elements);
         println!("\tlow_bit_count: {}", self.low_bit_count);
         println!("\tlow_bit_mask: {}", self.low_bit_mask);
         println!("---------------low-bits-----------------");
-        for i in 0..self.n_of_elements {
+        for i in 0..self.number_of_elements {
             print!("{}, ", self.read_lowbits(i));
         }
         println!("\n--------------high-bits-----------------");

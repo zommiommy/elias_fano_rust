@@ -62,7 +62,7 @@ impl EliasFano {
         if n_of_elements == 0 {
             return Err("Cannot create an Elias Fano with 0 values.".to_string());
         }
-        
+
         let mut result = EliasFano::new(universe, n_of_elements);
 
         result.build_low_high_bits(values)?;
@@ -104,7 +104,7 @@ impl EliasFano {
         (value >> self.low_bit_count, value & self.low_bit_mask)
     }
 
-    pub(crate) fn push(&mut self, value: u64, index: u64) -> Result<(), String> {
+    pub fn push(&mut self, value: u64, index: u64) -> Result<(), String> {
         if self.last_value > value {
             return Err(format!(
                 concat!(

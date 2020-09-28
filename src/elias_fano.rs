@@ -1,5 +1,7 @@
 use super::*;
 use fid::{BitVector, FID};
+use rayon::prelude::*;
+use rayon::iter::ParallelIterator;
 use std::mem;
 
 #[derive(Clone)]
@@ -15,11 +17,7 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
-    
-    pub fn new(
-        universe: u64,
-        n_of_elements: usize,
-    ) -> EliasFano {
+    pub fn new(universe: u64, n_of_elements: usize) -> EliasFano {
         // Compute the size of the low bits.
         let low_bit_count = if universe >= n_of_elements as u64 {
             (universe as f64 / n_of_elements as f64).log2().floor() as u64
@@ -150,6 +148,13 @@ impl EliasFano {
     /// Return iterator for the values in elias fano.
     pub fn iter(&self) -> impl Iterator<Item = u64> + '_ {
         (0..self.n_of_elements).map(move |index| self.unchecked_select(index))
+    }
+
+    /// Return iterator for the values in elias fano.
+    pub fn par_iter(&self) -> impl ParallelIterator<Item = u64> + '_ {
+        (0..self.n_of_elements)
+            .into_par_iter()
+            .map(move |index| self.unchecked_select(index))
     }
 
     /// Return the number of elements <= to the given value.

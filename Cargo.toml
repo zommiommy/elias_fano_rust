@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
 fid = { git = "https://github.com/zommiommy/fid", branch = "patch-1" }
+rayon = "1.1"
 
 [dev-dependencies]
 rand = {version="0.7", features = ["small_rng"] }
-rayon = "1.1"

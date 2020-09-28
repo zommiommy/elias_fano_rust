@@ -1,7 +1,5 @@
 use elias_fano_rust::EliasFano;
-use rayon::prelude::*;
 mod utils;
-use utils::*;
 
 #[test]
 /// Check that elias fano runs considering a lot of possible combinations.

@@ -8,7 +8,7 @@ fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
     let vector = build_random_sorted_vector(size, max);
     let true_max = *vector.last().unwrap();
     let ef = EliasFano::from_vec(&vector)?;
-    (0..max).into_iter().for_each(|i| {
+    (0..max).for_each(|i| {
         let index = ef.rank(i);
         if i <= true_max {
             assert!(ef.select(index).unwrap() >= i);

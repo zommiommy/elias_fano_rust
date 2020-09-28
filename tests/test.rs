@@ -10,6 +10,7 @@ fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
     let ef = EliasFano::from_vec(&vector)?;
     vector.iter().enumerate().for_each(|(i, v)| {
         assert_eq!(*v, ef.select(i as u64).unwrap());
+        assert!(ef.contains(*v));
         assert_eq!(*v, ef.unchecked_select(i as u64));
         assert_eq!(ef.select(ef.rank(*v)).unwrap(), *v);
     });

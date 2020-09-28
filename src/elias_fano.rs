@@ -10,6 +10,8 @@ pub struct EliasFano {
     low_bit_mask: u64,
     low_bits: Vec<u64>,
     high_bits: BitVector,
+    last_high_value: u64,
+    last_value: u64,
 }
 
 impl EliasFano {
@@ -50,6 +52,8 @@ impl EliasFano {
             n_of_elements: n_of_elements as u64,
             high_bits: BitVector::new(),
             low_bits: vec![0; low_size as usize],
+            last_high_value: 0,
+            last_value: 0,
         };
 
         result.build_low_high_bits(values)?;
@@ -91,36 +95,41 @@ impl EliasFano {
         (value >> self.low_bit_count, value & self.low_bit_mask)
     }
 
+    pub(crate) fn push(&mut self, value: u64, index: u64) -> Result<(), String> {
+        if self.last_value > value {
+            return Err(format!(
+                concat!(
+                    "Cannot initialize from an unsorted set of values! ",
+                    "Previous value was {} but given value is {}.",
+                ),
+                self.last_value, value
+            ));
+        }
+        self.last_value = value;
+
+        // split into high and low bits
+        let (high, low) = self.extract_high_low_bits(value);
+
+        // The following for loop and push
+        // are used to encode in inverted unary code for the high bits
+        // of the data structure.
+        for _ in self.last_high_value..high {
+            self.high_bits.push(false);
+        }
+        self.high_bits.push(true);
+
+        unsafe_write(&mut self.low_bits, index, low, self.low_bit_count);
+
+        self.last_high_value = high;
+        Ok(())
+    }
+
     fn build_low_high_bits(&mut self, values: impl Iterator<Item = u64>) -> Result<(), String> {
-        let mut last_high_value = 0;
-        let mut last_value = 0;
+        self.last_high_value = 0;
+        self.last_value = 0;
         for (index, value) in values.enumerate() {
             // check that the values are actually sorted.
-            if last_value > value {
-                return Err(format!(
-                    concat!(
-                        "Cannot initialize from an unsorted set of values!\n",
-                        "At the index {} there is {} but the value before was {}."
-                    ),
-                    index, value, last_value
-                ));
-            }
-            last_value = value;
-
-            // split into high and low bits
-            let (high, low) = self.extract_high_low_bits(value);
-
-            // The following for loop and push
-            // are used to encode in inverted unary code for the high bits
-            // of the data structure.
-            for _ in last_high_value..high {
-                self.high_bits.push(false);
-            }
-            self.high_bits.push(true);
-
-            unsafe_write(&mut self.low_bits, index as u64, low, self.low_bit_count);
-
-            last_high_value = high;
+            self.push(value, index as u64)?;
         }
         Ok(())
     }

@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
-rsdict = "0.0.2"
+rsdict = {version="0.0.2", features= ["simd"] }
 rayon = "1.1"
 
 [dev-dependencies]

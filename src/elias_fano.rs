@@ -14,6 +14,7 @@ pub struct EliasFano {
     high_bits: BitVector,
     last_high_value: u64,
     last_value: u64,
+    last_index: u64,
     current_number_of_elements: usize,
 }
 
@@ -39,6 +40,7 @@ impl EliasFano {
             low_bits: vec![0; low_size as usize],
             last_high_value: 0,
             last_value: 0,
+            last_index: 0,
             current_number_of_elements: 0,
         }
     }
@@ -104,7 +106,7 @@ impl EliasFano {
         (value >> self.low_bit_count, value & self.low_bit_mask)
     }
 
-    pub fn push(&mut self, value: u64, index: u64) -> Result<(), String> {
+    pub fn push(&mut self, value: u64) -> Result<(), String> {
         if self.last_value > value {
             return Err(format!(
                 concat!(
@@ -128,9 +130,10 @@ impl EliasFano {
         }
         self.high_bits.push(true);
 
-        unsafe_write(&mut self.low_bits, index, low, self.low_bit_count);
+        unsafe_write(&mut self.low_bits, self.last_index, low, self.low_bit_count);
 
         self.last_high_value = high;
+        self.last_index += 1;
         Ok(())
     }
 
@@ -143,13 +146,7 @@ impl EliasFano {
     }
 
     fn build_low_high_bits(&mut self, values: impl Iterator<Item = u64>) -> Result<(), String> {
-        self.last_high_value = 0;
-        self.last_value = 0;
-        for (index, value) in values.enumerate() {
-            // check that the values are actually sorted.
-            self.push(value, index as u64)?;
-        }
-        Ok(())
+        values.map(move |value| self.push(value)).collect()
     }
 
     fn read_lowbits(&self, index: u64) -> u64 {

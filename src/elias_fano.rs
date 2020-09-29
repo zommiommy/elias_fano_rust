@@ -95,6 +95,14 @@ impl EliasFano {
         )
     }
 
+    fn extract_high_bits(&self, value: u64) -> u64 {
+        value >> self.low_bit_count
+    }
+
+    fn extract_low_bits(&self, value: u64) -> u64 {
+        value & self.low_bit_mask
+    }
+
     fn extract_high_low_bits(&self, value: u64) -> (u64, u64) {
         // The following is an efficient mod operation
         // It is the equivalent of executing:
@@ -103,7 +111,7 @@ impl EliasFano {
         //
         // but faster.
         //
-        (value >> self.low_bit_count, value & self.low_bit_mask)
+        (self.extract_high_bits(value), self.extract_low_bits(value))
     }
 
     pub fn unchecked_push(&mut self, value: u64) {
@@ -329,6 +337,24 @@ impl EliasFano {
         self.high_bits.get(index) && self.read_lowbits(ones) == low
     }
 
+    pub fn range_contains(&self, value: u64, min_index: u64, max_index: u64) -> bool {
+        if value > self.last_value {
+            return false;
+        }
+        // split into high and low
+        let low = self.extract_low_bits(value);
+        for index in min_index..max_index {
+            let low_bits = self.read_lowbits(index);
+            if low_bits == low {
+                return true;
+            }
+            if low_bits > low {
+                break;
+            }
+        }
+        false
+    }
+
     /// Return the number of **bits** used by the structure
     pub fn size(&self) -> u64 {
         mem::size_of::<u64>() as u64 * (3 + 2 + self.low_bits.len()) as u64
@@ -339,10 +365,13 @@ impl EliasFano {
         println!("------------ELIAS-FANO------------------");
         println!("\tuniverse: {}", self.universe);
         println!("\tnumber_of_elements: {}", self.number_of_elements);
-        println!("\tcurrent_number_of_elements: {}", self.current_number_of_elements);
+        println!(
+            "\tcurrent_number_of_elements: {}",
+            self.current_number_of_elements
+        );
         println!("\tlow_bit_count: {}", self.low_bit_count);
         println!("\tlow_bit_mask: {}", self.low_bit_mask);
-        if self.number_of_elements < 10{
+        if self.number_of_elements < 10 {
             println!("---------------low-bits-----------------");
             for i in 0..self.number_of_elements {
                 print!("{}, ", self.read_lowbits(i));

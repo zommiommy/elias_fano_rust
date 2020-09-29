@@ -12,7 +12,7 @@ fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
         assert_eq!(*v, ef.select(i as u64).unwrap());
         assert!(ef.contains(*v));
         assert_eq!(*v, ef.unchecked_select(i as u64));
-        assert_eq!(ef.select(ef.rank(*v)).unwrap(), *v);
+        assert_eq!(ef.select(ef.unchecked_rank(*v)).unwrap(), *v);
     });
 
     ef.debug();

@@ -197,12 +197,61 @@ impl EliasFano {
     /// let vector = [5, 8, 8, 15, 32];
     /// let ef = EliasFano::from_vec(&vector).unwrap();
     ///
-    /// assert_eq!(ef.rank(15), 3);
-    /// assert_eq!(ef.rank(8), 1);
-    /// assert_eq!(ef.rank(17), 4);
+    /// assert_eq!(ef.rank(15).unwrap(), 3);
+    /// assert_eq!(ef.rank(8).unwrap(), 1);
     /// ```
     ///
-    pub fn rank(&self, value: u64) -> u64 {
+    pub fn rank(&self, value: u64) -> Option<u64> {
+        if value > self.universe {
+            return None;
+        }
+        // split into high and low
+        let (high, low) = self.extract_high_low_bits(value);
+        let mut index = match high == 0 {
+            true => 0,
+            false => self.high_bits.select0(high - 1) + 1,
+        };
+        // get the first guess
+        let mut ones = self.high_bits.rank1(index);
+        // handle the case where
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+            ones += 1;
+            index += 1;
+        }
+
+        if self.high_bits.get(index) && self.read_lowbits(ones) == low {
+            Some(ones)
+        } else {
+            None
+        }
+    }
+
+    /// Return the number of elements <= to the given value.
+    /// If the element is in the set, this is equivalent to the
+    /// index of the first instance of the given value.
+    ///
+    /// This means that if in the vector there are multiple equal values,
+    /// the index returned will always be the one of the first.
+    ///
+    /// # Arguments
+    ///
+    /// * `value`: u64 - Value whose rank is to be extracted.
+    ///
+    /// # Usage example
+    ///
+    /// Let's see an example. If I have the vector:
+    ///
+    /// ```rust
+    /// # use elias_fano_rust::EliasFano;
+    /// let vector = [5, 8, 8, 15, 32];
+    /// let ef = EliasFano::from_vec(&vector).unwrap();
+    ///
+    /// assert_eq!(ef.unchecked_rank(15), 3);
+    /// assert_eq!(ef.unchecked_rank(8), 1);
+    /// assert_eq!(ef.unchecked_rank(17), 4);
+    /// ```
+    ///
+    pub fn unchecked_rank(&self, value: u64) -> u64 {
         if value > self.universe {
             return self.number_of_elements;
         }
@@ -219,7 +268,7 @@ impl EliasFano {
             ones += 1;
             index += 1;
         }
-
+        
         ones
     }
 

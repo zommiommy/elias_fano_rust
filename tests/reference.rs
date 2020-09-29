@@ -11,7 +11,7 @@ fn test_reference() {
     for (i, v) in vector.iter().enumerate() {
         assert_eq!(*v, ef.select(i as u64).unwrap());
         assert_eq!(*v, ef.unchecked_select(i as u64));
-        let res = ef.rank(*v);
+        let res = ef.unchecked_rank(*v);
         assert_eq!(ef.select(res).unwrap(), *v);
     }
 }

@@ -9,7 +9,7 @@ fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
     let true_max = *vector.last().unwrap();
     let ef = EliasFano::from_vec(&vector)?;
     (0..max).for_each(|i| {
-        let index = ef.rank(i);
+        let index = ef.unchecked_rank(i);
         if i <= true_max {
             assert!(ef.select(index).unwrap() >= i);
         } else {

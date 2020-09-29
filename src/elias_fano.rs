@@ -106,16 +106,7 @@ impl EliasFano {
         (value >> self.low_bit_count, value & self.low_bit_mask)
     }
 
-    pub fn push(&mut self, value: u64) -> Result<(), String> {
-        if self.last_value > value {
-            return Err(format!(
-                concat!(
-                    "Cannot initialize from an unsorted set of values! ",
-                    "Previous value was {} but given value is {}.",
-                ),
-                self.last_value, value
-            ));
-        }
+    pub fn unchecked_push(&mut self, value: u64) {
         self.last_value = value;
         self.current_number_of_elements += 1;
 
@@ -134,6 +125,19 @@ impl EliasFano {
 
         self.last_high_value = high;
         self.last_index += 1;
+    }
+
+    pub fn push(&mut self, value: u64) -> Result<(), String> {
+        if self.last_value > value {
+            return Err(format!(
+                concat!(
+                    "Cannot initialize from an unsorted set of values! ",
+                    "Previous value was {} but given value is {}.",
+                ),
+                self.last_value, value
+            ));
+        }
+        self.unchecked_push(value);
         Ok(())
     }
 
@@ -268,7 +272,7 @@ impl EliasFano {
             ones += 1;
             index += 1;
         }
-        
+
         ones
     }
 

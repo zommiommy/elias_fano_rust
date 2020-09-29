@@ -206,7 +206,7 @@ impl EliasFano {
     /// ```
     ///
     pub fn rank(&self, value: u64) -> Option<u64> {
-        if value > self.universe {
+        if value > self.last_value {
             return None;
         }
         // split into high and low
@@ -256,7 +256,7 @@ impl EliasFano {
     /// ```
     ///
     pub fn unchecked_rank(&self, value: u64) -> u64 {
-        if value > self.universe {
+        if value > self.last_value {
             return self.number_of_elements;
         }
         // split into high and low
@@ -309,7 +309,7 @@ impl EliasFano {
     }
 
     pub fn contains(&self, value: u64) -> bool {
-        if value > self.universe {
+        if value > self.last_value {
             return false;
         }
         // split into high and low

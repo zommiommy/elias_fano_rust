@@ -257,7 +257,7 @@ impl EliasFano {
     ///
     pub fn unchecked_rank(&self, value: u64) -> u64 {
         if value > self.last_value {
-            return self.number_of_elements;
+            return self.current_number_of_elements;
         }
         // split into high and low
         let (high, low) = self.extract_high_low_bits(value);
@@ -339,6 +339,7 @@ impl EliasFano {
         println!("------------ELIAS-FANO------------------");
         println!("\tuniverse: {}", self.universe);
         println!("\tnumber_of_elements: {}", self.number_of_elements);
+        println!("\tcurrent_number_of_elements: {}", self.current_number_of_elements);
         println!("\tlow_bit_count: {}", self.low_bit_count);
         println!("\tlow_bit_mask: {}", self.low_bit_mask);
         println!("---------------low-bits-----------------");

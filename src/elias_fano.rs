@@ -165,6 +165,18 @@ impl EliasFano {
             .map(move |index| self.unchecked_select(index))
     }
 
+    /// Return iterator for the values in elias fano.
+    pub fn enumerate(&self) -> impl Iterator<Item = (u64, u64)> + '_ {
+        (0..self.number_of_elements).map(move |index| (index, self.unchecked_select(index)))
+    }
+
+    /// Return iterator for the values in elias fano.
+    pub fn par_enumerate(&self) -> impl ParallelIterator<Item = (u64, u64)> + '_ {
+        (0..self.number_of_elements)
+            .into_par_iter()
+            .map(move |index| (index, self.unchecked_select(index)))
+    }
+
     /// Return the number of elements <= to the given value.
     /// If the element is in the set, this is equivalent to the
     /// index of the first instance of the given value.

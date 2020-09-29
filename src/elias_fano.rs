@@ -338,7 +338,7 @@ impl EliasFano {
         self.high_bits.get(index) && self.read_lowbits(ones) == low
     }
 
-    pub fn range_contains(&self, value: u64, min_index: u64, max_index: u64) -> bool {
+    pub fn contains_in_range(&self, value: u64, min_index: u64, max_index: u64) -> bool {
         if value > self.last_value {
             return false;
         }

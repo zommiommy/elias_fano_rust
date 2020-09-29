@@ -342,17 +342,19 @@ impl EliasFano {
         println!("\tcurrent_number_of_elements: {}", self.current_number_of_elements);
         println!("\tlow_bit_count: {}", self.low_bit_count);
         println!("\tlow_bit_mask: {}", self.low_bit_mask);
-        println!("---------------low-bits-----------------");
-        for i in 0..self.number_of_elements {
-            print!("{}, ", self.read_lowbits(i));
-        }
-        println!("\n--------------high-bits-----------------");
-        for i in 0..self.high_bits.len() {
-            print!("{}", self.high_bits.get(i) as u64);
-        }
-        println!("\n--------------values--------------------");
-        for v in self.iter() {
-            print!("{}, ", v);
+        if self.len() < 10{
+            println!("---------------low-bits-----------------");
+            for i in 0..self.number_of_elements {
+                print!("{}, ", self.read_lowbits(i));
+            }
+            println!("\n--------------high-bits-----------------");
+            for i in 0..self.high_bits.len() {
+                print!("{}", self.high_bits.get(i) as u64);
+            }
+            println!("\n--------------values--------------------");
+            for v in self.iter() {
+                print!("{}, ", v);
+            }
         }
         println!("\n----------------END---------------------");
     }

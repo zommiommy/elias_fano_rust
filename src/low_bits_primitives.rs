@@ -4,7 +4,7 @@ use std::mem::size_of;
 const WORD_SIZE: u64 = 8 * size_of::<u64>() as u64;
 
 pub fn get_vec_size(n_bits: u64, size: usize) -> u64 {
-    2 + (size as u64 * n_bits / WORD_SIZE)
+    2 + ((size as u64 * n_bits) as f64  / WORD_SIZE as f64).ceil() as u64
 }
 
 #[inline(always)]

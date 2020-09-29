@@ -121,7 +121,7 @@ impl EliasFano {
         }
         self.high_bits.push(true);
 
-        unsafe_write(&mut self.low_bits, self.last_index, low, self.low_bit_count);
+        safe_write(&mut self.low_bits, self.last_index, low, self.low_bit_count);
 
         self.last_high_value = high;
         self.last_index += 1;
@@ -154,7 +154,7 @@ impl EliasFano {
     }
 
     fn read_lowbits(&self, index: u64) -> u64 {
-        unsafe_read(&self.low_bits, index, self.low_bit_count)
+        safe_read(&self.low_bits, index, self.low_bit_count)
     }
 
     /// Return iterator for the values in elias fano.

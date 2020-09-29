@@ -1,17 +1,16 @@
 use super::*;
-use fid::{BitVector, FID};
+use rsdict::RsDict;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
 use std::mem;
 
-#[derive(Clone, Debug)]
 pub struct EliasFano {
     universe: u64,
     number_of_elements: u64,
     low_bit_count: u64,
     low_bit_mask: u64,
     low_bits: Vec<u64>,
-    high_bits: BitVector,
+    high_bits: RsDict,
     last_high_value: u64,
     last_value: u64,
     last_index: u64,
@@ -36,7 +35,7 @@ impl EliasFano {
             // Pre-rendered mask to execute a fast version of the mod operation.
             low_bit_mask: (1 << low_bit_count) - 1,
             number_of_elements: number_of_elements as u64,
-            high_bits: BitVector::new(),
+            high_bits: RsDict::new(),
             low_bits: vec![0; low_size as usize],
             last_high_value: 0,
             last_value: 0,
@@ -213,17 +212,17 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1) + 1,
+            false => self.high_bits.select0(high - 1).unwrap() + 1,
         };
         // get the first guess
-        let mut ones = self.high_bits.rank1(index);
+        let mut ones = self.high_bits.rank(index, true);
         // handle the case where
-        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        if self.high_bits.get(index) && self.read_lowbits(ones) == low {
+        if self.high_bits.get_bit(index) && self.read_lowbits(ones) == low {
             Some(ones)
         } else {
             None
@@ -263,12 +262,12 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1) + 1,
+            false => self.high_bits.select0(high - 1).unwrap() + 1,
         };
         // get the first guess
-        let mut ones = self.high_bits.rank1(index);
+        let mut ones = self.high_bits.rank(index, true);
         // handle the case where
-        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
@@ -302,8 +301,8 @@ impl EliasFano {
     ///
     /// * index: u64 - Index of the value to be extract.
     pub fn unchecked_select(&self, index: u64) -> u64 {
-        let bit_index = self.high_bits.select1(index);
-        let high_bits = self.high_bits.rank0(bit_index);
+        let bit_index = self.high_bits.select1(index).unwrap();
+        let high_bits = self.high_bits.rank(bit_index, false);
         let low_bits = self.read_lowbits(index);
         (high_bits << self.low_bit_count) | low_bits
     }
@@ -316,23 +315,17 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1) + 1,
+            false => self.high_bits.select0(high - 1).unwrap() + 1,
         };
         // get the first guess
-        let mut ones = self.high_bits.rank1(index);
+        let mut ones = self.high_bits.rank(index, true);
         // handle the case where
-        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        self.high_bits.get(index) && self.read_lowbits(ones) == low
-    }
-
-    /// Return the number of **bits** used by the structure
-    pub fn size(&self) -> u64 {
-        mem::size_of::<u64>() as u64 * (3 + 2 + self.low_bits.len()) as u64
-            + self.high_bits.size() as u64
+        self.high_bits.get_bit(index) && self.read_lowbits(ones) == low
     }
 
     pub fn debug(&self) {
@@ -349,7 +342,7 @@ impl EliasFano {
             }
             println!("\n--------------high-bits-----------------");
             for i in 0..self.high_bits.len() {
-                print!("{}", self.high_bits.get(i) as u64);
+                print!("{}", self.high_bits.get_bit(i as u64) as u64);
             }
             println!("\n--------------values--------------------");
             for v in self.iter() {

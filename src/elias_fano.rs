@@ -4,6 +4,7 @@ use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
 use std::mem;
 
+
 #[derive(Clone, Debug)]
 pub struct EliasFano {
     universe: u64,

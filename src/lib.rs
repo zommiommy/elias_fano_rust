@@ -1,6 +1,3 @@
-mod utils;
-pub(crate) use utils::*;
-
 mod low_bits_primitives;
 
 pub use low_bits_primitives::safe_read;

@@ -1,3 +1,6 @@
+use super::*;
+use fid::BitVector;
+
 impl EliasFano {
 
     pub fn new(universe: u64, number_of_elements: usize) -> EliasFano {
@@ -76,7 +79,7 @@ impl EliasFano {
             values.len(),
         )
     }
-    
+
     pub fn unchecked_push(&mut self, value: u64) {
         self.last_value = value;
         self.current_number_of_elements += 1;

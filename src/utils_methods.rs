@@ -1,3 +1,7 @@
+use super::*;
+use std::mem;
+use fid::FID;
+
 impl EliasFano {
     /// Return the number of **bits** used by the structure
     pub fn size(&self) -> u64 {

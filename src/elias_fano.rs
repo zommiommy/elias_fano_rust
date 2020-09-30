@@ -1,35 +1,32 @@
 use super::*;
 use fid::{BitVector, FID};
-use rayon::iter::ParallelIterator;
-use rayon::prelude::*;
-use std::mem;
 
 
 #[derive(Clone, Debug)]
 pub struct EliasFano {
-    universe: u64,
-    number_of_elements: u64,
-    low_bit_count: u64,
-    low_bit_mask: u64,
-    low_bits: Vec<u64>,
-    high_bits: BitVector,
-    last_high_value: u64,
-    last_value: u64,
-    last_index: u64,
-    current_number_of_elements: u64,
+    pub(crate) universe: u64,
+    pub(crate) number_of_elements: u64,
+    pub(crate) low_bit_count: u64,
+    pub(crate) low_bit_mask: u64,
+    pub(crate) low_bits: Vec<u64>,
+    pub(crate) high_bits: BitVector,
+    pub(crate) last_high_value: u64,
+    pub(crate) last_value: u64,
+    pub(crate) last_index: u64,
+    pub(crate) current_number_of_elements: u64,
 }
 
 impl EliasFano {
 
-    fn extract_high_bits(&self, value: u64) -> u64 {
+    pub(crate) fn extract_high_bits(&self, value: u64) -> u64 {
         value >> self.low_bit_count
     }
 
-    fn extract_low_bits(&self, value: u64) -> u64 {
+    pub(crate) fn extract_low_bits(&self, value: u64) -> u64 {
         value & self.low_bit_mask
     }
 
-    fn extract_high_low_bits(&self, value: u64) -> (u64, u64) {
+    pub(crate) fn extract_high_low_bits(&self, value: u64) -> (u64, u64) {
         // The following is an efficient mod operation
         // It is the equivalent of executing:
         //
@@ -41,11 +38,11 @@ impl EliasFano {
     }
 
 
-    fn build_low_high_bits(&mut self, values: impl Iterator<Item = u64>) -> Result<(), String> {
+    pub(crate) fn build_low_high_bits(&mut self, values: impl Iterator<Item = u64>) -> Result<(), String> {
         values.map(move |value| self.push(value)).collect()
     }
 
-    fn read_lowbits(&self, index: u64) -> u64 {
+    pub(crate) fn read_lowbits(&self, index: u64) -> u64 {
         safe_read(&self.low_bits, index, self.low_bit_count)
     }
 

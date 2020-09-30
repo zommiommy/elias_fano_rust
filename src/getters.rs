@@ -1,3 +1,7 @@
+use super::*;
+use rayon::iter::ParallelIterator;
+use rayon::prelude::*;
+
 impl EliasFano {
     pub fn len(&self) -> usize {
         self.current_number_of_elements as usize

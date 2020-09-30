@@ -338,24 +338,6 @@ impl EliasFano {
         self.high_bits.get(index) && self.read_lowbits(ones) == low
     }
 
-    pub fn contains_in_range(&self, value: u64, min_index: u64, max_index: u64) -> bool {
-        if value > self.last_value {
-            return false;
-        }
-        // split into high and low
-        let low = self.extract_low_bits(value);
-        for index in min_index..max_index {
-            let low_bits = self.read_lowbits(index);
-            if low_bits == low {
-                return true;
-            }
-            if low_bits > low {
-                break;
-            }
-        }
-        false
-    }
-
     /// Return the number of **bits** used by the structure
     pub fn size(&self) -> u64 {
         mem::size_of::<u64>() as u64 * (3 + 2 + self.low_bits.len()) as u64

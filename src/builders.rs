@@ -111,6 +111,16 @@ impl EliasFano {
                 self.last_value, value
             ));
         }
+        if self.current_number_of_elements >= self.number_of_elements {
+            return Err(format!(
+                concat!(
+                    "Cannot push anymore values inside of the Elias-Fano ",
+                    "because it already reached the maximum number of elements ",
+                    "that was passed during the initializzation {}."
+                ),
+                self.number_of_elements
+            ));
+        }
         self.unchecked_push(value);
         Ok(())
     }

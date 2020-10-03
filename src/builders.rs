@@ -5,11 +5,16 @@ impl EliasFano {
 
     pub fn new(universe: u64, number_of_elements: usize) -> EliasFano {
         // Compute the size of the low bits.
-        let low_bit_count = if universe >= number_of_elements as u64 {
+        let mut low_bit_count = if universe >= number_of_elements as u64 {
             (universe as f64 / number_of_elements as f64).log2().floor() as u64
         } else {
             0
         };
+
+        // saturate at the max we can handle
+        if low_bit_count > 64 {
+            low_bit_count = 64;
+        }
 
         // add 2 to do the ceil and have brenchless primitives.
         let low_size = get_vec_size(low_bit_count, number_of_elements);
@@ -18,7 +23,11 @@ impl EliasFano {
             universe,
             low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
-            low_bit_mask: (1 << low_bit_count) - 1,
+            low_bit_mask: if low_bit_count < 64 {
+                (1 << low_bit_count) - 1
+            } else {
+                0xffffffffffffffff
+            },
             number_of_elements: number_of_elements as u64,
             high_bits: BitVector::new(),
             low_bits: vec![0; low_size as usize],

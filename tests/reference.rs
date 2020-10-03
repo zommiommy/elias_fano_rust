@@ -14,4 +14,6 @@ fn test_reference() {
         let res = ef.unchecked_rank(*v);
         assert_eq!(ef.select(res).unwrap(), *v);
     }
+
+    assert_eq!(ef.iter_uniques().collect::<Vec<u64>>(), vec![5, 8, 13, 32]);
 }

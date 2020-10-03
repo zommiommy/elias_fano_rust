@@ -12,7 +12,8 @@ impl EliasFano {
         };
 
         // saturate at the max we can handle
-        if low_bit_count > 64 {
+        if low_bit_count >= 64 {
+            println!("The lowbits are too big, we only support 64 bits for the low parts. The value were universe {} number_of_elements {}", universe, number_of_elements);
             low_bit_count = 64;
         }
 

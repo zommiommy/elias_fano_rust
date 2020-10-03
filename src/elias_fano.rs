@@ -2,7 +2,7 @@ use super::*;
 use fid::{BitVector, FID};
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EliasFano {
     pub(crate) universe: u64,
     pub(crate) number_of_elements: u64,

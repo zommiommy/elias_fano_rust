@@ -17,6 +17,7 @@ impl EliasFano {
             "\tcurrent_number_of_elements: {}",
             self.current_number_of_elements
         );
+        println!("\tlast_value: {}", self.last_value);
         println!("\tlow_bit_count: {}", self.low_bit_count);
         println!("\tlow_bit_mask: {}", self.low_bit_mask);
         if self.number_of_elements < 10 {

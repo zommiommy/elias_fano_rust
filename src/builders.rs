@@ -129,7 +129,7 @@ impl EliasFano {
                 concat!(
                     "Cannot push anymore values inside of the Elias-Fano ",
                     "because it already reached the maximum number of elements ",
-                    "that was passed during the initializzation {}."
+                    "that was passed during the initialization {}."
                 ),
                 self.number_of_elements
             ));

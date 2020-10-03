@@ -3,24 +3,31 @@ use fid::BitVector;
 
 impl EliasFano {
 
-    pub fn new(universe: u64, number_of_elements: usize) -> EliasFano {
+    pub fn new(universe: u64, number_of_elements: usize) -> Result<EliasFano, String> {
+        if number_of_elements == 0 {
+            return Err("The number of elements cannot be 0!".to_string());
+        }
         // Compute the size of the low bits.
-        let mut low_bit_count = if universe >= number_of_elements as u64 {
+        let low_bit_count = if universe >= number_of_elements as u64 {
             (universe as f64 / number_of_elements as f64).log2().floor() as u64
         } else {
             0
         };
 
         // saturate at the max we can handle
-        if low_bit_count >= 64 {
-            println!("The lowbits are too big, we only support 64 bits for the low parts. The value were universe {} number_of_elements {}", universe, number_of_elements);
-            low_bit_count = 64;
+        if low_bit_count > 64 {
+            return Err(format!(concat!(
+                    "The lowbits are too big, we only support 64 bits for the low parts.",
+                    "The value were universe {} number_of_elements {}"
+                ),
+                universe, number_of_elements
+            ));
         }
 
         // add 2 to do the ceil and have brenchless primitives.
         let low_size = get_vec_size(low_bit_count, number_of_elements);
 
-        EliasFano {
+        Ok(EliasFano {
             universe,
             low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
@@ -36,7 +43,7 @@ impl EliasFano {
             last_value: 0,
             last_index: 0,
             current_number_of_elements: 0,
-        }
+        })
     }
 
     /// Create a new elias-fano from an iterable of **sorted values**.
@@ -60,7 +67,7 @@ impl EliasFano {
             return Err("Cannot create an Elias Fano with 0 values.".to_string());
         }
 
-        let mut result = EliasFano::new(universe, number_of_elements);
+        let mut result = EliasFano::new(universe, number_of_elements)?;
 
         result.build_low_high_bits(values)?;
 

@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
 fid = "0.1.7"
+# rsdict = "0.0.2"
+rsdict = {path = "../rsdict"}
 rayon = "1.1"
 
 [dev-dependencies]
@@ -17,4 +19,3 @@ succinct = "0.5.2"
 indexed_bitvec = "4.0.1"
 bio = "0.32.0"
 bv = "0.11.1"
-rsdict = "0.0.2"

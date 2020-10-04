@@ -1,13 +1,7 @@
 use super::*;
-use std::mem;
-use fid::FID;
 
 impl EliasFano {
     /// Return the number of **bits** used by the structure
-    pub fn size(&self) -> u64 {
-        mem::size_of::<u64>() as u64 * (3 + 2 + self.low_bits.len()) as u64
-            + self.high_bits.size() as u64
-    }
 
     pub fn debug(&self) {
         println!("------------ELIAS-FANO------------------");
@@ -27,7 +21,7 @@ impl EliasFano {
             }
             println!("\n--------------high-bits-----------------");
             for i in 0..self.high_bits.len() {
-                print!("{}", self.high_bits.get(i) as u64);
+                print!("{}", self.high_bits.get_bit(i as u64) as u64);
             }
             println!("\n--------------values--------------------");
             for v in self.iter() {

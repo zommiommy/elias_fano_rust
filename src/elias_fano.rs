@@ -1,14 +1,14 @@
 use super::*;
-use rsdict::RsDict;
+use fid::{FID, BitVector};
 
-//#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EliasFano {
     pub(crate) universe: u64,
     pub(crate) number_of_elements: u64,
     pub(crate) low_bit_count: u64,
     pub(crate) low_bit_mask: u64,
     pub(crate) low_bits: Vec<u64>,
-    pub(crate) high_bits: RsDict,
+    pub(crate) high_bits: BitVector,
     pub(crate) last_high_value: u64,
     pub(crate) last_value: u64,
     pub(crate) last_index: u64,
@@ -78,17 +78,17 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1).unwrap() + 1,
+            false => self.high_bits.select0(high - 1) + 1,
         };
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        if self.high_bits.get_bit(index) && self.read_lowbits(ones) == low {
+        if self.high_bits.get(index) && self.read_lowbits(ones) == low {
             Some(ones)
         } else {
             None
@@ -128,13 +128,13 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1).unwrap() + 1,
+            false => self.high_bits.select0(high - 1) + 1,
         };
 
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
@@ -168,7 +168,7 @@ impl EliasFano {
     ///
     /// * index: u64 - Index of the value to be extract.
     pub fn unchecked_select(&self, index: u64) -> u64 {
-        let high_bits = self.high_bits.select1(index).unwrap() - index;
+        let high_bits = self.high_bits.select1(index) - index;
         let low_bits = self.read_lowbits(index);
         (high_bits << self.low_bit_count) | low_bits
     }
@@ -181,16 +181,16 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1).unwrap() + 1,
+            false => self.high_bits.select0(high - 1) + 1,
         };
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        self.high_bits.get_bit(index) && self.read_lowbits(ones) == low
+        self.high_bits.get(index) && self.read_lowbits(ones) == low
     }
 }

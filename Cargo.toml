@@ -13,3 +13,7 @@ rayon = "1.1"
 
 [dev-dependencies]
 rand = {version="0.7", features = ["small_rng"] }
+succinct = "0.5.2"
+indexed_bitvec = "4.0.1"
+bio = "0.32.0"
+bv = "0.11.1"

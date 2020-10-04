@@ -1,7 +1,12 @@
 # elias_fano_rust
 Rust implementation of [Sebastiano Vigna's elias fano](http://vigna.di.unimi.it/ftp/papers/QuasiSuccinctIndices.pdf).
 
+Our goal is not to achieve best compression possible, instead we seek a good tradeoff between speed and memory.
+
+We differ from the paper's implementation because we don't use a bitvector with skipping quantums for the high-bits but **currently** we use a Fully Indexable Dictionary.
+This seems a reasonable idea because in SUX implementation of Elias Fano (SUX is one of Vigna's projects) he use simple select to store the high-bits.
 Currently **we only need `select_0` and `select_1`** so better structures, to support select on the high-bits, might be explored in the futures.
+For this reason one of the next steps is to implement `simple_select` as presented by Vigna in [Broadword Implementation of Rank/Select Queries](http://vigna.di.unimi.it/ftp/papers/Broadword.pdf).
 
 # Rank and Select performances
 We benchmark our library against all the data structures we found that supports rank and select.

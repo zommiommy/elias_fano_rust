@@ -12,7 +12,7 @@ use test::{Bencher, black_box};
 
 const TRIALS: u64 = 1_000;
 const SIZE: u64 = 1_000_000;
-const MAX: u64 = 1_000_000_000;
+const MAX: u64 = 2 * SIZE;
 
 const SEED: [u8; 16] = [
     0xde, 0xad, 0xbe, 0xef,
@@ -58,6 +58,49 @@ mod fid {
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
+        let mut last_v = 0;
+        for val  in v {
+            for _ in  last_v..val {
+                bv.push(false);
+            }
+            bv.push(true);
+            last_v = val;
+        }
+        b.iter(|| {
+            for _ in 0..super::TRIALS {
+                black_box(bv.select1(rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+}
+
+mod rsdict {
+    use super::*;
+    extern crate rsdict;
+    use rsdict::RsDict;
+
+    #[bench]
+    fn rank(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let mut bv = RsDict::new();
+        let mut last_v = 0;
+        for val  in v {
+            for _ in  last_v..val {
+                bv.push(false);
+            }
+            bv.push(true);
+            last_v = val;
+        }
+        b.iter(|| {
+            for _ in 0..super::TRIALS {
+                black_box(bv.rank(rng.gen_range(0, SIZE), true));
+            }
+        })
+    }
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let mut bv = RsDict::new();
         let mut last_v = 0;
         for val  in v {
             for _ in  last_v..val {
@@ -292,6 +335,23 @@ mod vec {
         })
     }
 }
+
+mod hashmap {
+    use super::*;
+    use std::collections::HashMap;
+    
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let m : HashMap<usize, u64> = v.iter().enumerate().map(|(i, v)| (i, *v)).collect();
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(m.get(&(rng.gen_range(0, SIZE) as usize)));
+            }
+        })
+    }
+}
+
 
 
 

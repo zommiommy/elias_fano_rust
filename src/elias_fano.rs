@@ -82,7 +82,7 @@ impl EliasFano {
             false => self.high_bits.select0(high - 1) + 1,
         };
         // get the first guess
-        let mut ones = self.high_bits.rank1(index);
+        let mut ones = index - high;
         // handle the case where
         while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
@@ -132,7 +132,7 @@ impl EliasFano {
             false => self.high_bits.select0(high - 1) + 1,
         };
         // get the first guess
-        let mut ones = self.high_bits.rank1(index);
+        let mut ones = index - high;
         // handle the case where
         while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
@@ -169,7 +169,7 @@ impl EliasFano {
     /// * index: u64 - Index of the value to be extract.
     pub fn unchecked_select(&self, index: u64) -> u64 {
         let bit_index = self.high_bits.select1(index);
-        let high_bits = self.high_bits.rank0(bit_index);
+        let high_bits = bit_index - index;
         let low_bits = self.read_lowbits(index);
         (high_bits << self.low_bit_count) | low_bits
     }
@@ -185,7 +185,7 @@ impl EliasFano {
             false => self.high_bits.select0(high - 1) + 1,
         };
         // get the first guess
-        let mut ones = self.high_bits.rank1(index);
+        let mut ones = index - high;
         // handle the case where
         while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;

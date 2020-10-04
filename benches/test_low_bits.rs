@@ -8,7 +8,7 @@ use elias_fano_rust::*;
 use vec_rand::gen_random_vec;
 
 const ARRAY_SIZE: usize = 1 << 16;
-const NUMBER: usize = 100000;
+const NUMBER: usize = 100_000;
 const VALUE_SIZE: u64 = 5;
 
 #[bench]

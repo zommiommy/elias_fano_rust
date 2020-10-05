@@ -1,7 +1,7 @@
 use super::*;
 use rsdict::RsDict;
 
-//#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EliasFano {
     pub(crate) universe: u64,
     pub(crate) number_of_elements: u64,

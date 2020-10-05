@@ -15,7 +15,7 @@ impl EliasFano {
         println!("\tlast_value: {}", self.last_value);
         println!("\tlow_bit_count: {}", self.low_bit_count);
         println!("\tlow_bit_mask: {}", self.low_bit_mask);
-        if self.number_of_elements < 10 {
+        if self.number_of_elements < 200 {
             println!("---------------low-bits-----------------");
             for i in 0..self.number_of_elements {
                 print!("{}, ", self.read_lowbits(i));

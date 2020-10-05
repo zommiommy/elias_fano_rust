@@ -1,4 +1,4 @@
-
+use elias_fano_rust::EliasFano;
 use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
@@ -17,4 +17,21 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
     }
     vector.sort();
     vector
+}
+
+
+/// Test that we can build successfully run all methods in elias fano.
+pub fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
+    let vector = build_random_sorted_vector(size, max);
+    let ef = EliasFano::from_vec(&vector)?;
+    vector.iter().enumerate().for_each(|(i, v)| {
+        assert_eq!(*v, ef.select(i as u64).unwrap());
+        assert!(ef.contains(*v));
+        assert_eq!(*v, ef.unchecked_select(i as u64));
+        assert_eq!(ef.select(ef.unchecked_rank(*v)).unwrap(), *v);
+    });
+
+    //ef.debug();
+
+    Ok(())
 }

@@ -1,5 +1,4 @@
 use super::*;
-use rsdict::RsDict;
 
 impl EliasFano {
     /// Return the number of **bits** used by the structure

@@ -27,10 +27,8 @@ pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64)
     let higher = shr(value, o2);
 
     let base = pos >> WORD_SHIFT;
-    unsafe {
-        *array.get_unchecked_mut(base) |= lower;
-        *array.get_unchecked_mut(base + 1) |= higher;
-    }
+    array[base] |= lower;
+    array[base + 1] |= higher;
 }
 
 #[inline(always)]

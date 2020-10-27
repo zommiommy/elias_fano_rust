@@ -33,6 +33,11 @@ impl EliasFano {
         })
     }
 
+    /// Return universe of the elias fano data structure.
+    pub fn get_universe(&self) -> u64 {
+        self.universe
+    }
+
     /// Return iterator for the values in elias fano.
     pub fn par_iter(&self) -> impl ParallelIterator<Item = u64> + '_ {
         (0..self.current_number_of_elements)

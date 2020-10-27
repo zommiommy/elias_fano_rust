@@ -1,5 +1,5 @@
 use super::*;
-use fid::{BitVector};
+use rsdict::RsDict;
 
 impl EliasFano {
 
@@ -33,7 +33,7 @@ impl EliasFano {
             // Pre-rendered mask to execute a fast version of the mod operation.
             low_bit_mask: shr(0xffffffffffffffff, (64 - low_bit_count) as usize),
             number_of_elements: number_of_elements as u64,
-            high_bits: BitVector::new(),
+            high_bits: RsDict::new(),
             low_bits: vec![0; low_size as usize],
             last_high_value: 0,
             last_value: 0,

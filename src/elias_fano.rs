@@ -43,7 +43,10 @@ impl EliasFano {
     }
 
     pub(crate) fn read_lowbits(&self, index: u64) -> u64 {
-        unsafe_read(&self.low_bits, index, self.low_bit_count)
+        #[cfg(not(feature = "unsafe"))]
+        return safe_read(&self.low_bits, index, self.low_bit_count);
+        #[cfg(feature = "unsafe")]
+        return unsafe_read(&self.low_bits, index, self.low_bit_count);
     }
 
     /// Return the number of elements <= to the given value.

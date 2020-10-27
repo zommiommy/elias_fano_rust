@@ -18,3 +18,7 @@ indexed_bitvec = "4.0.1"
 bio = "0.32.0"
 fid = "0.1.7"
 bv = "0.11.1"
+
+[features]
+default = []
+unsafe = []

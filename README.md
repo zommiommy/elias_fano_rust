@@ -1,4 +1,6 @@
-# elias_fano_rust
+# elias_fano_rust 
+[![Build Status](https://travis-ci.com/zommiommy/elias_fano_rust.svg?branch=master)](https://travis-ci.com/zommiommy/elias_fano_rust) ![](https://img.shields.io/badge/rust-nightly-orange) ![](https://img.shields.io/badge/platform-linux--64%20%7C%20osx--64%20%7C%20win--64-lightgrey)
+
 Rust implementation of [Sebastiano Vigna's elias fano](http://vigna.di.unimi.it/ftp/papers/QuasiSuccinctIndices.pdf).
 
 Our goal is not to achieve best compression possible, instead we seek a good tradeoff between speed and memory.

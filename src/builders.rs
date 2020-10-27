@@ -108,7 +108,7 @@ impl EliasFano {
         }
         self.high_bits.push(true);
 
-        safe_write(&mut self.low_bits, self.last_index, low, self.low_bit_count);
+        unsafe_write(&mut self.low_bits, self.last_index, low, self.low_bit_count);
 
         self.last_high_value = high;
         self.last_index += 1;

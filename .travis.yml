@@ -1,0 +1,43 @@
+language: rust
+
+# pyo3 currently is only supported by the nightly version
+rust:
+  - nightly
+
+# Cache cargo symbols for faster build
+cache: cargo
+
+# In future we could also add windows testing
+jobs:
+  include:
+    - os: linux
+      dist: bionic
+    - os: osx
+      osx_image: "xcode11.5"
+    - os: windows
+
+# Dependencies of kcov, used by coverage
+addons:
+  apt:
+    packages:
+      - libiberty-dev
+      - zlib1g-dev
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+      - gcc
+      - cmake # also required for cargo-update
+
+before_script:
+  - export PATH=$HOME/.cargo/bin:$PATH
+  - cargo install cargo-update || echo "cargo-update already installed"
+  - cargo install-update -a # update outdated cached binaries
+
+# the main build
+script:
+  # Build, test, bench the graph crate
+  - cargo update --verbose
+  - cargo build --verbose --all
+  - cargo test --verbose --all
+  - cargo test --verbose --all --features unsafe

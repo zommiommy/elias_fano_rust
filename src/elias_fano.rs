@@ -171,7 +171,12 @@ impl EliasFano {
     ///
     /// * index: u64 - Index of the value to be extract.
     pub fn unchecked_select(&self, index: u64) -> u64 {
-        let high_bits = self.high_bits.select1(index).unwrap() - index;
+        let high_bits = self.high_bits.select1(index).expect(
+            &format!(
+                "Cannot execute the select1 inside the RsDict with index {}, the high bits currently have {} ones and have size {}",
+                index, self.high_bits.count_ones(), self.high_bits.len()
+            )
+        ) - index;
         let low_bits = self.read_lowbits(index);
         (high_bits << self.low_bit_count) | low_bits
     }

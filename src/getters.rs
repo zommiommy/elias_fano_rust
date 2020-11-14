@@ -33,6 +33,24 @@ impl EliasFano {
         })
     }
 
+    /// Return a parallel iterator for the values in elias fano.
+    pub fn par_iter_uniques(&self) -> impl ParallelIterator<Item = u64> + '_ {
+        (0..self.current_number_of_elements).into_par_iter()
+            .filter_map(move |index| {
+                if index == 0 {
+                    return Some(self.unchecked_select(0));
+                }
+                let last_value = self.unchecked_select(index - 1);
+                let value = self.unchecked_select(index);
+
+                if last_value != value {
+                    Some(value)
+                } else {
+                    None
+                }
+            })
+    }
+
     /// Return universe of the elias fano data structure.
     pub fn get_universe(&self) -> u64 {
         self.universe

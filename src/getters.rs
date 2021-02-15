@@ -17,6 +17,16 @@ impl EliasFano {
     }
 
     /// Return iterator for the values in elias fano.
+    pub fn iter_new(&self) -> impl Iterator<Item = u64> + '_ {
+        self.high_bits.iter().enumerate().map(move |(index, high_bit_index)|{
+            let high_value = high_bit_index - index as u64;
+            let low_bits = self.read_lowbits(index as u64);
+            (high_value << self.low_bit_count) | low_bits
+        })
+        //(0..self.current_number_of_elements).map(move |index| self.unchecked_select(index))
+    }
+
+    /// Return iterator for the values in elias fano.
     pub fn iter_uniques(&self) -> impl Iterator<Item = u64> + '_ {
         let mut last_value = 0;
         let mut first = true;

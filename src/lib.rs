@@ -7,3 +7,5 @@ mod builders;
 mod getters;
 mod utils_methods;
 pub use elias_fano::EliasFano;
+
+mod hash;

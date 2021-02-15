@@ -1,0 +1,18 @@
+[package]
+name = "benchmark"
+version = "0.1.0"
+authors = ["zom <tommaso.fontana.96@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+elias_fano_rust = {path = "../"}
+rand = {version="0.7", features = ["small_rng"] }
+succinct = "0.5.2"
+indexed_bitvec = "4.0.1"
+bio = "0.32.0"
+fid = "0.1.7"
+bv = "0.11.1"
+procfs = "0.9.0"
+rsdict = {version="0.0.4", features = ["simd"], git="https://github.com/zommiommy/rsdict"}

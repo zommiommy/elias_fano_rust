@@ -16,14 +16,17 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
+    #[inline]
     pub(crate) fn extract_high_bits(&self, value: u64) -> u64 {
         value >> self.low_bit_count
     }
 
+    #[inline]
     pub(crate) fn extract_low_bits(&self, value: u64) -> u64 {
         value & self.low_bit_mask
     }
 
+    #[inline]
     pub(crate) fn extract_high_low_bits(&self, value: u64) -> (u64, u64) {
         // The following is an efficient mod operation
         // It is the equivalent of executing:
@@ -35,6 +38,7 @@ impl EliasFano {
         (self.extract_high_bits(value), self.extract_low_bits(value))
     }
 
+    #[inline]
     pub(crate) fn build_low_high_bits(
         &mut self,
         values: impl Iterator<Item = u64>,
@@ -42,6 +46,7 @@ impl EliasFano {
         values.map(move |value| self.push(value)).collect()
     }
 
+    #[inline]
     pub(crate) fn read_lowbits(&self, index: u64) -> u64 {
         #[cfg(not(feature = "unsafe"))]
         return safe_read(&self.low_bits, index, self.low_bit_count);
@@ -73,6 +78,7 @@ impl EliasFano {
     /// assert_eq!(ef.rank(8).unwrap(), 1);
     /// ```
     ///
+    #[inline]
     pub fn rank(&self, value: u64) -> Option<u64> {
         if value > self.last_value {
             return None;
@@ -123,6 +129,7 @@ impl EliasFano {
     /// assert_eq!(ef.unchecked_rank(17), 4);
     /// ```
     ///
+    #[inline]
     pub fn unchecked_rank(&self, value: u64) -> u64 {
         if value > self.last_value {
             return self.current_number_of_elements;
@@ -155,6 +162,7 @@ impl EliasFano {
     /// # Arguments
     ///
     /// * index: u64 - Index of the value to be extract.
+    #[inline]
     pub fn select(&self, index: u64) -> Result<u64, String> {
         match index < self.number_of_elements {
             true => Ok(self.unchecked_select(index)),
@@ -170,6 +178,7 @@ impl EliasFano {
     /// # Arguments
     ///
     /// * index: u64 - Index of the value to be extract.
+    #[inline]
     pub fn unchecked_select(&self, index: u64) -> u64 {
         let high_bits = self.high_bits.select1(index).expect(
             &format!(
@@ -181,6 +190,7 @@ impl EliasFano {
         (high_bits << self.low_bit_count) | low_bits
     }
 
+    #[inline]
     pub fn contains(&self, value: u64) -> bool {
         if value > self.last_value {
             return false;

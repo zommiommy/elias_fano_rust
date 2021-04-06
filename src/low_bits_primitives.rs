@@ -4,6 +4,7 @@ const WORD_SIZE: usize = 8 * size_of::<u64>();
 const WORD_SHIFT: usize = 6; // log2(WORD_SIZE)
 const WORD_MASK: usize = (1 << WORD_SHIFT) - 1;
 
+#[inline]
 pub fn get_vec_size(n_bits: u64, size: usize) -> u64 {
     3 + ((size as u64 * n_bits) >> WORD_SHIFT)
 }

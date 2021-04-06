@@ -26,7 +26,6 @@ impl EliasFano {
     pub fn iter(&self) -> impl Iterator<Item = u64> + '_ {
         self.high_bits.iter().enumerate().map(move |(index, high_bit_index)|{
             let high_value = high_bit_index - index as u64;
-            println!("high: {}", high_value);
             let low_bits = self.read_lowbits(index as u64);
             (high_value << self.low_bit_count) | low_bits
         })

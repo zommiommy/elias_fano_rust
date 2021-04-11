@@ -1,6 +1,5 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use fid::{FID, BitVector};
 use elias_fano_rust::EliasFano;
 
 fuzz_target!(|data: Vec<u16>| {

@@ -6,7 +6,18 @@ impl EliasFano {
     #[inline]
     pub fn new(universe: u64, number_of_elements: usize) -> Result<EliasFano, String> {
         if number_of_elements == 0 {
-            return Err("The number of elements cannot be 0!".to_string());
+            return Ok(EliasFano{
+                universe: universe,
+                low_bit_count: 0,
+                low_bit_mask:  0,
+                number_of_elements: 0,
+                high_bits: RsDict::new(),
+                low_bits: vec![],
+                last_high_value: 0,
+                last_value: 0,
+                last_index: 0,
+                current_number_of_elements: 0,
+            });
         }
         // Compute the size of the low bits.
         let low_bit_count = if universe >= number_of_elements as u64 {

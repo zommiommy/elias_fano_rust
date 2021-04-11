@@ -72,10 +72,6 @@ impl EliasFano {
         universe: u64,
         number_of_elements: usize,
     ) -> Result<EliasFano, String> {
-        if number_of_elements == 0 {
-            return Err("Cannot create an Elias Fano with 0 values.".to_string());
-        }
-
         let mut result = EliasFano::new(universe, number_of_elements)?;
 
         result.build_low_high_bits(values)?;

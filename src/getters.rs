@@ -1,5 +1,5 @@
 use super::*;
-use rayon::iter::ParallelIterator;
+use rayon::iter::{ParallelIterator, IndexedParallelIterator};
 use rayon::prelude::*;
 use std::ops::Range;
 
@@ -95,23 +95,15 @@ impl EliasFano {
 
     /// Return iterator for the values in elias fano.
     #[inline]
-    pub fn par_iter(&self) -> impl ParallelIterator<Item = u64> + '_ {
-        (0..self.current_number_of_elements)
+    pub fn par_iter(&self) -> impl IndexedParallelIterator<Item = u64> + '_ {
+        (0..self.current_number_of_elements as usize)
             .into_par_iter()
-            .map(move |index| self.unchecked_select(index))
+            .map(move |index| self.unchecked_select(index as u64))
     }
 
     /// Return iterator for the values in elias fano.
     #[inline]
     pub fn enumerate(&self) -> impl Iterator<Item = (u64, u64)> + '_ {
         (0..self.current_number_of_elements).map(move |index| (index, self.unchecked_select(index)))
-    }
-
-    /// Return iterator for the values in elias fano.
-    #[inline]
-    pub fn par_enumerate(&self) -> impl ParallelIterator<Item = (u64, u64)> + '_ {
-        (0..self.current_number_of_elements)
-            .into_par_iter()
-            .map(move |index| (index, self.unchecked_select(index)))
     }
 }

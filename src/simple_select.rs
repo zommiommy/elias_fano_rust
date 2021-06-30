@@ -12,6 +12,18 @@ pub struct SimpleSelect {
     len: u64,
 }
 
+impl SimpleSelect {
+    /// Return the memory used in bytes
+    /// This ignores the metadata of vectors, but it should be at most 24 bytes
+    pub fn size(&self) -> usize {
+        use std::mem::size_of;
+        3 * size_of::<u64>() + 
+        self.high_bits.capacity() * size_of::<u64>() +
+        self.high_bits_index_zeros.capacity() * size_of::<u64>() +
+        self.high_bits_index_ones.capacity() * size_of::<u64>()
+    }
+}
+
 impl PartialEq for SimpleSelect {
     fn eq(&self, other: &SimpleSelect) -> bool {
         // if needed this can be sped up by comparing the metadata before the vec

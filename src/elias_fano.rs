@@ -15,6 +15,15 @@ pub struct EliasFano {
 }
 
 impl EliasFano {
+    /// Return the memory used in bytes
+    /// This ignores the metadata of vectors, but it should be at most 24 bytes
+    pub fn size(&self) -> usize {
+        use std::mem::size_of;
+        8 * size_of::<u64>() + 
+        self.high_bits.size() +
+        self.low_bits.capacity() * size_of::<u64>()
+    }
+
     #[inline]
     pub(crate) fn extract_high_bits(&self, value: u64) -> u64 {
         value >> self.low_bit_count

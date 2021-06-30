@@ -31,9 +31,9 @@ impl EliasFano {
             universe,
             low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
-            low_bit_mask: shr(0xffffffffffffffff, (64 - low_bit_count) as usize),
+            low_bit_mask: shr(0xffffffffffffffff, 64 - low_bit_count),
+            high_bits: HighBits::with_capacity(2 * number_of_elements),
             number_of_elements: number_of_elements as u64,
-            high_bits: RsDict::new(),
             low_bits: vec![0; low_size as usize],
             last_high_value: 0,
             last_value: 0,

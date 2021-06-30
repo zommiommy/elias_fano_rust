@@ -4,7 +4,7 @@ use std::ops::Range;
 #[derive(Clone, Debug)]
 /// Structure with index inspired by Vigna's simple select
 pub struct SimpleSelect {
-    pub high_bits: Vec<u64>,
+    high_bits: Vec<u64>,
     high_bits_index_zeros: Vec<u64>,
     high_bits_index_ones: Vec<u64>,
     number_of_ones: u64,
@@ -21,6 +21,13 @@ impl SimpleSelect {
         self.high_bits.capacity() * size_of::<u64>() +
         self.high_bits_index_zeros.capacity() * size_of::<u64>() +
         self.high_bits_index_ones.capacity() * size_of::<u64>()
+    }
+
+    /// Reduces the memory allocated to the minimum needed.
+    pub fn shrink_to_fit(&mut self) {
+        self.high_bits.shrink_to_fit();
+        self.high_bits_index_zeros.shrink_to_fit();
+        self.high_bits_index_ones.shrink_to_fit();
     }
 }
 

@@ -24,6 +24,12 @@ impl EliasFano {
         self.low_bits.capacity() * size_of::<u64>()
     }
 
+    /// Reduces the memory allocated to the minimum needed.
+    pub fn shrink_to_fit(&mut self) {
+        self.low_bits.shrink_to_fit();
+        self.high_bits.shrink_to_fit();
+    }
+
     #[inline]
     pub(crate) fn extract_high_bits(&self, value: u64) -> u64 {
         value >> self.low_bit_count

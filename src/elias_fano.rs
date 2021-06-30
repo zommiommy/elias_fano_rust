@@ -16,12 +16,12 @@ pub struct EliasFano {
 
 impl EliasFano {
     /// Return the memory used in bytes
-    /// This ignores the metadata of vectors, but it should be at most 24 bytes
+    /// This approximate the metadata as 3 u64 for each vector.
     pub fn size(&self) -> usize {
         use std::mem::size_of;
         8 * size_of::<u64>() + 
         self.high_bits.size() +
-        self.low_bits.capacity() * size_of::<u64>()
+        (3 + self.low_bits.capacity()) * size_of::<u64>()
     }
 
     /// Reduces the memory allocated to the minimum needed.

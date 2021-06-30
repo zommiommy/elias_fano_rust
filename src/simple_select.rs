@@ -14,13 +14,14 @@ pub struct SimpleSelect {
 
 impl SimpleSelect {
     /// Return the memory used in bytes
-    /// This ignores the metadata of vectors, but it should be at most 24 bytes
+    /// This is an approximation which considers 3 words extra for metadata for each
+    /// vector
     pub fn size(&self) -> usize {
         use std::mem::size_of;
         3 * size_of::<u64>() + 
-        self.high_bits.capacity() * size_of::<u64>() +
-        self.high_bits_index_zeros.capacity() * size_of::<u64>() +
-        self.high_bits_index_ones.capacity() * size_of::<u64>()
+        (3  + self.high_bits.capacity()) * size_of::<u64>() +
+        (3 + self.high_bits_index_zeros.capacity()) * size_of::<u64>() +
+        (3 + self.high_bits_index_ones.capacity()) * size_of::<u64>()
     }
 
     /// Reduces the memory allocated to the minimum needed.

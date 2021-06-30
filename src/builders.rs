@@ -3,9 +3,21 @@ use rsdict::RsDict;
 
 impl EliasFano {
 
+    #[inline]
     pub fn new(universe: u64, number_of_elements: usize) -> Result<EliasFano, String> {
         if number_of_elements == 0 {
-            return Err("The number of elements cannot be 0!".to_string());
+            return Ok(EliasFano{
+                universe: universe,
+                low_bit_count: 0,
+                low_bit_mask:  0,
+                number_of_elements: 0,
+                high_bits: SimpleSelect::new(),
+                low_bits: vec![],
+                last_high_value: 0,
+                last_value: 0,
+                last_index: 0,
+                current_number_of_elements: 0,
+            });
         }
         // Compute the size of the low bits.
         let low_bit_count = if universe >= number_of_elements as u64 {
@@ -32,7 +44,7 @@ impl EliasFano {
             low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
             low_bit_mask: shr(0xffffffffffffffff, 64 - low_bit_count),
-            high_bits: HighBits::with_capacity(2 * number_of_elements),
+            high_bits: SimpleSelect::with_capacity(2 * number_of_elements),
             number_of_elements: number_of_elements as u64,
             low_bits: vec![0; low_size as usize],
             last_high_value: 0,
@@ -54,15 +66,12 @@ impl EliasFano {
     /// let vector = [5, 8, 8, 15, 32];
     /// let ef = EliasFano::from_iter(vector.iter().cloned(), *vector.last().unwrap(), vector.len()).unwrap();
     /// ```
+    #[inline]
     pub fn from_iter(
         values: impl Iterator<Item = u64>,
         universe: u64,
         number_of_elements: usize,
     ) -> Result<EliasFano, String> {
-        if number_of_elements == 0 {
-            return Err("Cannot create an Elias Fano with 0 values.".to_string());
-        }
-
         let mut result = EliasFano::new(universe, number_of_elements)?;
 
         result.build_low_high_bits(values)?;
@@ -82,6 +91,7 @@ impl EliasFano {
     /// let vector = [5, 8, 8, 15, 32];
     /// let ef = EliasFano::from_vec(&vector).unwrap();
     /// ```
+    #[inline]
     pub fn from_vec(values: &[u64]) -> Result<EliasFano, String> {
         if values.is_empty() {
             return Err("Cannot create an Elias Fano with 0 values.".to_string());
@@ -93,6 +103,7 @@ impl EliasFano {
         )
     }
 
+    #[inline]
     pub fn unchecked_push(&mut self, value: u64) {
         self.last_value = value;
         self.current_number_of_elements += 1;
@@ -117,6 +128,7 @@ impl EliasFano {
         self.last_index += 1;
     }
 
+    #[inline]
     pub fn push(&mut self, value: u64) -> Result<(), String> {
         if self.last_value > value {
             return Err(format!(

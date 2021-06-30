@@ -1,0 +1,42 @@
+
+[package]
+name = "elias_fano_rust-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = { version = "0.4.0" }
+arbitrary = { version = "0.4.5", features = ["derive"] }
+fid = "0.1.7"
+succinct = "0.5.2"
+
+[dependencies.elias_fano_rust]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "rank_and_select"
+path = "fuzz_targets/rank_and_select.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "iter"
+path = "fuzz_targets/iter.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "iter_in_range"
+path = "fuzz_targets/iter_in_range.rs"
+test = false
+doc = false
+

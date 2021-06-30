@@ -23,10 +23,10 @@ impl EliasFano {
             for i in 0..self.high_bits.len() {
                 print!("{}", self.high_bits.get(i) as u64);
             }
-            println!("\n--------------values--------------------");
-            for v in self.iter() {
-                print!("{}, ", v);
-            }
+            // println!("\n--------------values--------------------");
+            // for v in self.iter() {
+            //     print!("{}, ", v);
+            // }
         }
         println!("\n----------------END---------------------");
     }

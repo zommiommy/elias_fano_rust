@@ -7,8 +7,7 @@ use std::mem::size_of;
 // because it would index in which memory page
 // each value is, thus exploiting at best the 
 // TLB.
-pub const INDEX_SHIFT: u64 = 16;
-pub const INDEX_SIZE:  u64 = 1 << INDEX_SHIFT;
+pub const INDEX_SHIFT: u64 = 8;
 pub const INDEX_MASK:  u64 = (1 << INDEX_SHIFT) - 1;
 
 pub const WORD_SHIFT: u64 = 6; // log2(WORD_SIZE)

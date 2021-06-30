@@ -1,3 +1,4 @@
 rustflags = [
   "-C", "inline-threshold=10000000",
+  "-C", "target-cpu=native",
 ]

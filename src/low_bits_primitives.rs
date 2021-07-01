@@ -1,4 +1,5 @@
 use super::*;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Return the size needed to allcoate the choosen number of bits
 /// This is a bit bigger than the minimum amount because doing so allows
@@ -31,6 +32,19 @@ pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64)
     let base = (pos >> WORD_SHIFT) as usize;
     array[base] |= lower;
     array[base + 1] |= higher;
+}
+
+pub fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, value_size: u64) {
+    let pos = index * value_size;
+    let o1 = pos & WORD_MASK;
+    let o2 = WORD_SIZE - o1;
+
+    let lower = shl(value, o1);
+    let higher = shr(value, o2);
+
+    let base = (pos >> WORD_SHIFT) as usize;
+    array[base].fetch_or(lower, Ordering::SeqCst);
+    array[base + 1].fetch_or(higher, Ordering::SeqCst);
 }
 
 #[inline(always)]

@@ -14,3 +14,6 @@ use constants::*;
 
 mod hash;
 mod getters;
+
+mod concurrent_builder;
+pub use concurrent_builder::*;

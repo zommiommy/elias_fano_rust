@@ -1,5 +1,4 @@
 use super::*;
-use rsdict::RsDict;
 
 impl EliasFano {
 

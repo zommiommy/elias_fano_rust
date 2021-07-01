@@ -10,7 +10,7 @@ const ITERS: usize = 1_000_000;
 fn test_high_bits_against_rsdict() {
     let mut rng = rand::thread_rng();
     
-    let mut hb = HighBits::new();
+    let mut hb = SimpleSelect::new();
     let mut rs = RsDict::new();
 
     for i in 0..ITERS {

@@ -65,6 +65,58 @@ impl SimpleSelect {
         }
     }
 
+    /// Take the given bit-vector and build the indices on it.
+    pub fn from_vec(bitvector: Vec<u64>) -> SimpleSelect {
+
+        // The following two steps are independant so we could parallelize them
+        // using two separate threads
+        ////////////////////////////////////////////////////////////////////////
+        let mut high_bits_index_ones = Vec::new();
+        let mut number_of_ones = 0;
+        for (i, mut word) in bitvector.iter().cloned().enumerate() {
+            while word != 0 {
+                // Get the bit position of the current one
+                let idx = i << WORD_SHIFT + word.trailing_zeros() as u64;
+
+                // write the index
+                if number_of_ones & INDEX_MASK == 0 {
+                    high_bits_index_ones.push(idx as u64);
+                }
+
+                // Clean the one so that we can get to the next one.
+                word &= word - 1;
+                number_of_ones += 1;
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////
+        let mut high_bits_index_zeros = Vec::new();
+        let mut number_of_zeros = 0;
+        for (i, mut word) in bitvector.iter().cloned().enumerate() {
+            while word != u64::MAX {
+                // Get the bit position of the current one
+                let idx = i << WORD_SHIFT + word.trailing_ones() as u64;
+
+                // write the index
+                if number_of_zeros & INDEX_MASK == 0 {
+                    high_bits_index_zeros.push(idx as u64);
+                }
+
+                // set the zero so that we can get to the next zero.
+                word |= word + 1;
+                number_of_zeros += 1;
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////
+        SimpleSelect{
+            len: bitvector.len() as u64,
+            number_of_zeros,
+            number_of_ones,
+            high_bits: bitvector,
+            high_bits_index_zeros,
+            high_bits_index_ones,
+        }
+    }
+
     /// Add the given bit to the end of the high-bits
     pub fn push(&mut self, value: bool) {
         if value {

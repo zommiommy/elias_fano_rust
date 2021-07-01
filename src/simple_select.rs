@@ -4,12 +4,12 @@ use std::ops::Range;
 #[derive(Clone, Debug)]
 /// Structure with index inspired by Vigna's simple select
 pub struct SimpleSelect {
-    high_bits: Vec<u64>,
-    high_bits_index_zeros: Vec<u64>,
-    high_bits_index_ones: Vec<u64>,
-    number_of_ones: u64,
-    number_of_zeros: u64,
-    len: u64,
+    pub high_bits: Vec<u64>,
+    pub high_bits_index_zeros: Vec<u64>,
+    pub high_bits_index_ones: Vec<u64>,
+    pub number_of_ones: u64,
+    pub number_of_zeros: u64,
+    pub len: u64,
 }
 
 impl SimpleSelect {

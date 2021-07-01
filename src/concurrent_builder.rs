@@ -50,9 +50,12 @@ impl ConcurrentEliasFanoBuilder {
 
         // add 2 to do the ceil and have brenchless primitives.
         let low_size = get_vec_size(low_bit_count, number_of_elements as usize);
+        // the number of bits will be at max the number of elements + max(high)
+        // we need a ceil, but >> is floor so we add 1
+        let high_size = 1 + ((number_of_elements + (universe >> low_bit_count)) >> WORD_SHIFT);
 
-        let high_bits = (0..(2 * number_of_elements) >> WORD_SHIFT).map(|_| AtomicU64::new(0)).collect();
-        let low_bits = (0..low_size).map(|_| AtomicU64::new(0)).collect();
+        let high_bits: Vec<_> = (0..high_size).map(|_| AtomicU64::new(0)).collect();
+        let low_bits : Vec<_> = (0..low_size ).map(|_| AtomicU64::new(0)).collect();
 
         Ok(ConcurrentEliasFanoBuilder {
             universe,

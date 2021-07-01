@@ -5,6 +5,7 @@ use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
 use rayon::prelude::*;
+use std::time::Instant;
 
 pub const SEED: [u8; 16] = [
     0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe,
@@ -23,25 +24,36 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
 }
 
 
+const SIZE: usize = 1_000_000_000;
+const MAX : u64 = 10_000_000_000;
+
 #[test]
 /// Test that we can build successfully run all methods in elias fano.
 pub fn test_concurrent_builder() {
     // gen a random vector of values
-    let vector = build_random_sorted_vector(1_000, 1_000_000);
+    println!("Building vec");
+    let start = Instant::now();
+    let vector = build_random_sorted_vector(SIZE, MAX);
+    println!("Done: {}", start.elapsed().as_secs_f64());
 
+    println!("Seq");
+    let start = Instant::now();
     // build and hash the elias fano sequentially
     let seq = EliasFano::from_vec(&vector).unwrap();
     let mut hasher = DefaultHasher::new();
     seq.hash(&mut hasher);
+    println!("Done: {}", start.elapsed().as_secs_f64());
     let seq_hash = hasher.finish();
 
-
+    println!("Concurrent");
+    let start = Instant::now();
     // build the elias-fano concurrently
-    let builder = ConcurrentEliasFanoBuilder::new(1_000, 1_000_000).unwrap();
-    vector.iter().enumerate().for_each(|(i, v)| {
+    let builder = ConcurrentEliasFanoBuilder::new(SIZE as u64, MAX).unwrap();
+    vector.par_iter().enumerate().for_each(|(i, v)| {
         builder.set(i as u64, *v);
     });
     let ef = builder.build();
+    println!("Done: {}", start.elapsed().as_secs_f64());
 
     // hash it
     let mut hasher = DefaultHasher::new();

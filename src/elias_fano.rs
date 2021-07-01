@@ -2,16 +2,16 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EliasFano {
-    pub(crate) low_bits: Vec<u64>,
-    pub(crate) high_bits: SimpleSelect,
-    pub(crate) universe: u64,
-    pub(crate) number_of_elements: u64,
-    pub(crate) low_bit_count: u64,
-    pub(crate) low_bit_mask: u64,
-    pub(crate) last_high_value: u64,
-    pub(crate) last_value: u64,
-    pub(crate) last_index: u64,
-    pub(crate) current_number_of_elements: u64,
+    pub low_bits: Vec<u64>,
+    pub high_bits: SimpleSelect,
+    pub universe: u64,
+    pub number_of_elements: u64,
+    pub low_bit_count: u64,
+    pub low_bit_mask: u64,
+    pub last_high_value: u64,
+    pub last_value: u64,
+    pub last_index: u64,
+    pub current_number_of_elements: u64,
 }
 
 impl EliasFano {

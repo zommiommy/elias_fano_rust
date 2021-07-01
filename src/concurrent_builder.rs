@@ -52,7 +52,7 @@ impl ConcurrentEliasFanoBuilder {
         let low_size = get_vec_size(low_bit_count, number_of_elements as usize);
         // the number of bits will be at max the number of elements + max(high)
         // we need a ceil, but >> is floor so we add 1
-        let high_size = 1 + ((number_of_elements + (universe >> low_bit_count)) >> WORD_SHIFT);
+        let high_size = ((number_of_elements + (universe >> low_bit_count)) as f64 / WORD_SIZE as f64).ceil() as u64;
 
         let high_bits: Vec<_> = (0..high_size).map(|_| AtomicU64::new(0)).collect();
         let low_bits : Vec<_> = (0..low_size ).map(|_| AtomicU64::new(0)).collect();
@@ -95,7 +95,7 @@ impl ConcurrentEliasFanoBuilder {
             std::mem::transmute::<Vec<_>, Vec<u64>>(self.high_bits),
         )};
 
-        let result = EliasFano {
+        let mut result = EliasFano {
             low_bits,
             high_bits: SimpleSelect::from_vec(high_bits),
             universe: self.universe,
@@ -113,10 +113,14 @@ impl ConcurrentEliasFanoBuilder {
             // methods to compute the right values
             last_high_value:0,
             last_value:0,
-            last_index:0,
+            last_index: self.number_of_elements,
         };
 
-        // TODO! actually fix those values
+        if self.number_of_elements > 0 {
+            let max_value = result.select(self.number_of_elements.saturating_sub(1)).unwrap();
+            result.last_value = max_value;
+            result.last_high_value = max_value >> self.low_bit_count;
+        }
 
         result
     }

@@ -1,4 +1,5 @@
 use super::*;
+use core::num;
 use std::ops::Range;
 
 #[derive(Clone, Debug)]
@@ -76,7 +77,7 @@ impl SimpleSelect {
         for (i, mut word) in bitvector.iter().cloned().enumerate() {
             while word != 0 {
                 // Get the bit position of the current one
-                let idx = i << WORD_SHIFT + word.trailing_zeros() as u64;
+                let idx = (i << WORD_SHIFT) as u64 + word.trailing_zeros() as u64;
 
                 // write the index
                 if number_of_ones & INDEX_MASK == 0 {
@@ -94,7 +95,7 @@ impl SimpleSelect {
         for (i, mut word) in bitvector.iter().cloned().enumerate() {
             while word != u64::MAX {
                 // Get the bit position of the current one
-                let idx = i << WORD_SHIFT + word.trailing_ones() as u64;
+                let idx = (i << WORD_SHIFT) as u64 + word.trailing_ones() as u64;
 
                 // write the index
                 if number_of_zeros & INDEX_MASK == 0 {
@@ -108,7 +109,7 @@ impl SimpleSelect {
         }
         ////////////////////////////////////////////////////////////////////////
         SimpleSelect{
-            len: bitvector.len() as u64,
+            len: (bitvector.len() << WORD_SHIFT) as u64,
             number_of_zeros,
             number_of_ones,
             high_bits: bitvector,

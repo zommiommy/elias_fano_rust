@@ -306,13 +306,18 @@ impl<'a> SimpleSelectIterator<'a> {
     /// ```
     #[inline]
     pub fn new_in_range(father: &SimpleSelect, range: Range<u64>) -> SimpleSelectIterator {
+        if range.start >= father.len() {
+            return SimpleSelectIterator{
+                father:father,
+                current_code: 0,
+                index: 0,
+                max_index: 0,
+                max: None,
+            };    
+        }
 
-        
-
-        let index_idx = range.start >> INDEX_SHIFT;
-        let bit_pos = father.high_bits_index_ones[index_idx as usize];
-        let block_id = bit_pos >> WORD_SHIFT;
-        let in_word_reminder = bit_pos & WORD_MASK;
+        let block_id = range.start >> WORD_SHIFT;
+        let in_word_reminder = range.start & WORD_MASK;
         let mut code = father.high_bits[block_id as usize];
 
         // clean the "already parsed lower bits"
@@ -348,12 +353,8 @@ impl<'a> Iterator for SimpleSelectIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         while self.current_code == 0 {
             self.index += 1;
-            // if its the last block just dump it
-            if self.index == self.max_index {
-                return None;
-            }
             // if we are over just end the iterator
-            if self.index > self.max_index {
+            if self.index >= self.max_index {
                 return None;
             }
             self.current_code = self.father.high_bits[self.index];   
@@ -367,7 +368,7 @@ impl<'a> Iterator for SimpleSelectIterator<'a> {
         self.current_code &= self.current_code - 1;
 
         // compute the result value
-        let result = self.index as u64 * WORD_SIZE + t as u64;
+        let result = (self.index as u64 * WORD_SIZE) + t as u64;
 
         // Check if we exceeds the max value
         if let Some(_max) = &self.max {

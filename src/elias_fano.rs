@@ -94,6 +94,9 @@ impl EliasFano {
     ///
     #[inline]
     pub fn rank(&self, value: u64) -> Option<u64> {
+        if self.is_empty() {
+            return None;
+        }
         if value > self.last_value {
             return None;
         }
@@ -145,6 +148,9 @@ impl EliasFano {
     ///
     #[inline]
     pub fn unchecked_rank(&self, value: u64) -> u64 {
+        if self.is_empty() {
+            return 0;
+        }
         if value > self.last_value {
             return self.current_number_of_elements;
         }
@@ -180,10 +186,10 @@ impl EliasFano {
     pub fn select(&self, index: u64) -> Result<u64, String> {
         match index < self.number_of_elements {
             true => Ok(self.unchecked_select(index)),
-            false => Err(format!(
+            false =>Err(format!(
                 "Given index {} is out of bound on a collection with {} elements.",
                 index, self.number_of_elements
-            )),
+                ))
         }
     }
 

@@ -92,12 +92,9 @@ impl EliasFano {
     /// ```
     #[inline]
     pub fn from_vec(values: &[u64]) -> Result<EliasFano, String> {
-        if values.is_empty() {
-            return Err("Cannot create an Elias Fano with 0 values.".to_string());
-        }
         EliasFano::from_iter(
             values.iter().cloned(),
-            *values.last().unwrap(),
+            *values.last().unwrap_or(&0),
             values.len(),
         )
     }

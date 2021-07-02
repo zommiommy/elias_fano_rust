@@ -7,9 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
-rsdict = {version="0.0.4", features = ["simd"], git="https://github.com/zommiommy/rsdict"}
 rayon = "1.1"
+arbitrary = { version = "0.4.5", features = ["derive"],  optional = true }
 
 [dev-dependencies]
 rand = {version="0.7", features = ["small_rng"] }
@@ -18,7 +17,14 @@ indexed_bitvec = "4.0.1"
 bio = "0.32.0"
 fid = "0.1.7"
 bv = "0.11.1"
+vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
+rsdict = {version="0.0.4", features = ["simd"], git="https://github.com/zommiommy/rsdict"}
 
 [features]
 default = []
 unsafe = []
+fuzz = ["arbitrary"]
+
+
+[profile.test]
+default = ["fuzz"]

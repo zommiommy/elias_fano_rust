@@ -307,6 +307,8 @@ impl<'a> SimpleSelectIterator<'a> {
     #[inline]
     pub fn new_in_range(father: &SimpleSelect, range: Range<u64>) -> SimpleSelectIterator {
 
+        
+
         let index_idx = range.start >> INDEX_SHIFT;
         let bit_pos = father.high_bits_index_ones[index_idx as usize];
         let block_id = bit_pos >> WORD_SHIFT;
@@ -331,7 +333,7 @@ impl<'a> SimpleSelectIterator<'a> {
     pub fn new(father: &SimpleSelect) -> SimpleSelectIterator {
         SimpleSelectIterator{
             father:father,
-            current_code: father.high_bits[0],
+            current_code: *father.high_bits.get(0).unwrap_or(&0),
             index: 0,
             max_index: father.high_bits.len(),
             max: None,

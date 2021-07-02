@@ -1,0 +1,31 @@
+[package]
+name = "hongfuzz"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+honggfuzz = "=0.5.52"
+elias_fano_rust = {path="..", features = ["fuzz"]}
+
+[profile.release]
+opt-level = 3
+#codgen-units=1
+#lto = "fat"
+overflow-checks = false     # Disable integer overflow checks.
+debug = false             # Include debug info.
+debug-assertions = false  # Enables debug assertions.
+
+[[bin]]
+name = "rank_and_select"
+path = "src/rank_and_select.rs"
+
+[[bin]]
+name = "iter"
+path = "src/iter.rs"
+
+[[bin]]
+name = "iter_in_range"
+path = "src/iter_in_range.rs"
+

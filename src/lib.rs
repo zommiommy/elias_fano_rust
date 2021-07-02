@@ -17,3 +17,7 @@ mod getters;
 
 mod concurrent_builder;
 pub use concurrent_builder::*;
+
+mod fuzz_harnesses;
+
+pub use fuzz_harnesses::fuzz_harness;

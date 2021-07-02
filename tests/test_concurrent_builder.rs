@@ -45,7 +45,9 @@ pub fn test_concurrent_builder() {
     });
     let ef = builder.build();
     println!("Done: {} s", start.elapsed().as_secs_f64());
-    println!("Total size = {:.3} Mib\n", ef.size() as f64 / 1024.0f64.powi(2));
+    println!("Total size = {:.3} Mib", ef.size() as f64 / 1024.0f64.powi(2));
+    println!("Overhead ones size = {:.3} Mib", ((3 + ef.high_bits.high_bits_index_ones.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
+    println!("Overhead zeros size = {:.3} Mib\n", ((3 + ef.high_bits.high_bits_index_zeros.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
 
     println!("Sequential builder");
     let start = Instant::now();
@@ -55,7 +57,9 @@ pub fn test_concurrent_builder() {
     seq.hash(&mut hasher);
     println!("Done: {} s", start.elapsed().as_secs_f64());
     let seq_hash = hasher.finish();
-    println!("Total size = {:.3} Mib\n", seq.size() as f64 / 1024.0f64.powi(2));
+    println!("Total size = {:.3} Mib", seq.size() as f64 / 1024.0f64.powi(2));
+    println!("Overhead ones size = {:.3} Mib", ((3 + seq.high_bits.high_bits_index_ones.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
+    println!("Overhead zeros size = {:.3} Mib\n", ((3 + seq.high_bits.high_bits_index_zeros.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
 
     // hash it
     let mut hasher = DefaultHasher::new();

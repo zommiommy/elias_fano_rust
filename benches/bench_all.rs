@@ -21,6 +21,33 @@ const SEED: [u8; 16] = [
     0xc0, 0xfe, 0xbe, 0xbe   
 ];
 
+mod ef {
+    use super::*;
+        
+    #[bench]
+    fn rank(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ef.rank(rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ef.select(rng.gen_range(0, SIZE)).unwrap());
+            }
+        })
+    }
+}
+
+
 pub(crate) fn test_vector() -> (Vec<u64>, SmallRng) {
     let mut rng: SmallRng = SmallRng::from_seed(SEED);
     let mut v = Vec::new();
@@ -347,35 +374,6 @@ mod hashmap {
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(m.get(&(rng.gen_range(0, SIZE) as usize)));
-            }
-        })
-    }
-}
-
-
-
-
-mod ef {
-    use super::*;
-        
-    #[bench]
-    fn rank(b: &mut Bencher) {
-        let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
-        b.iter(|| {
-            for _ in 0..TRIALS {
-                black_box(ef.rank(rng.gen_range(0, SIZE)));
-            }
-        })
-    }
-
-    #[bench]
-    fn select(b: &mut Bencher) {
-        let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
-        b.iter(|| {
-            for _ in 0..TRIALS {
-                black_box(ef.select(rng.gen_range(0, SIZE)));
             }
         })
     }

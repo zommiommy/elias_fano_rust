@@ -1,6 +1,7 @@
 use super::*;
 use core::num;
 use std::ops::Range;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 /// Structure with index inspired by Vigna's simple select
@@ -13,16 +14,28 @@ pub struct SimpleSelect {
     pub len: u64,
 }
 
+#[derive(Clone, Debug)]
+/// Memory usage in bytes by the variuos fields of Simple Select
+pub struct SimpleSelectMemoryStats {
+    pub high_bits: usize,
+    pub metadata: usize,
+    pub high_bits_index_zeros: usize,
+    pub high_bits_index_ones: usize,
+}
+
 impl SimpleSelect {
     /// Return the memory used in bytes
     /// This is an approximation which considers 3 words extra for metadata for each
     /// vector
-    pub fn size(&self) -> usize {
+    pub fn size(&self) -> SimpleSelectMemoryStats {
         use std::mem::size_of;
-        3 * size_of::<u64>() + 
-        (3  + self.high_bits.capacity()) * size_of::<u64>() +
-        (3 + self.high_bits_index_zeros.capacity()) * size_of::<u64>() +
-        (3 + self.high_bits_index_ones.capacity()) * size_of::<u64>()
+        SimpleSelectMemoryStats {
+            metadata: 3 * size_of::<u64>(),
+            high_bits: (3  + self.high_bits.capacity()) * size_of::<u64>(),
+            high_bits_index_zeros: (3  + self.high_bits_index_zeros.capacity()) * size_of::<u64>(),
+            high_bits_index_ones: (3  + self.high_bits_index_ones.capacity()) * size_of::<u64>(),
+
+        }
     }
 
     /// Reduces the memory allocated to the minimum needed.
@@ -71,8 +84,12 @@ impl SimpleSelect {
 
         // The following two steps are independant so we could parallelize them
         // using two separate threads
+        // moreover, if we know in advance the number of ones and zeros in the bitvector
+        // we can use 4 threads, for each index one thread that build the index 
+        // from the start to the middle, and one thread that build from the end
+        // to the middle
         ////////////////////////////////////////////////////////////////////////
-        let mut high_bits_index_ones = Vec::new();
+        let mut high_bits_index_ones = Vec::with_capacity(bitvector.len() >> INDEX_SHIFT);
         let mut number_of_ones = 0;
         for (i, mut word) in bitvector.iter().cloned().enumerate() {
             while word != 0 {
@@ -90,7 +107,7 @@ impl SimpleSelect {
             }
         }
         ////////////////////////////////////////////////////////////////////////
-        let mut high_bits_index_zeros = Vec::new();
+        let mut high_bits_index_zeros = Vec::with_capacity(bitvector.len() >> INDEX_SHIFT);
         let mut number_of_zeros = 0;
         for (i, mut word) in bitvector.iter().cloned().enumerate() {
             while word != u64::MAX {

@@ -24,8 +24,8 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
 }
 
 
-const SIZE: usize = 100_000_000;
-const MAX : u64 = 1_000_000_000;
+const SIZE: usize = 32_000_000;
+const MAX : u64 = 450_000 * 450_000;
 
 #[test]
 /// Test that we can build successfully run all methods in elias fano.
@@ -34,6 +34,7 @@ pub fn test_concurrent_builder() {
     println!("Building vec");
     let start = Instant::now();
     let vector = build_random_sorted_vector(SIZE, MAX);
+    assert_eq!(vector.len(), SIZE);
     println!("Done: {} s\n", start.elapsed().as_secs_f64());
 
     println!("Concurrent Builder");
@@ -43,23 +44,28 @@ pub fn test_concurrent_builder() {
     vector.par_iter().enumerate().for_each(|(i, v)| {
         builder.set(i as u64, *v);
     });
-    let ef = builder.build();
+    let mut ef = builder.build();
     println!("Done: {} s", start.elapsed().as_secs_f64());
-    println!("Total size = {:.3} Mib", ef.size() as f64 / 1024.0f64.powi(2));
-    println!("Overhead ones size = {:.3} Mib", ((3 + ef.high_bits.high_bits_index_ones.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
-    println!("Overhead zeros size = {:.3} Mib\n", ((3 + ef.high_bits.high_bits_index_zeros.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
+    ef.shrink_to_fit();
+    println!("Total size = {:.5} Mib", ef.size() as f64 / (1024*1024) as f64);
+    println!("Overhead          = {:.5} {:.5} Mib", ef.overhead_ratio(), ef.overhead() as f64 / (1024*1024) as f64);
+    println!("Overhead Highbits = {:.5}", ef.overhead_high_bits_ratio());
+    println!("{:#4?}", ef.memory_stats());
+
 
     println!("Sequential builder");
     let start = Instant::now();
     // build and hash the elias fano sequentially
-    let seq = EliasFano::from_vec(&vector).unwrap();
+    let mut seq = EliasFano::from_vec(&vector).unwrap();
     let mut hasher = DefaultHasher::new();
     seq.hash(&mut hasher);
     println!("Done: {} s", start.elapsed().as_secs_f64());
     let seq_hash = hasher.finish();
-    println!("Total size = {:.3} Mib", seq.size() as f64 / 1024.0f64.powi(2));
-    println!("Overhead ones size = {:.3} Mib", ((3 + seq.high_bits.high_bits_index_ones.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
-    println!("Overhead zeros size = {:.3} Mib\n", ((3 + seq.high_bits.high_bits_index_zeros.capacity()) * std::mem::size_of::<u64>()) as f64 / 1024.0f64.powi(2));
+    seq.shrink_to_fit();
+    println!("Total size = {:.5} Mib", seq.size() as f64 / (1024*1024) as f64);
+    println!("Overhead          = {:.5} {:.5} Mib", seq.overhead_ratio(), seq.overhead() as f64 / (1024*1024) as f64);
+    println!("Overhead Highbits = {:.5}", seq.overhead_high_bits_ratio());
+    println!("{:#4?}", seq.memory_stats());
 
     // hash it
     let mut hasher = DefaultHasher::new();

@@ -11,8 +11,10 @@ extern crate test;
 use test::{Bencher, black_box};
 
 const TRIALS: u64 = 1_000;
-const SIZE: u64 = 1_000_000;
-const MAX: u64 = 2 * SIZE;
+//const SIZE: u64 = 1_000_000;
+const SIZE: u64 = 32_000_000;
+const MAX : u64 = 450_000 * 450_000;
+//const MAX: u64 = 2 * SIZE;
 
 const SEED: [u8; 16] = [
     0xde, 0xad, 0xbe, 0xef,
@@ -63,7 +65,7 @@ mod fid {
     extern crate fid;
     use fid::{BitVector, FID};
 
-    #[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
@@ -81,7 +83,7 @@ mod fid {
             }
         })
     }
-    #[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
@@ -106,7 +108,7 @@ mod rsdict {
     extern crate rsdict;
     use rsdict::RsDict;
 
-    #[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = RsDict::new();
@@ -124,7 +126,7 @@ mod rsdict {
             }
         })
     }
-    #[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = RsDict::new();
@@ -158,7 +160,7 @@ mod succint {
     use succinct::select::Select1Support;
     use succinct::broadword::Broadword;
 
-    #[bench]
+    //#[bench]
     fn rank9_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -178,7 +180,7 @@ mod succint {
         })
     }   
 
-    #[bench]
+    //#[bench]
     fn rank9_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -199,7 +201,7 @@ mod succint {
         })
     }   
 
-    #[bench]
+    //#[bench]
     fn jacobson_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -219,7 +221,7 @@ mod succint {
         })
     }   
     
-    #[bench]
+    //#[bench]
     fn jacobson_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -247,7 +249,7 @@ mod indexed_bitvec {
     use indexed_bitvec::IndexedBits;
     use indexed_bitvec::bits::Bits;
 
-    #[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
@@ -267,7 +269,7 @@ mod indexed_bitvec {
         })
     }   
 
-    #[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
@@ -289,7 +291,7 @@ mod indexed_bitvec {
 }
 
 
-mod bio {
+mod z_bio {
     use super::*;
     extern crate bio;
     extern crate bv;
@@ -297,7 +299,7 @@ mod bio {
     use bv::BitVec;
     
 
-    #[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();
@@ -317,7 +319,7 @@ mod bio {
         })
     }
 
-    #[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();

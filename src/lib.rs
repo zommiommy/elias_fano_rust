@@ -4,10 +4,10 @@ pub use low_bits_primitives::*;
 mod elias_fano;
 mod builders;
 mod utils_methods;
-pub use elias_fano::EliasFano;
+pub use elias_fano::*;
 
 mod simple_select;
-pub use simple_select::SimpleSelect;
+pub use simple_select::*;
 
 mod constants;
 use constants::*;

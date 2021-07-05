@@ -21,6 +21,14 @@ pub struct EliasFanoMemoryStats {
     pub high_bits: SimpleSelectMemoryStats,
 }
 
+impl EliasFanoMemoryStats {
+    pub fn total(&self) -> usize {
+        self.metadata 
+        + self.low_bits 
+        + self.high_bits.total()
+    }
+}
+
 impl EliasFano {
     /// Return the memory used by each sub-element in bytes
     pub fn memory_stats(&self) -> EliasFanoMemoryStats {
@@ -34,13 +42,7 @@ impl EliasFano {
 
     /// Return the memory used in bytes
     pub fn size(&self) -> usize {
-        let vals = self.memory_stats();
-        vals.metadata 
-        + vals.low_bits 
-        + vals.high_bits.high_bits 
-        + vals.high_bits.high_bits_index_ones
-        + vals.high_bits.high_bits_index_ones
-        + vals.high_bits.metadata
+        self.memory_stats().total()
     }
 
     /// Return how much memory is spent for the indices

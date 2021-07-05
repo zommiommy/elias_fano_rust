@@ -23,6 +23,15 @@ pub struct SimpleSelectMemoryStats {
     pub high_bits_index_ones: usize,
 }
 
+impl SimpleSelectMemoryStats {
+    pub fn total(&self) -> usize {
+        self.high_bits
+        + self.high_bits_index_ones
+        + self.high_bits_index_ones
+        + self.metadata
+    }
+}
+
 impl SimpleSelect {
     /// Return the memory used in bytes
     pub fn size(&self) -> SimpleSelectMemoryStats {

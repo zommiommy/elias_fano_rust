@@ -1,5 +1,4 @@
 use super::*;
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EliasFano {
@@ -23,20 +22,17 @@ pub struct EliasFanoMemoryStats {
 }
 
 impl EliasFano {
-    /// Return the memory used in bytes
-    /// This approximate the metadata as 3 u64 for each vector.
-    /// with values specified for each substructure
+    /// Return the memory used by each sub-element in bytes
     pub fn memory_stats(&self) -> EliasFanoMemoryStats {
         use std::mem::size_of;
         EliasFanoMemoryStats {
             metadata: 8 * size_of::<u64>(),
-            low_bits: (3 + self.low_bits.capacity()) * size_of::<u64>(),
+            low_bits: (self.low_bits.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),
             high_bits: self.high_bits.size(),
         }
     }
 
     /// Return the memory used in bytes
-    /// This approximate the metadata as 3 u64 for each vector.
     pub fn size(&self) -> usize {
         let vals = self.memory_stats();
         vals.metadata 

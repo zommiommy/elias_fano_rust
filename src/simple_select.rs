@@ -25,15 +25,13 @@ pub struct SimpleSelectMemoryStats {
 
 impl SimpleSelect {
     /// Return the memory used in bytes
-    /// This is an approximation which considers 3 words extra for metadata for each
-    /// vector
     pub fn size(&self) -> SimpleSelectMemoryStats {
         use std::mem::size_of;
         SimpleSelectMemoryStats {
             metadata: 3 * size_of::<u64>(),
-            high_bits: (3  + self.high_bits.capacity()) * size_of::<u64>(),
-            high_bits_index_zeros: (3  + self.high_bits_index_zeros.capacity()) * size_of::<u64>(),
-            high_bits_index_ones: (3  + self.high_bits_index_ones.capacity()) * size_of::<u64>(),
+            high_bits:  (self.high_bits.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),
+            high_bits_index_zeros:  (self.high_bits_index_zeros.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),
+            high_bits_index_ones:  (self.high_bits_index_ones.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),
 
         }
     }

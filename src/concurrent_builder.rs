@@ -10,10 +10,29 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub struct ConcurrentEliasFanoBuilder {
     high_bits: Vec<AtomicU64>,
     low_bits: Vec<AtomicU64>,
+    number_of_inserted_elements: AtomicU64,
+    max_index_found: AtomicU64,
+    min_index_found: AtomicU64,
     number_of_elements: u64,
     universe: u64,
     low_bit_count: u64,
     low_bit_mask: u64,
+}
+
+impl Default for ConcurrentEliasFanoBuilder {
+    fn default() -> Self {
+        ConcurrentEliasFanoBuilder{
+            high_bits: Vec::new(),
+            low_bits: Vec::new(),
+            number_of_inserted_elements: AtomicU64::new(0),
+            max_index_found: AtomicU64::new(0),
+            min_index_found: AtomicU64::new(u64::MAX),
+            number_of_elements: 0,
+            universe: u64::MAX,
+            low_bit_count: 0,
+            low_bit_mask: 0,
+        }
+    }
 }
 
 impl ConcurrentEliasFanoBuilder {
@@ -25,9 +44,8 @@ impl ConcurrentEliasFanoBuilder {
                 high_bits: Vec::new(),
                 low_bits: Vec::new(),
                 number_of_elements: 0,
-                universe: universe,
-                low_bit_count: 0,
-                low_bit_mask: 0,
+                universe,
+                ..Default::default()
             });
         }
 
@@ -65,6 +83,7 @@ impl ConcurrentEliasFanoBuilder {
             high_bits,
             number_of_elements: number_of_elements as u64,
             low_bits,
+            ..Default::default()
         })
     }
 
@@ -81,12 +100,24 @@ impl ConcurrentEliasFanoBuilder {
         // write the high-bits
         let idx = high + index;
         self.high_bits[(idx >> WORD_SHIFT) as usize].fetch_or(1 << (idx & WORD_MASK), Ordering::SeqCst);        
+
+        self.number_of_inserted_elements.fetch_add(1, Ordering::SeqCst);
+        self.max_index_found.fetch_max(index, Ordering::SeqCst);
+        self.min_index_found.fetch_min(index, Ordering::SeqCst);
+    }
+
+    /// Return the **current** number of values inserted
+    /// This is computed based on an atomic value with Sequentailly Consistent
+    /// Ordering. If you want consistent values, it's your responsability to use
+    /// it while no threads is writing.
+    pub fn len(&self) -> usize {
+        self.number_of_inserted_elements.load(Ordering::SeqCst) as usize
     }
 
     ///  Consume the builder and returns the built EliasFano struct.
     /// This step is not really parallel and will have to build the
     /// high-bits indices needed for the constant time select.
-    pub fn build(self) -> EliasFano {
+    pub fn build(self) -> Result<EliasFano, String> {
         // Remove the atomic type from the vector
         // this is not supposed to generate any instruction but it's meant to 
         // make the compiler happy.
@@ -94,6 +125,12 @@ impl ConcurrentEliasFanoBuilder {
             std::mem::transmute::<Vec<_>, Vec<u64>>(self.low_bits),
             std::mem::transmute::<Vec<_>, Vec<u64>>(self.high_bits),
         )};
+
+        if self.min_index_found.load(Ordering::SeqCst) != 0 
+            || self.max_index_found.load(Ordering::SeqCst) != self.number_of_inserted_elements.load(Ordering::SeqCst) 
+        {
+            return Err("The given indices were not dense or they might contained duplicates!".to_string());
+        }
 
         let mut result = EliasFano {
             low_bits,
@@ -122,6 +159,6 @@ impl ConcurrentEliasFanoBuilder {
             result.last_high_value = max_value >> self.low_bit_count;
         }
 
-        result
+        Ok(result)
     }
 }

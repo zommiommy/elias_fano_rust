@@ -44,7 +44,7 @@ pub fn test_concurrent_builder() {
     vector.par_iter().enumerate().for_each(|(i, v)| {
         builder.set(i as u64, *v);
     });
-    let mut ef = builder.build();
+    let mut ef = builder.build().unwrap();
     println!("Done: {} s", start.elapsed().as_secs_f64());
     ef.shrink_to_fit();
     println!("Total size = {:.5} Mib", ef.size() as f64 / (1024*1024) as f64);

@@ -1,5 +1,6 @@
 use super::*;
 use std::sync::atomic::{AtomicU64, Ordering};
+use rayon::prelude::*;
 
 #[derive(Debug)]
 /// Builder that allows to concurrently build elias-fano.
@@ -10,9 +11,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub struct ConcurrentEliasFanoBuilder {
     high_bits: Vec<AtomicU64>,
     low_bits: Vec<AtomicU64>,
-    number_of_inserted_elements: AtomicU64,
-    max_index_found: AtomicU64,
-    min_index_found: AtomicU64,
     number_of_elements: u64,
     universe: u64,
     low_bit_count: u64,
@@ -24,9 +22,6 @@ impl Default for ConcurrentEliasFanoBuilder {
         ConcurrentEliasFanoBuilder{
             high_bits: Vec::new(),
             low_bits: Vec::new(),
-            number_of_inserted_elements: AtomicU64::new(0),
-            max_index_found: AtomicU64::new(0),
-            min_index_found: AtomicU64::new(u64::MAX),
             number_of_elements: 0,
             universe: u64::MAX,
             low_bit_count: 0,
@@ -40,13 +35,7 @@ impl ConcurrentEliasFanoBuilder {
         // If the user says that there will be no elements, the builder will 
         // only use the high-bits to store the eventual values
         if number_of_elements == 0 {
-            return Ok(ConcurrentEliasFanoBuilder{
-                high_bits: Vec::new(),
-                low_bits: Vec::new(),
-                number_of_elements: 0,
-                universe,
-                ..Default::default()
-            });
+            return Ok(ConcurrentEliasFanoBuilder::default());
         }
 
         // Compute the size of the low bits.
@@ -59,7 +48,7 @@ impl ConcurrentEliasFanoBuilder {
         // saturate at the max we can handle
         if low_bit_count > 64 {
             return Err(format!(concat!(
-                    "The lowbits are too big, we only support 64 bits for the low parts.",
+                    "The lowbits are too big, in EliasFano we only support 64 bits for the low parts.",
                     "The value were universe {} number_of_elements {}"
                 ),
                 universe, number_of_elements
@@ -100,18 +89,6 @@ impl ConcurrentEliasFanoBuilder {
         // write the high-bits
         let idx = high + index;
         self.high_bits[(idx >> WORD_SHIFT) as usize].fetch_or(1 << (idx & WORD_MASK), Ordering::SeqCst);        
-
-        self.number_of_inserted_elements.fetch_add(1, Ordering::SeqCst);
-        self.max_index_found.fetch_max(index, Ordering::SeqCst);
-        self.min_index_found.fetch_min(index, Ordering::SeqCst);
-    }
-
-    /// Return the **current** number of values inserted
-    /// This is computed based on an atomic value with Sequentailly Consistent
-    /// Ordering. If you want consistent values, it's your responsability to use
-    /// it while no threads is writing.
-    pub fn len(&self) -> usize {
-        self.number_of_inserted_elements.load(Ordering::SeqCst) as usize
     }
 
     ///  Consume the builder and returns the built EliasFano struct.
@@ -126,29 +103,17 @@ impl ConcurrentEliasFanoBuilder {
             std::mem::transmute::<Vec<_>, Vec<u64>>(self.high_bits),
         )};
 
-        if self.min_index_found.load(Ordering::SeqCst) != 0 
-        {
-            return Err(format!(
-                concat!(
-                    "The given indices were either not dense or ",
-                    "they might have contained duplicates!\n",
-                    "Specifically, the minimum index was expected to be zero, but was {}."
-                ),
-                self.min_index_found.load(Ordering::SeqCst)
-            ));
-        }
-        
-        if self.max_index_found.load(Ordering::SeqCst) != self.number_of_inserted_elements.load(Ordering::SeqCst) - 1
-        {
-            return Err(format!(
-                concat!(
-                    "The given indices were either not dense or ",
-                    "they might have contained duplicates!\n",
-                    "Specifically, the maximum index was expected to be equal to the number of elements in ",
-                    "the set, which is {}, minus one, but was {}."
-                ),
-                self.number_of_inserted_elements.load(Ordering::SeqCst),
-                self.max_index_found.load(Ordering::SeqCst),
+        let actual_number_of_inserted_values = high_bits.par_iter().map(|x| x.count_ones() as u64).sum::<u64>();
+
+        if actual_number_of_inserted_values != self.number_of_elements {
+            return Err(format!(concat!(
+                "The number of elements given on construction to EliasFano concurrent builder was {}",
+                "but on the high bits there are {} ones, so either you inserted less elements, or",
+                "there were duplicated indices!"
+                
+            ),
+            self.number_of_elements,
+            actual_number_of_inserted_values,
             ));
         }
 

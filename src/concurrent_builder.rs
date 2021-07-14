@@ -127,9 +127,29 @@ impl ConcurrentEliasFanoBuilder {
         )};
 
         if self.min_index_found.load(Ordering::SeqCst) != 0 
-            || self.max_index_found.load(Ordering::SeqCst) != self.number_of_inserted_elements.load(Ordering::SeqCst) 
         {
-            return Err("The given indices were not dense or they might contained duplicates!".to_string());
+            return Err(format!(
+                concat!(
+                    "The given indices were either not dense or ",
+                    "they might have contained duplicates!\n",
+                    "Specifically, the minimum index was expected to be zero, but was {}."
+                ),
+                self.min_index_found.load(Ordering::SeqCst)
+            ));
+        }
+        
+        if self.max_index_found.load(Ordering::SeqCst) != self.number_of_inserted_elements.load(Ordering::SeqCst) - 1
+        {
+            return Err(format!(
+                concat!(
+                    "The given indices were either not dense or ",
+                    "they might have contained duplicates!\n",
+                    "Specifically, the maximum index was expected to be equal to the number of elements in ",
+                    "the set, which is {}, minus one, but was {}."
+                ),
+                self.number_of_inserted_elements.load(Ordering::SeqCst),
+                self.max_index_found.load(Ordering::SeqCst),
+            ));
         }
 
         let mut result = EliasFano {

@@ -138,7 +138,7 @@ impl ConcurrentEliasFanoBuilder {
             ));
         }
         
-        if self.max_index_found.load(Ordering::SeqCst) != self.number_of_inserted_elements.load(Ordering::SeqCst) - 1
+        if self.max_index_found.load(Ordering::SeqCst) != self.number_of_inserted_elements.load(Ordering::SeqCst).saturating_sub(-1)
         {
             return Err(format!(
                 concat!(

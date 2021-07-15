@@ -107,10 +107,9 @@ impl ConcurrentEliasFanoBuilder {
 
         if actual_number_of_inserted_values != self.number_of_elements {
             return Err(format!(concat!(
-                "The number of elements given on construction to EliasFano concurrent builder was {}",
+                "The number of elements given on construction to EliasFano's concurrent builder was {}",
                 " but on the high bits there are {} ones, so either you inserted less elements, or",
-                "there were duplicated indices!"
-                
+                " there were duplicated indices!"
             ),
             self.number_of_elements,
             actual_number_of_inserted_values,

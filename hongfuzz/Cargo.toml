@@ -29,3 +29,6 @@ path = "src/iter.rs"
 name = "iter_in_range"
 path = "src/iter_in_range.rs"
 
+[[bin]]
+name = "builders"
+path = "src/builders.rs"

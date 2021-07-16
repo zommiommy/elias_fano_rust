@@ -6,12 +6,13 @@ pub mod fuzz_harness{}
 #[cfg(feature="fuzz")]
 pub mod fuzz_harness{
     use arbitrary::{Arbitrary, Unstructured};
+    use rayon::iter::*;
     use super::*;
 
     pub fn rank_and_select_harness(data: &[u8]) {
         let data = <Vec<u16>>::arbitrary(&mut Unstructured::new(data)).unwrap();
         let mut data = data.iter().map(|x| *x as u64).collect::<Vec<u64>>();
-        // create a sorted vector with no duplicates
+        // create a sorted vector
         data.sort();
 
         let ef = EliasFano::from_vec(&data).unwrap();
@@ -113,6 +114,30 @@ pub mod fuzz_harness{
     
         for (a, b) in truth.iter().zip(ours.iter()) {
             assert_eq!(*a, *b, "The values inside elias-fano");
+        }
+    }
+
+    pub fn builders(data: &[u8]) {
+        let data = <Vec<u16>>::arbitrary(&mut Unstructured::new(data)).unwrap();
+        let mut data = data.iter().map(|x| *x as u64).collect::<Vec<u64>>();
+        // create a sorted vector
+        data.sort();
+
+        let ef = EliasFano::from_vec(&data).unwrap();
+
+        assert_eq!( ef.len() as usize, data.len() as usize, "the sequential elias fano length do not match the vector!");
+
+        let cefb = ConcurrentEliasFanoBuilder::new(data.len() as u64, *data.last().unwrap_or(&0)).unwrap();
+
+        data.par_iter().enumerate().for_each(|(i, x)| cefb.set(i as u64, *x));
+
+        let cef = cefb.build().unwrap();
+
+        assert_eq!(cef.len() as usize, data.len() as usize, "the concurrent elias fano length do not match the vector!");
+        
+        for ((t, s), c) in data.iter().zip(ef.iter()).zip(cef.iter()) {
+            assert_eq!(*t, s, "The sequetial iter do not match the truth data.");
+            assert_eq!(*t, c, "The concurrent iter do not match the truth data.");
         }
     }
 }

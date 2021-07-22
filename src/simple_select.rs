@@ -1,7 +1,6 @@
 use super::*;
-use core::num;
 use std::ops::Range;
-use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 /// Structure with index inspired by Vigna's simple select
@@ -89,6 +88,8 @@ impl SimpleSelect {
     /// Take the given bit-vector and build the indices on it.
     pub fn from_vec(bitvector: Vec<u64>) -> SimpleSelect {
 
+        let bitvector = Arc::new(bitvector);
+
         // The following two steps are independant so we could parallelize them
         // using two separate threads
         // moreover, if we know in advance the number of ones and zeros in the bitvector
@@ -96,24 +97,28 @@ impl SimpleSelect {
         // from the start to the middle, and one thread that build from the end
         // to the middle
         ////////////////////////////////////////////////////////////////////////
-        let mut high_bits_index_ones = Vec::with_capacity(bitvector.len() >> INDEX_SHIFT);
-        let mut number_of_ones = 0;
-        for (i, mut word) in bitvector.iter().cloned().enumerate() {
-            while word != 0 {
-                // Get the bit position of the current one
-                let idx = (i << WORD_SHIFT) as u64 + word.trailing_zeros() as u64;
+        let ones_bitvector_copy = bitvector.clone();
+        let ones_counter = std::thread::spawn(move || {
+            let mut high_bits_index_ones = Vec::with_capacity(ones_bitvector_copy.len() >> INDEX_SHIFT);
+            let mut number_of_ones = 0;
+            for (i, mut word) in ones_bitvector_copy.iter().cloned().enumerate() {
+                while word != 0 {
+                    // Get the bit position of the current one
+                    let idx = (i << WORD_SHIFT) as u64 + word.trailing_zeros() as u64;
 
-                // write the index
-                if number_of_ones & INDEX_MASK == 0 {
-                    high_bits_index_ones.push(idx as u64);
+                    // write the index
+                    if number_of_ones & INDEX_MASK == 0 {
+                        high_bits_index_ones.push(idx as u64);
+                    }
+
+                    // Clean the one so that we can get to the next one.
+                    word &= word - 1;
+                    number_of_ones += 1;
                 }
-
-                // Clean the one so that we can get to the next one.
-                word &= word - 1;
-                number_of_ones += 1;
             }
-        }
-        ////////////////////////////////////////////////////////////////////////
+            (number_of_ones, high_bits_index_ones)
+        });
+
         let mut high_bits_index_zeros = Vec::with_capacity(bitvector.len() >> INDEX_SHIFT);
         let mut number_of_zeros = 0;
         for (i, mut word) in bitvector.iter().cloned().enumerate() {
@@ -131,7 +136,11 @@ impl SimpleSelect {
                 number_of_zeros += 1;
             }
         }
-        ////////////////////////////////////////////////////////////////////////
+
+        let (number_of_ones, high_bits_index_ones) = ones_counter.join().unwrap();
+
+        let bitvector = Arc::try_unwrap(bitvector).unwrap();
+
         SimpleSelect{
             len: (bitvector.len() << WORD_SHIFT) as u64,
             number_of_zeros,

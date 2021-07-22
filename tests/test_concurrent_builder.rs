@@ -24,8 +24,8 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
 }
 
 
-const SIZE: usize = 32_000_000;
-const MAX : u64 = 450_000 * 450_000;
+const SIZE: usize = 23_751_196;
+const MAX : u64 = 462_304 * 462_304;
 
 #[test]
 /// Test that we can build successfully run all methods in elias fano.

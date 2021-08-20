@@ -40,4 +40,10 @@ fn test_high_bits_against_rsdict() {
     for i in 0..rs.len() as u64 {
         assert_eq!(hb.rank0(i), rs.rank(i, false), "error ranking zeros up to {}", i);
     }
+
+    assert_eq!(hb.rank1(hb.len()), hb.count_ones());
+    assert_eq!(hb.rank0(hb.len()), hb.count_zeros());
+
+    println!("Simple select uses: {} Mib", hb.size().total() as f64 / (1024.0*1024.0));
+    println!("{:#4?}", hb.size());
 }

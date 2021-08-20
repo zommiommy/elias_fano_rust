@@ -22,6 +22,10 @@ name = "rank_and_select"
 path = "src/rank_and_select.rs"
 
 [[bin]]
+name = "simple_select"
+path = "src/simple_select.rs"
+
+[[bin]]
 name = "iter"
 path = "src/iter.rs"
 

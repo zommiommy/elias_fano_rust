@@ -113,6 +113,9 @@ impl SimpleSelect {
     /// This is basically a select + a binary search so it should be a bit
     /// slower than a select.
     pub fn rank1(&self, index: u64) -> u64 {
+        if index >= self.len() {
+            return self.count_ones();
+        }
         // use the ones index to search for in which word the index fall
         match self.high_bits_index_ones.binary_search(&index) {
             // fast path, luckily the index is one found in the index
@@ -166,6 +169,9 @@ impl SimpleSelect {
     /// This is basically a select + a binary search so it should be a bit
     /// slower than a select.
     pub fn rank0(&self, index: u64) -> u64 {
+        if index >= self.len() {
+            return self.count_zeros();
+        }
         // use the ones index to search for in which word the index fall
         match self.high_bits_index_zeros.binary_search(&index) {
             // fast path, luckily the index is one found in the index

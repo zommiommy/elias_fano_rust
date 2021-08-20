@@ -23,7 +23,7 @@ rsdict = {version="0.0.4", features = ["simd"], git="https://github.com/zommiomm
 [features]
 default = []
 unsafe = []
-fuzz = ["arbitrary"]
+fuzz = ["arbitrary", "rsdict"]
 
 
 [profile.release]

@@ -2,14 +2,17 @@ use super::*;
 
 /// # Getters
 impl SimpleSelect {
+    #[inline]
     pub fn count_zeros(&self) -> u64 {
         self.number_of_zeros
     }
-
+    
+    #[inline]
     pub fn count_ones(&self) -> u64 {
         self.number_of_ones
     }
 
+    #[inline]
     pub fn len(&self) -> u64 {
         self.len
     }
@@ -114,7 +117,10 @@ impl SimpleSelect {
     /// slower than a select.
     pub fn rank1(&self, index: u64) -> u64 {
         if index >= self.len() {
-            return self.count_ones();
+            return self.count_ones();   
+        }
+        if self.count_ones() == 0 {
+            return 0;
         }
         // use the ones index to search for in which word the index fall
         match self.high_bits_index_ones.binary_search(&index) {
@@ -171,6 +177,9 @@ impl SimpleSelect {
     pub fn rank0(&self, index: u64) -> u64 {
         if index >= self.len() {
             return self.count_zeros();
+        }
+        if self.count_zeros() == 0 {
+            return 0;
         }
         // use the ones index to search for in which word the index fall
         match self.high_bits_index_zeros.binary_search(&index) {

@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 rayon = "1.1"
 arbitrary = { version = "0.4.5", features = ["derive"],  optional = true }
+rsdict = {version="0.0.4", features = ["simd"], git="https://github.com/zommiommy/rsdict", optional = true}
 
 [dev-dependencies]
 rand = {version="0.7", features = ["small_rng"] }

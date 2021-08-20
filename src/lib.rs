@@ -15,6 +15,9 @@ use constants::*;
 mod hash;
 mod getters;
 
+mod iter;
+mod par_iter;
+
 mod concurrent_builder;
 pub use concurrent_builder::*;
 

@@ -50,6 +50,32 @@ mod ef {
 }
 
 
+mod simple_select {
+    use super::*;
+        
+    #[bench]
+    fn rank(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ss.rank1(rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ss.select1(rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+}
+
 pub(crate) fn test_vector() -> (Vec<u64>, SmallRng) {
     let mut rng: SmallRng = SmallRng::from_seed(SEED);
     let mut v = Vec::new();

@@ -32,4 +32,12 @@ fn test_high_bits_against_rsdict() {
     for i in 0..rs.count_zeros() as u64 {
         assert_eq!(hb.select0(i), rs.select0(i).unwrap(), "error seleting the {}-th zero", i);
     }
+
+    for i in 0..rs.len() as u64 {
+        assert_eq!(hb.rank1(i), rs.rank(i, true), "error ranking ones up to {}", i);
+    }
+
+    for i in 0..rs.len() as u64 {
+        assert_eq!(hb.rank0(i), rs.rank(i, false), "error ranking zeros up to {}", i);
+    }
 }

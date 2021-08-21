@@ -77,7 +77,7 @@ pub mod fuzz_harness{
         let mut hb = SimpleSelect::new();
         let mut rs = BitVector::new();
 
-        for bit in data.unwrap() {
+        for bit in data {
             hb.push(bit);
             rs.push(bit);
         }

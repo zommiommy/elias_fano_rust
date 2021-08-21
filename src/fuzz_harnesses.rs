@@ -73,12 +73,7 @@ pub mod fuzz_harness{
         }
     }
 
-    pub fn simple_select_harness(data: &[u8]) {
-        let data = <Vec<bool>>::arbitrary(&mut Unstructured::new(data));
-        if data.is_err() {
-            return;
-        }
-            
+    pub fn simple_select_harness(data: Vec<bool>) {
         let mut hb = SimpleSelect::new();
         let mut rs = BitVector::new();
 

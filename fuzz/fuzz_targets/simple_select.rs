@@ -2,6 +2,6 @@
 use libfuzzer_sys::fuzz_target;
 use elias_fano_rust::fuzz_harness::*;
 
-fuzz_target!(|data: &[u8]| {
+fuzz_target!(|data: Vec<bool>| {
     simple_select_harness(data);
 });

@@ -147,7 +147,7 @@ impl SimpleSelect {
                 current_word &= !0_u64 << bits_to_ignore;
 
                 // compute how many bits are left to be scanned
-                let mut bits_left = index + bits_to_ignore - bit_pos;
+                let mut bits_left = (index + bits_to_ignore).saturating_sub(bit_pos);
                 
                 // We can quickly skip words by popcnt-ing them
                 while bits_left > 63 {
@@ -206,7 +206,7 @@ impl SimpleSelect {
                 current_word &= !0_u64 << bits_to_ignore;
 
                 // compute how many bits are left to be scanned
-                let mut bits_left = index + bits_to_ignore - bit_pos;
+                let mut bits_left = (index + bits_to_ignore).saturating_sub(bit_pos);
                 
                 // We can quickly skip words by popcnt-ing them
                 while bits_left > 63 {

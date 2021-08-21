@@ -78,9 +78,7 @@ pub mod fuzz_harness{
         if data.is_err() {
             return;
         }
-    
-        dbg!(&data);
-        
+            
         let mut hb = SimpleSelect::new();
         let mut rs = BitVector::new();
 

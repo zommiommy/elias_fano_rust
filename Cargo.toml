@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 rayon = "1.1"
 arbitrary = { version = "0.4.5", features = ["derive"],  optional = true }
-rsdict = {version="0.0.4", features = ["simd"], git="https://github.com/zommiommy/rsdict", optional = true}
+fid = {version="0.1.7", optional = true}
 
 [dev-dependencies]
 rand = {version="0.7", features = ["small_rng"] }
@@ -19,12 +19,12 @@ bio = "0.32.0"
 fid = "0.1.7"
 bv = "0.11.1"
 vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
-rsdict = {version="0.0.4", features = ["simd"], git="https://github.com/zommiommy/rsdict"}
+rsdict = {version="0.0.4", features = ["simd"]}
 
 [features]
 default = []
 unsafe = []
-fuzz = ["arbitrary", "rsdict"]
+fuzz = ["arbitrary", "fid"]
 
 
 [profile.release]

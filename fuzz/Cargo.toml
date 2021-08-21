@@ -31,3 +31,9 @@ path = "fuzz_targets/iter_in_range.rs"
 test = false
 doc = false
 
+[[bin]]
+name = "simple_select"
+path = "fuzz_targets/simple_select.rs"
+test = false
+doc = false
+

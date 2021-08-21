@@ -7,7 +7,7 @@ pub mod fuzz_harness{}
 pub mod fuzz_harness{
     use arbitrary::{Arbitrary, Unstructured};
     use rayon::iter::*;
-    use rsdict::*;
+    use fid::*;
     use super::*;
 
     pub fn rank_and_select_harness(data: &[u8]) {
@@ -82,27 +82,27 @@ pub mod fuzz_harness{
         dbg!(&data);
         
         let mut hb = SimpleSelect::new();
-        let mut rs = RsDict::new();
+        let mut rs = BitVector::new();
 
         for bit in data.unwrap() {
             hb.push(bit);
             rs.push(bit);
         }
 
-        for i in 0..rs.count_ones() as u64 {
-            assert_eq!(hb.select1(i), rs.select1(i).unwrap(), "error seleting the {}-th one", i);
+        for i in 0..rs.rank1(rs.len()) as u64 {
+            assert_eq!(hb.select1(i), rs.select1(i), "error seleting the {}-th one", i);
         }
 
-        for i in 0..rs.count_zeros() as u64 {
-            assert_eq!(hb.select0(i), rs.select0(i).unwrap(), "error seleting the {}-th zero", i);
-        }
-
-        for i in 0..rs.len() as u64 {
-            assert_eq!(hb.rank1(i), rs.rank(i, true), "error ranking ones up to {}", i);
+        for i in 0..rs.rank0(rs.len()) as u64 {
+            assert_eq!(hb.select0(i), rs.select0(i), "error seleting the {}-th zero", i);
         }
 
         for i in 0..rs.len() as u64 {
-            assert_eq!(hb.rank0(i), rs.rank(i, false), "error ranking zeros up to {}", i);
+            assert_eq!(hb.rank1(i), rs.rank1(i), "error ranking ones up to {}", i);
+        }
+
+        for i in 0..rs.len() as u64 {
+            assert_eq!(hb.rank0(i), rs.rank0(i), "error ranking zeros up to {}", i);
         }
     }
 

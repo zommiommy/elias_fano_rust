@@ -91,7 +91,7 @@ mod fid {
     extern crate fid;
     use fid::{BitVector, FID};
 
-    //#[bench]
+    #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
@@ -109,7 +109,8 @@ mod fid {
             }
         })
     }
-    //#[bench]
+    
+    #[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
@@ -134,7 +135,7 @@ mod rsdict {
     extern crate rsdict;
     use rsdict::RsDict;
 
-    //#[bench]
+    #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = RsDict::new();
@@ -152,7 +153,8 @@ mod rsdict {
             }
         })
     }
-    //#[bench]
+    
+    #[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = RsDict::new();

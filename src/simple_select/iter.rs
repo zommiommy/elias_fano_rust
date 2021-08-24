@@ -20,6 +20,11 @@ impl<'a> SimpleSelect {
     pub fn iter(&'a self) -> SimpleSelectIterator<'a> {
         self.into_iter()
     }
+
+    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
+    pub fn iter_double_ended(&'a self) -> SimpleSelectDobuleEndedIterator<'a> {
+        SimpleSelectDobuleEndedIterator::new(self)
+    }
 }
 
 #[derive(Debug)]

@@ -1,4 +1,5 @@
 use super::*;
+use std::intrinsics::unlikely;
 
 impl<'a> IntoIterator for &'a SimpleSelect {
     type Item = u64;
@@ -25,6 +26,12 @@ impl<'a> SimpleSelect {
     pub fn iter_double_ended(&'a self) -> SimpleSelectDobuleEndedIterator<'a> {
         SimpleSelectDobuleEndedIterator::new(self)
     }
+
+    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
+    pub fn iter_in_range_double_ended(&'a self, range: Range<u64>) -> SimpleSelectDobuleEndedIterator<'a> {
+        SimpleSelectDobuleEndedIterator::new_in_range(self, range)
+    }
+    
 }
 
 #[derive(Debug)]
@@ -54,7 +61,7 @@ impl<'a> SimpleSelectIterator<'a> {
     /// ```
     #[inline]
     pub fn new_in_range(father: &SimpleSelect, range: Range<u64>) -> SimpleSelectIterator {
-        if range.start >= father.len() {
+        if unlikely(range.start >= father.len()) {
             return SimpleSelectIterator{
                 father:father,
                 current_code: 0,
@@ -99,10 +106,10 @@ impl<'a> Iterator for SimpleSelectIterator<'a> {
     /// The iteration code takes inspiration from https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        while self.current_code == 0 {
+        while unlikely(self.current_code == 0) {
             self.index += 1;
             // if we are over just end the iterator
-            if self.index >= self.max_index {
+            if unlikely(self.index >= self.max_index) {
                 return None;
             }
             self.current_code = self.father.high_bits[self.index];   
@@ -120,7 +127,7 @@ impl<'a> Iterator for SimpleSelectIterator<'a> {
 
         // Check if we exceeds the max value
         if let Some(_max) = &self.max {
-            if result >= *_max {
+            if unlikely(result >= *_max) {
                 return None;
             }
         }

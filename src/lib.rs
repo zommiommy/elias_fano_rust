@@ -1,3 +1,5 @@
+#![feature(core_intrinsics)]
+
 mod low_bits_primitives;
 pub use low_bits_primitives::*;
 

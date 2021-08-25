@@ -52,29 +52,64 @@ fn test_simple_select_against_fid() {
     println!("Simple select uses: {} Mib", hb.size().total() as f64 / (1024.0*1024.0));
     println!("{:#4?}", hb.size());
 
-    // test normal iteration
-    let truth_iter = (0..rs.rank1(rs.len())).map(|i| rs.select1(i));
-    let test_iter = hb.iter_double_ended();
-    for (truth, test) in truth_iter.zip(test_iter) {
-        assert_eq!(truth, test);
-    }
-
-    // test reverse iteration
-    let truth_iter = (0..rs.rank1(rs.len())).map(|i| rs.select1(i)).rev();
-    let test_iter = hb.iter_double_ended().rev();
-    for (truth, test) in truth_iter.zip(test_iter) {
-        assert_eq!(truth, test);
-    }
 
     // test random access on the iterator
     let mut truth_iter = (0..rs.rank1(rs.len())).map(|i| rs.select1(i));
     let mut test_iter = hb.iter_double_ended();
-    for i in 0..hb.count_ones() {
+    // check that the compute size is correct
+    assert_eq!(
+        test_iter.size_hint().0, 
+        rs.rank1(rs.len()) as usize
+    );
+    println!("{:#4?}", test_iter);
+    loop {
         let bit = rng.gen_bool(0.5);
         if bit {
-            assert_eq!(truth_iter.next(), test_iter.next(), "{:#4?}", test_iter);
+            let truth = truth_iter.next();
+            let test = test_iter.next();
+            assert_eq!(truth, test, "{:#4?}", test_iter);
+            if truth.is_none() && test.is_none() {
+                break
+            }
         } else {
-            assert_eq!(truth_iter.next_back(), test_iter.next_back(), "{:#4?}", test_iter);
+            let truth = truth_iter.next_back();
+            let test = test_iter.next_back();
+            assert_eq!(truth, test, "{:#4?}", test_iter);
+            if truth.is_none() && test.is_none() {
+                break
+            }
+        }
+    }
+
+    // test random access on the iterator in a range
+    let (start, end) = (rng.gen_range(0, rs.len()), rng.gen_range(0, rs.len()));
+    let (start, end) = (start.min(end), start.max(end));
+    println!("{}..{}", start, end);
+    let mut truth_iter = (0..rs.rank1(rs.len())).map(|i| rs.select1(i)).filter(|i| (start..end).contains(i));
+    let mut test_iter = hb.iter_in_range_double_ended(start..end);
+    // check that the compute size is correct
+    assert_eq!(
+        test_iter.size_hint().0, 
+        (0..rs.rank1(rs.len())).map(|i| rs.select1(i)).filter(|i| (start..end).contains(i)).count()
+    );
+
+    println!("{:#4?}", test_iter);
+    loop {
+        let bit = rng.gen_bool(0.5);
+        if bit {
+            let truth = truth_iter.next();
+            let test = test_iter.next();
+            assert_eq!(truth, test, "{:#4?}", test_iter);
+            if truth.is_none() && test.is_none() {
+                break
+            }
+        } else {
+            let truth = truth_iter.next_back();
+            let test = test_iter.next_back();
+            assert_eq!(truth, test, "{:#4?}", test_iter);
+            if truth.is_none() && test.is_none() {
+                break
+            }
         }
     }
 }

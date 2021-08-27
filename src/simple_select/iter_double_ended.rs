@@ -101,25 +101,36 @@ impl<'a> Iterator for SimpleSelectDobuleEndedIterator<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let mut code = &mut self.start_code;
-        while unlikely(*code == 0) {
-            self.start_index += 1;
-            if (self.end_index - self.start_index) <= 1 {
-                if unlikely(self.end_code == 0) {
+        while self.start_code == 0 {
+            let tmp_idx = self.start_index + 1;
+            if tmp_idx >= self.end_index {
+                if self.end_code == 0 {
                     return None;
                 }
-                code = &mut self.end_code;
-            } else {
-                *code = self.father.high_bits[self.start_index]
+                
+                // get the index of the first one (we are guaranteed to have
+                // at least one bit set to 1)
+                let t = self.end_code.trailing_zeros();
+
+                // clear it from the current code
+                self.end_code &= self.end_code - 1;
+
+                // compute the result value
+                let result = (tmp_idx as u64 * WORD_SIZE) + t as u64;
+                self.len = self.len.checked_sub(1).expect(&format!("SUb with overflow: {:#4?}", self));
+                return Some(result);
             }
+
+            self.start_index = tmp_idx;
+            self.start_code = self.father.high_bits[self.start_index]
         }
 
         // get the index of the first one (we are guaranteed to have
         // at least one bit set to 1)
-        let t = code.trailing_zeros();
+        let t = self.start_code.trailing_zeros();
 
         // clear it from the current code
-        *code &= *code - 1;
+        self.start_code &= self.start_code - 1;
 
         // compute the result value
         let result = (self.start_index as u64 * WORD_SIZE) + t as u64;
@@ -136,25 +147,39 @@ impl<'a> ExactSizeIterator for SimpleSelectDobuleEndedIterator<'a> {}
 
 impl<'a> DoubleEndedIterator for SimpleSelectDobuleEndedIterator<'a> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let mut code = &mut self.end_code;
-        while unlikely(*code == 0) {
-            self.end_index = self.end_index.saturating_sub(1);
-            if (self.end_index - self.start_index) <= 1 {
-                if unlikely(self.start_code == 0) {
+        while self.end_code == 0 {
+            let tmp_idx = self.end_index.saturating_sub(1);
+            // if we reach the index of the start, we should finish the word
+            // on which the other iter is already working
+            if self.start_index >= tmp_idx {
+                if self.start_code == 0 {
                     return None;
                 }
-                code = &mut self.start_code;
-            } else {
-                *code = self.father.high_bits[self.end_index]
+                        
+                // get the index of the last one (we are guaranteed to have
+                // at least one bit set to 1)
+                let t = 63 - self.start_code.leading_zeros();
+                
+                // clear it from the current code
+                self.start_code ^= 1 << t;
+
+                // compute the result value
+                let result = (tmp_idx as u64 * WORD_SIZE) + t as u64;
+                self.len = self.len.checked_sub(1).expect(&format!("SuB with overflow: {:#4?}", self));
+                return Some(result);
             }
+
+            // iter over the highbits
+            self.end_index = tmp_idx;
+            self.end_code = self.father.high_bits[self.end_index]
         }
 
         // get the index of the last one (we are guaranteed to have
         // at least one bit set to 1)
-        let t = 63 - code.leading_zeros();
+        let t = 63 - self.end_code.leading_zeros();
         
         // clear it from the current code
-        *code ^= 1 << t;
+        self.end_code ^= 1 << t;
 
         // compute the result value
         let result = (self.end_index as u64 * WORD_SIZE) + t as u64;

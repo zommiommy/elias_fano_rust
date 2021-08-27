@@ -67,14 +67,14 @@ fn test_simple_select_against_fid() {
         if bit {
             let truth = truth_iter.next();
             let test = test_iter.next();
-            assert_eq!(truth, test, "{:#4?}", test_iter);
+            assert_eq!(truth, test, "fw: {:#4?}", test_iter);
             if truth.is_none() && test.is_none() {
                 break
             }
         } else {
             let truth = truth_iter.next_back();
             let test = test_iter.next_back();
-            assert_eq!(truth, test, "{:#4?}", test_iter);
+            assert_eq!(truth, test, "bw: {:#4?}", test_iter);
             if truth.is_none() && test.is_none() {
                 break
             }
@@ -99,14 +99,14 @@ fn test_simple_select_against_fid() {
         if bit {
             let truth = truth_iter.next();
             let test = test_iter.next();
-            assert_eq!(truth, test, "{:#4?}", test_iter);
+            assert_eq!(truth, test, "fw: {:#4?}", test_iter);
             if truth.is_none() && test.is_none() {
                 break
             }
         } else {
             let truth = truth_iter.next_back();
             let test = test_iter.next_back();
-            assert_eq!(truth, test, "{:#4?}", test_iter);
+            assert_eq!(truth, test, "bw: {:#4?}", test_iter);
             if truth.is_none() && test.is_none() {
                 break
             }

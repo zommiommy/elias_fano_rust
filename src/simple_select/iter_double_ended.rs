@@ -259,12 +259,12 @@ impl<'a> UnindexedProducer for SimpleSelectDobuleEndedIterator<'a> {
     }
 }
 
-impl<'a> Producer for SimpleSelectDobuleEndedIterator<'a> {
-    fn into_iter(self) -> Self::IntoIter {
-        self
-    }
-
-    fn split_at(self, index: usize) -> (Self, Self) {
-        
-    }
-}
+// impl<'a> Producer for SimpleSelectDobuleEndedIterator<'a> {
+//     fn into_iter(self) -> Self::IntoIter {
+//         self
+//     }
+// 
+//     fn split_at(self, index: usize) -> (Self, Self) {
+//         
+//     }
+// }

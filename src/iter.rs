@@ -20,7 +20,7 @@ impl EliasFano {
     }
 
     #[inline]
-    pub fn iter_in_range(&self, range: Range<u64>) -> impl Iterator<Item = u64> + '_ {
+    pub fn iter_in_range(&self, range: Range<u64>) -> impl Iterator<Item=u64> + '_ {
         let Range{
             start,
             end

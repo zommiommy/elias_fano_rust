@@ -8,8 +8,6 @@ mod iter;
 pub use iter::*;
 mod iter_double_ended;
 pub use iter_double_ended::*;
-mod par_iter;
-pub use par_iter::*;
 mod getters;
 
 #[derive(Clone, Debug)]

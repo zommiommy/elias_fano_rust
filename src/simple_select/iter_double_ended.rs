@@ -1,5 +1,12 @@
 use super::*;
 use std::intrinsics::unlikely;
+use rayon::prelude::*;
+use rayon::iter::plumbing::{
+    bridge_unindexed, 
+    UnindexedProducer,
+    bridge,
+    Producer,
+};
 
 /// An iterator over the simple select ones
 /// that can be itered in both directions and has a known length
@@ -101,10 +108,10 @@ impl<'a> Iterator for SimpleSelectDobuleEndedIterator<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        while self.start_code == 0 {
+        while unlikely(self.start_code == 0) {
             let tmp_idx = self.start_index + 1;
-            if tmp_idx >= self.end_index {
-                if self.end_code == 0 {
+            if unlikely(tmp_idx >= self.end_index) {
+                if unlikely(self.end_code == 0) {
                     return None;
                 }
                 
@@ -117,7 +124,7 @@ impl<'a> Iterator for SimpleSelectDobuleEndedIterator<'a> {
 
                 // compute the result value
                 let result = (tmp_idx as u64 * WORD_SIZE) + t as u64;
-                self.len = self.len.checked_sub(1).expect(&format!("SUb with overflow: {:#4?}", self));
+                self.len -= 1;
                 return Some(result);
             }
 
@@ -134,7 +141,7 @@ impl<'a> Iterator for SimpleSelectDobuleEndedIterator<'a> {
 
         // compute the result value
         let result = (self.start_index as u64 * WORD_SIZE) + t as u64;
-        self.len = self.len.checked_sub(1).expect(&format!("SUb with overflow: {:#4?}", self));
+        self.len -= 1;
         Some(result)
     }
 
@@ -146,13 +153,14 @@ impl<'a> Iterator for SimpleSelectDobuleEndedIterator<'a> {
 impl<'a> ExactSizeIterator for SimpleSelectDobuleEndedIterator<'a> {}
 
 impl<'a> DoubleEndedIterator for SimpleSelectDobuleEndedIterator<'a> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        while self.end_code == 0 {
+        while unlikely(self.end_code == 0) {
             let tmp_idx = self.end_index.saturating_sub(1);
             // if we reach the index of the start, we should finish the word
             // on which the other iter is already working
-            if self.start_index >= tmp_idx {
-                if self.start_code == 0 {
+            if unlikely(self.start_index >= tmp_idx) {
+                if unlikely(self.start_code == 0) {
                     return None;
                 }
                         
@@ -165,7 +173,7 @@ impl<'a> DoubleEndedIterator for SimpleSelectDobuleEndedIterator<'a> {
 
                 // compute the result value
                 let result = (tmp_idx as u64 * WORD_SIZE) + t as u64;
-                self.len = self.len.checked_sub(1).expect(&format!("SuB with overflow: {:#4?}", self));
+                self.len -= 1;
                 return Some(result);
             }
 
@@ -183,7 +191,80 @@ impl<'a> DoubleEndedIterator for SimpleSelectDobuleEndedIterator<'a> {
 
         // compute the result value
         let result = (self.end_index as u64 * WORD_SIZE) + t as u64;
-        self.len = self.len.checked_sub(1).expect(&format!("SuB with overflow: {:#4?}", self));
+        self.len -= 1;
         Some(result)
+    }
+}
+
+
+/// This isn't tested, as for elias-fano we need the indexed version
+/// and for a general parllalel iterator we can use the normal iter
+/// which is slightly faster. 
+///
+/// Thus, this trait is not really needed, but we have it ¯\_(ツ)_/¯ .
+impl<'a> UnindexedProducer for SimpleSelectDobuleEndedIterator<'a> {
+    type Item = u64;
+
+    /// Split the file in two approximately balanced streams
+    fn split(mut self) -> (Self, Option<Self>) {
+        // Check if it's reasonable to split
+        if self.len() < 2 {
+            return (self, None);
+        }
+
+        // compute the current parsing index
+        let start_value = (self.start_index as u64 * WORD_SIZE) 
+            + self.start_code.trailing_zeros() as u64;
+
+        // compute how many ones there where
+        let start_rank = self.father.rank1(start_value) as usize;
+        // Compute the middle 1 in the current iterator
+        let middle_point = start_rank + (self.len / 2);
+        // Find it's index, so we can split the iterator exactly in half
+        let middle_bit_index = self.father.select1(middle_point as u64);
+        let code = self.father.high_bits[middle_bit_index as usize];
+        let inword_offset = middle_bit_index & WORD_MASK;
+
+        // Create the new iterator for the second half
+        let new_iter = SimpleSelectDobuleEndedIterator{
+            father: self.father, 
+
+            start_code: code & !(u64::MAX << inword_offset),
+            start_index: (middle_bit_index >> WORD_SHIFT) as usize,
+
+            end_index: self.end_index,
+            end_code: self.end_code,
+
+            len: self.len() - middle_point,
+        };
+
+        // Update the current iterator so that it will work on the 
+        // first half
+        self.end_index = (middle_bit_index >> WORD_SHIFT) as usize;
+        self.end_code = code & (u64::MAX << inword_offset);
+        self.len = middle_point;
+
+        // return the two halfs
+        (
+            self,
+            Some(new_iter),
+        )
+
+    }
+
+    fn fold_with<F>(self, folder: F) -> F
+    where
+            F: rayon::iter::plumbing::Folder<Self::Item> {
+        folder.consume_iter(self)
+    }
+}
+
+impl<'a> Producer for SimpleSelectDobuleEndedIterator<'a> {
+    fn into_iter(self) -> Self::IntoIter {
+        self
+    }
+
+    fn split_at(self, index: usize) -> (Self, Self) {
+        
     }
 }

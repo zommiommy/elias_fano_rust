@@ -30,6 +30,8 @@ mod ef {
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        println!("{:#4?}", ef.memory_stats());
+        println!("{:?}", ef.size());
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(ef.rank(rng.gen_range(0, SIZE)));
@@ -57,6 +59,7 @@ mod simple_select {
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+        println!("{:?}", ss.size());
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(ss.rank1(rng.gen_range(0, SIZE)));

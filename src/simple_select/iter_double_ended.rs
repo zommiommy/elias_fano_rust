@@ -248,8 +248,7 @@ impl<'a> UnindexedProducer for SimpleSelectDobuleEndedIterator<'a> {
         (
             self,
             Some(new_iter),
-        )
-
+        )   
     }
 
     fn fold_with<F>(self, folder: F) -> F

@@ -54,11 +54,6 @@ impl<'a> SimpleSelectIterator<'a> {
 
     /// Create a structure that iter over all the indices of the bits set to one
     /// which are inside the provided range.
-    /// 
-    /// This iterator should give the same result of:
-    /// ```
-    /// r.iter().filter(|x| range.contains(&x))
-    /// ```
     #[inline]
     pub fn new_in_range(father: &SimpleSelect, range: Range<u64>) -> SimpleSelectIterator {
         if unlikely(range.start >= father.len()) {

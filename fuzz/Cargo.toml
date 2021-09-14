@@ -11,16 +11,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = { version = "0.4.0" }
-arbitrary = { version = "0.4.5", features = ["derive"] }
-fid = "0.1.7"
-succinct = "0.5.2"
-
-[dependencies.elias_fano_rust]
-path = ".."
-
-# Prevent this from interfering with workspaces
-[workspace]
-members = ["."]
+elias_fano_rust = {path="..", features = ["fuzz"] }
 
 [[bin]]
 name = "rank_and_select"
@@ -37,6 +28,12 @@ doc = false
 [[bin]]
 name = "iter_in_range"
 path = "fuzz_targets/iter_in_range.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "simple_select"
+path = "fuzz_targets/simple_select.rs"
 test = false
 doc = false
 

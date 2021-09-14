@@ -11,8 +11,10 @@ extern crate test;
 use test::{Bencher, black_box};
 
 const TRIALS: u64 = 1_000;
-const SIZE: u64 = 1_000_000;
-const MAX: u64 = 2 * SIZE;
+//const SIZE: u64 = 1_000_000;
+const SIZE: u64 = 32_000_000;
+const MAX : u64 = 450_000 * 450_000;
+//const MAX: u64 = 2 * SIZE;
 
 const SEED: [u8; 16] = [
     0xde, 0xad, 0xbe, 0xef,
@@ -20,6 +22,62 @@ const SEED: [u8; 16] = [
     0xde, 0xad, 0xbe, 0xef,
     0xc0, 0xfe, 0xbe, 0xbe   
 ];
+
+mod ef {
+    use super::*;
+        
+    #[bench]
+    fn rank(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        println!("{:#4?}", ef.memory_stats());
+        println!("{:?}", ef.size());
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ef.rank(rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ef.select(rng.gen_range(0, SIZE)).unwrap());
+            }
+        })
+    }
+}
+
+
+mod simple_select {
+    use super::*;
+        
+    #[bench]
+    fn rank(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+        println!("{:?}", ss.size());
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ss.rank1(rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(ss.select1(rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+}
 
 pub(crate) fn test_vector() -> (Vec<u64>, SmallRng) {
     let mut rng: SmallRng = SmallRng::from_seed(SEED);
@@ -54,6 +112,7 @@ mod fid {
             }
         })
     }
+    
     #[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
@@ -97,6 +156,7 @@ mod rsdict {
             }
         })
     }
+    
     #[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
@@ -131,7 +191,7 @@ mod succint {
     use succinct::select::Select1Support;
     use succinct::broadword::Broadword;
 
-    #[bench]
+    //#[bench]
     fn rank9_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -151,7 +211,7 @@ mod succint {
         })
     }   
 
-    #[bench]
+    //#[bench]
     fn rank9_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -172,7 +232,7 @@ mod succint {
         })
     }   
 
-    #[bench]
+    //#[bench]
     fn jacobson_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -192,7 +252,7 @@ mod succint {
         })
     }   
     
-    #[bench]
+    //#[bench]
     fn jacobson_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -220,7 +280,7 @@ mod indexed_bitvec {
     use indexed_bitvec::IndexedBits;
     use indexed_bitvec::bits::Bits;
 
-    #[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
@@ -240,7 +300,7 @@ mod indexed_bitvec {
         })
     }   
 
-    #[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
@@ -262,7 +322,7 @@ mod indexed_bitvec {
 }
 
 
-mod bio {
+mod z_bio {
     use super::*;
     extern crate bio;
     extern crate bv;
@@ -270,7 +330,7 @@ mod bio {
     use bv::BitVec;
     
 
-    #[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();
@@ -290,7 +350,7 @@ mod bio {
         })
     }
 
-    #[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();
@@ -347,35 +407,6 @@ mod hashmap {
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(m.get(&(rng.gen_range(0, SIZE) as usize)));
-            }
-        })
-    }
-}
-
-
-
-
-mod ef {
-    use super::*;
-        
-    #[bench]
-    fn rank(b: &mut Bencher) {
-        let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
-        b.iter(|| {
-            for _ in 0..TRIALS {
-                black_box(ef.rank(rng.gen_range(0, SIZE)));
-            }
-        })
-    }
-
-    #[bench]
-    fn select(b: &mut Bencher) {
-        let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
-        b.iter(|| {
-            for _ in 0..TRIALS {
-                black_box(ef.select(rng.gen_range(0, SIZE)));
             }
         })
     }

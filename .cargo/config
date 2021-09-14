@@ -1,3 +1,0 @@
-rustflags = [
-  "-C", "inline-threshold=10000000",
-]

@@ -1,21 +1,97 @@
 use super::*;
-use rsdict::RsDict;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EliasFano {
-    pub(crate) universe: u64,
-    pub(crate) number_of_elements: u64,
-    pub(crate) low_bit_count: u64,
-    pub(crate) low_bit_mask: u64,
-    pub(crate) low_bits: Vec<u64>,
-    pub(crate) high_bits: RsDict,
-    pub(crate) last_high_value: u64,
-    pub(crate) last_value: u64,
-    pub(crate) last_index: u64,
-    pub(crate) current_number_of_elements: u64,
+    pub low_bits: Vec<u64>,
+    pub high_bits: SimpleSelect,
+    pub universe: u64,
+    pub number_of_elements: u64,
+    pub low_bit_count: u64,
+    pub low_bit_mask: u64,
+    pub last_high_value: u64,
+    pub last_value: u64,
+    pub last_index: u64,
+    pub current_number_of_elements: u64,
+}
+
+#[derive(Clone, Debug)]
+pub struct EliasFanoMemoryStats {
+    pub metadata: usize,
+    pub low_bits: usize,
+    pub high_bits: SimpleSelectMemoryStats,
+}
+
+impl EliasFanoMemoryStats {
+    pub fn total(&self) -> usize {
+        self.metadata 
+        + self.low_bits 
+        + self.high_bits.total()
+    }
 }
 
 impl EliasFano {
+    /// Return the memory used by each sub-element in bytes
+    pub fn memory_stats(&self) -> EliasFanoMemoryStats {
+        use std::mem::size_of;
+        EliasFanoMemoryStats {
+            metadata: 8 * size_of::<u64>(),
+            low_bits: (self.low_bits.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),
+            high_bits: self.high_bits.size(),
+        }
+    }
+
+    /// Return the memory used in bytes
+    pub fn size(&self) -> usize {
+        self.memory_stats().total()
+    }
+
+    /// Return how much memory is spent for the indices
+    /// needed for constant time rank and select in ratio with
+    /// the high and low bits vectors.
+    pub fn overhead(&self) -> usize {
+        let vals = self.memory_stats();
+    
+        vals.high_bits.high_bits_index_zeros 
+        + vals.high_bits.high_bits_index_ones 
+        + vals.high_bits.metadata 
+        + vals.metadata  
+    }
+
+    /// Return how much memory is spent for the indices
+    /// needed for constant time rank and select in ratio with
+    /// the high and low bits vectors.
+    pub fn overhead_ratio(&self) -> f64 {
+        let vals = self.memory_stats();
+        (
+            vals.high_bits.high_bits_index_zeros 
+            + vals.high_bits.high_bits_index_ones 
+            + vals.high_bits.metadata 
+            + vals.metadata  
+        ) as f64 / (
+            vals.high_bits.high_bits 
+            + vals.low_bits 
+        ) as f64
+    }
+
+    /// Return how much memory is spent for the indices
+    /// needed for constant time rank and select in ratio with
+    /// the high bits vector.
+    pub fn overhead_high_bits_ratio(&self) -> f64 {
+        let vals = self.memory_stats();
+        (
+            vals.high_bits.high_bits_index_zeros 
+            + vals.high_bits.high_bits_index_ones 
+            + vals.high_bits.metadata 
+            + vals.metadata  
+        ) as f64 / vals.high_bits.high_bits as f64
+    }
+
+    /// Reduces the memory allocated to the minimum needed.
+    pub fn shrink_to_fit(&mut self) {
+        self.low_bits.shrink_to_fit();
+        self.high_bits.shrink_to_fit();
+    }
+
     #[inline]
     pub(crate) fn extract_high_bits(&self, value: u64) -> u64 {
         value >> self.low_bit_count
@@ -80,6 +156,9 @@ impl EliasFano {
     ///
     #[inline]
     pub fn rank(&self, value: u64) -> Option<u64> {
+        if self.is_empty() {
+            return None;
+        }
         if value > self.last_value {
             return None;
         }
@@ -87,17 +166,17 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1).unwrap() + 1,
+            false => self.high_bits.select0(high - 1) + 1,
         };
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        if self.high_bits.get_bit(index) && self.read_lowbits(ones) == low {
+        if self.high_bits.get(index) && self.read_lowbits(ones) == low {
             Some(ones)
         } else {
             None
@@ -131,6 +210,9 @@ impl EliasFano {
     ///
     #[inline]
     pub fn unchecked_rank(&self, value: u64) -> u64 {
+        if self.is_empty() {
+            return 0;
+        }
         if value > self.last_value {
             return self.current_number_of_elements;
         }
@@ -138,13 +220,13 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1).unwrap() + 1,
+            false => self.high_bits.select0(high - 1) + 1,
         };
 
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
@@ -166,10 +248,10 @@ impl EliasFano {
     pub fn select(&self, index: u64) -> Result<u64, String> {
         match index < self.number_of_elements {
             true => Ok(self.unchecked_select(index)),
-            false => Err(format!(
+            false =>Err(format!(
                 "Given index {} is out of bound on a collection with {} elements.",
                 index, self.number_of_elements
-            )),
+                ))
         }
     }
 
@@ -180,12 +262,7 @@ impl EliasFano {
     /// * index: u64 - Index of the value to be extract.
     #[inline]
     pub fn unchecked_select(&self, index: u64) -> u64 {
-        let high_bits = self.high_bits.select1(index).expect(
-            &format!(
-                "Cannot execute the select1 inside the RsDict with index {}, the high bits currently have {} ones and have size {}",
-                index, self.high_bits.count_ones(), self.high_bits.len()
-            )
-        ) - index;
+        let high_bits = self.high_bits.select1(index) - index;
         let low_bits = self.read_lowbits(index);
         (high_bits << self.low_bit_count) | low_bits
     }
@@ -199,16 +276,16 @@ impl EliasFano {
         let (high, low) = self.extract_high_low_bits(value);
         let mut index = match high == 0 {
             true => 0,
-            false => self.high_bits.select0(high - 1).unwrap() + 1,
+            false => self.high_bits.select0(high - 1) + 1,
         };
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get_bit(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        self.high_bits.get_bit(index) && self.read_lowbits(ones) == low
+        self.high_bits.get(index) && self.read_lowbits(ones) == low
     }
 }

@@ -7,4 +7,4 @@ OPEN_COMMAND := "open"
 endif
 
 test:
-	cargo test
+	RUSTFLAGS="-C target-cpu=native" cargo test --features fuzz --release -- --nocapture

@@ -1,5 +1,4 @@
 use super::*;
-use rsdict::RsDict;
 
 impl EliasFano {
 
@@ -11,7 +10,7 @@ impl EliasFano {
                 low_bit_count: 0,
                 low_bit_mask:  0,
                 number_of_elements: 0,
-                high_bits: RsDict::new(),
+                high_bits: SimpleSelect::new(),
                 low_bits: vec![],
                 last_high_value: 0,
                 last_value: 0,
@@ -43,9 +42,9 @@ impl EliasFano {
             universe,
             low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
-            low_bit_mask: shr(0xffffffffffffffff, (64 - low_bit_count) as usize),
+            low_bit_mask: shr(0xffffffffffffffff, 64 - low_bit_count),
+            high_bits: SimpleSelect::with_capacity(2 * number_of_elements),
             number_of_elements: number_of_elements as u64,
-            high_bits: RsDict::new(),
             low_bits: vec![0; low_size as usize],
             last_high_value: 0,
             last_value: 0,
@@ -93,12 +92,9 @@ impl EliasFano {
     /// ```
     #[inline]
     pub fn from_vec(values: &[u64]) -> Result<EliasFano, String> {
-        if values.is_empty() {
-            return Err("Cannot create an Elias Fano with 0 values.".to_string());
-        }
         EliasFano::from_iter(
             values.iter().cloned(),
-            *values.last().unwrap(),
+            *values.last().unwrap_or(&0),
             values.len(),
         )
     }

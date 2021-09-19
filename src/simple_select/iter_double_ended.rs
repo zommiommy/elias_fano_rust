@@ -8,6 +8,18 @@ use rayon::iter::plumbing::{
     Producer,
 };
 
+impl<'a> SimpleSelect {
+    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
+    pub fn iter_double_ended(&'a self) -> SimpleSelectDobuleEndedIterator<'a> {
+        SimpleSelectDobuleEndedIterator::new(self)
+    }
+
+    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
+    pub fn iter_in_range_double_ended(&'a self, range: Range<u64>) -> SimpleSelectDobuleEndedIterator<'a> {
+        SimpleSelectDobuleEndedIterator::new_in_range(self, range)
+    }
+}
+
 /// An iterator over the simple select ones
 /// that can be itered in both directions and has a known length
 pub struct SimpleSelectDobuleEndedIterator<'a> {

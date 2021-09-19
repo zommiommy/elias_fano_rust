@@ -87,6 +87,8 @@ impl SimpleSelect {
         // clean the "already parsed lower bits"
         code |= (1 << in_word_reminder) - 1;
 
+        //////////////////////////////////////////////////////////////
+
         // use popcnt to find the right word
         loop {
             let popcnt = code.count_zeros() as u64;
@@ -97,8 +99,15 @@ impl SimpleSelect {
             reminder_to_scan -= popcnt;
             code = self.high_bits[block_id as usize];
         }
-
+ 
         // scan the current word
+        // Example:
+        // code: 01101010110011100011101110
+        //                  ^ wanted zero
+        // reminder_to_scan: 5
+        // ->
+        // code: 01101010110011111111111111
+        //                  ^ wanted zero
         for _ in 0..reminder_to_scan {
             // set the lowest set bits (BLCS)
             // saddly the BLCS instruction is nolonger

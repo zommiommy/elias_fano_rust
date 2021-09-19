@@ -21,17 +21,6 @@ impl<'a> SimpleSelect {
     pub fn iter(&'a self) -> SimpleSelectIterator<'a> {
         self.into_iter()
     }
-
-    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
-    pub fn iter_double_ended(&'a self) -> SimpleSelectDobuleEndedIterator<'a> {
-        SimpleSelectDobuleEndedIterator::new(self)
-    }
-
-    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
-    pub fn iter_in_range_double_ended(&'a self, range: Range<u64>) -> SimpleSelectDobuleEndedIterator<'a> {
-        SimpleSelectDobuleEndedIterator::new_in_range(self, range)
-    }
-    
 }
 
 #[derive(Debug)]

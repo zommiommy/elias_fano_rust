@@ -1,8 +1,10 @@
 [package]
 name = "elias_fano_rust"
-version = "0.1.0"
-authors = ["zom <tommaso.fontana.96@gmail.com>"]
+version = "0.1.1"
+authors = ["Fontana Tommaso <tommaso.fontana.96@gmail.com>"]
+description="An optimized implementation of Sebastiano Vigna's Elis-Fano quasi succint datastructure."
 edition = "2018"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

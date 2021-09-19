@@ -1,11 +1,9 @@
-use elias_fano_rust::{EliasFano, fuzz_harness::*};
+use elias_fano_rust::*;
 mod utils;
-use rand::AsByteSliceMut;
-use utils::*;
 
 
 #[test]
-fn tet_regression() {    
+fn test_regression() {    
     let data = vec![0x46, 0xca, 0x14, 0x2d];
     rank_and_select_harness(&data);
 

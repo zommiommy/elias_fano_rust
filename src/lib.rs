@@ -23,6 +23,7 @@ mod par_iter;
 mod concurrent_builder;
 pub use concurrent_builder::*;
 
+#[cfg(feature="fuzz")]
 mod fuzz_harnesses;
-
-pub use fuzz_harnesses::fuzz_harness;
+#[cfg(feature="fuzz")]
+pub use fuzz_harnesses::*;

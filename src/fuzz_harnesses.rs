@@ -60,16 +60,15 @@ pub fn iter_harness(data: &[u8]) {
 
     let ef = EliasFano::from_vec(&data).unwrap();
 
-      assert_eq!(ef.len() as usize, data.len() as usize, "the length of the vector do not match!");
+    assert_eq!(ef.len() as usize, data.len() as usize, "the length of the vector do not match!");
 
-      for (a, b) in data.iter().zip(ef.iter()) {
-          assert_eq!(*a, b, "The values inside elias-fano");
-      }
-
-      let seq = ef.iter().collect::<Vec<_>>();
-      let par = ef.par_iter().collect::<Vec<_>>();
-      assert_eq!(seq, par);
+    for (a, b) in data.iter().zip(ef.iter()) {
+        assert_eq!(*a, b, "The values inside elias-fano");
     }
+
+    let seq = ef.iter().collect::<Vec<_>>();
+    let par = ef.par_iter().collect::<Vec<_>>();
+    assert_eq!(seq, par);
 }
 
 pub fn simple_select_harness(data: Vec<bool>) {

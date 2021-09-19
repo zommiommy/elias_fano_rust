@@ -64,21 +64,21 @@ mod simpleselect {
         })
     }
 
-    #[bench]
-    fn iter_double_ended(b: &mut Bencher) {
-        let (v, rng) = test_vector();
-        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
-        b.iter(|| {
-            ss.iter_double_ended().collect::<Vec<_>>()
-        })
-    }
+    //#[bench]
+    //fn iter_double_ended(b: &mut Bencher) {
+    //    let (v, rng) = test_vector();
+    //    let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+    //    b.iter(|| {
+    //        ss.iter_double_ended().collect::<Vec<_>>()
+    //    })
+    //}
 
-    #[bench]
-    fn iter_double_ended_back(b: &mut Bencher) {
-        let (v, rng) = test_vector();
-        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
-        b.iter(|| {
-            ss.iter_double_ended().rev().collect::<Vec<_>>()
-        })
-    }
+    // #[bench]
+    // fn iter_double_ended_back(b: &mut Bencher) {
+    //     let (v, rng) = test_vector();
+    //     let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+    //     b.iter(|| {
+    //         ss.iter_double_ended().rev().collect::<Vec<_>>()
+    //     })
+    // }
 }

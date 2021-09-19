@@ -71,6 +71,10 @@ pub mod fuzz_harness{
         for (a, b) in data.iter().zip(ef.iter()) {
             assert_eq!(*a, b, "The values inside elias-fano");
         }
+
+        let seq = ef.iter().collect::<Vec<_>>();
+        let par = ef.par_iter().collect::<Vec<_>>();
+        assert_eq!(seq, par);
     }
 
     pub fn simple_select_harness(data: Vec<bool>) {

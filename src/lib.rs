@@ -45,7 +45,7 @@
 //! Simple Select stores the position of every q-th one and zero in the bitvec.
 //! This hyperparameter `q` it's a tunable for the trade-off between time and memory.
 //!
-//! ![](https://raw.githubusercontent.com/zommiommy/elias_fano_rust/master/img/quantum_tradeoff.png)
+//! ![](https://raw.githubusercontent.com/zommiommy/elias_fano_rust/master/img/quantum_tradeoff.svg)
 #![feature(core_intrinsics)]
 
 mod low_bits_primitives;

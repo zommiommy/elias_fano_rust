@@ -12,3 +12,6 @@ Cargo.lock
 
 hfuzz_workspace
 hfuzz_target
+
+.ipynb_checkpoints
+.vscode

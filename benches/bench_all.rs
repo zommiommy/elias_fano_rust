@@ -11,10 +11,8 @@ extern crate test;
 use test::{Bencher, black_box};
 
 const TRIALS: u64 = 1_000;
-//const SIZE: u64 = 1_000_000;
 const SIZE: u64 = 32_000_000;
 const MAX : u64 = 450_000 * 450_000;
-//const MAX: u64 = 2 * SIZE;
 
 const SEED: [u8; 16] = [
     0xde, 0xad, 0xbe, 0xef,
@@ -29,9 +27,10 @@ mod ef {
     #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
-        println!("{:#4?}", ef.memory_stats());
-        println!("{:?}", ef.size());
+        let mut ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        ef.shrink_to_fit();
+        println!("k: {} u: {} n: {}", elias_fano_rust::INDEX_SHIFT, MAX, SIZE);
+        println!("{:?} Mib", ef.size() as f64 / 1024.0 / 1024.0);
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(ef.rank(rng.gen_range(0, SIZE)));
@@ -58,8 +57,9 @@ mod simple_select {
     #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
-        println!("{:?}", ss.size());
+        let mut ss = elias_fano_rust::SimpleSelect::from_vec(v);
+        ss.shrink_to_fit();
+        println!("{} Mib", ss.size().total() as f64 / 1024.0 / 1024.0);
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(ss.rank1(rng.gen_range(0, SIZE)));
@@ -71,7 +71,6 @@ mod simple_select {
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let ss = elias_fano_rust::SimpleSelect::from_vec(v);
-        println!("{} Mib", ss.size().total() as f64 / 1024.0 / 1024.0);
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(ss.select1(rng.gen_range(0, SIZE)));
@@ -95,7 +94,7 @@ mod fid {
     extern crate fid;
     use fid::{BitVector, FID};
 
-    ////#[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
@@ -114,7 +113,7 @@ mod fid {
         })
     }
     
-    ////#[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
@@ -192,7 +191,7 @@ mod succint {
     use succinct::select::Select1Support;
     use succinct::broadword::Broadword;
 
-    ////#[bench]
+    //#[bench]
     fn rank9_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -212,7 +211,7 @@ mod succint {
         })
     }   
 
-    ////#[bench]
+    //#[bench]
     fn rank9_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -233,7 +232,7 @@ mod succint {
         })
     }   
 
-    ////#[bench]
+    //#[bench]
     fn jacobson_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -253,7 +252,7 @@ mod succint {
         })
     }   
     
-    ////#[bench]
+    //#[bench]
     fn jacobson_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
@@ -281,7 +280,7 @@ mod indexed_bitvec {
     use indexed_bitvec::IndexedBits;
     use indexed_bitvec::bits::Bits;
 
-    ////#[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
@@ -301,7 +300,7 @@ mod indexed_bitvec {
         })
     }   
 
-    ////#[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
@@ -331,7 +330,7 @@ mod z_bio {
     use bv::BitVec;
     
 
-    ////#[bench]
+    //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();
@@ -351,7 +350,7 @@ mod z_bio {
         })
     }
 
-    ////#[bench]
+    //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();
@@ -379,6 +378,7 @@ mod vec {
     //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
+        println!("{:?} Mib", (8 * (v.len() + 2)) as f64 / 1024.0 / 1024.0);
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(v.binary_search(&rng.gen_range(0, SIZE)));

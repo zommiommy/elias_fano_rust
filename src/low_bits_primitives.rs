@@ -7,21 +7,21 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// so we pay 3 extra words of memory to speed up the operations which is usually
 /// worth because it would be an overhead of 24 bytes over the vector which could
 /// occupy GiB of memory.
-pub(crate) fn get_vec_size(n_bits: u64, size: usize) -> u64 {
+pub fn get_vec_size(n_bits: u64, size: usize) -> u64 {
     3 + ((size as u64 * n_bits) >> WORD_SHIFT)
 }
 
 #[inline(always)]
-pub(crate) fn shl(value: u64, offset: u64) -> u64 {
+pub fn shl(value: u64, offset: u64) -> u64 {
     value.checked_shl(offset as u32).unwrap_or(0)
 }
 
 #[inline(always)]
-pub(crate) fn shr(value: u64, offset: u64) -> u64 {
+pub fn shr(value: u64, offset: u64) -> u64 {
     value.checked_shr(offset as u32).unwrap_or(0)
 }
 
-pub(crate) fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
+pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
     let o2 = WORD_SIZE - o1;
@@ -34,7 +34,7 @@ pub(crate) fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_siz
     array[base + 1] |= higher;
 }
 
-pub(crate) fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, value_size: u64) {
+pub fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, value_size: u64) {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
     let o2 = WORD_SIZE - o1;
@@ -48,7 +48,7 @@ pub(crate) fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, v
 }
 
 #[inline(always)]
-pub(crate) fn safe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
+pub fn safe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
     let o2 = WORD_SIZE - o1;
@@ -62,7 +62,7 @@ pub(crate) fn safe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
 }
 
 #[inline(always)]
-pub(crate) fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
+pub fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
     let o2 = WORD_SIZE - o1;
@@ -78,7 +78,7 @@ pub(crate) fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_s
 }
 
 #[inline(always)]
-pub(crate) fn unsafe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
+pub fn unsafe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
     let o2 = WORD_SIZE - o1;

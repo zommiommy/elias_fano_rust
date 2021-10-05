@@ -79,6 +79,70 @@ mod simple_select {
     }
 }
 
+
+mod vec {
+    use super::*;
+    
+    #[bench]
+    fn rank(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        println!("{:?} Mib", (8 * (v.len() + 2)) as f64 / 1024.0 / 1024.0);
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(v.binary_search(&rng.gen_range(0, SIZE)));
+            }
+        })
+    }
+
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(v[rng.gen_range(0, SIZE) as usize]);
+            }
+        })
+    }
+}
+
+mod hashmap {
+    use super::*;
+    use std::collections::HashMap;
+    
+    #[bench]
+    fn select(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let m : HashMap<usize, u64> = v.iter().enumerate().map(|(i, v)| (i, *v)).collect();
+        use std::mem::size_of;
+        let m_total = (m.capacity() as f64 * 1.1) * (size_of::<usize>() + size_of::<u64>() + size_of::<usize>()) as f64;
+        println!("{:?} Mib", m_total / 1024.0 / 1024.0);
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                black_box(m.get(&(rng.gen_range(0, SIZE) as usize)));
+            }
+        })
+    }
+    
+    /*
+    #[bench]
+    fn rank(b: &mut Bencher) {
+        let (v, mut rng) = test_vector();
+        let m : HashMap<usize, u64> = v.iter().enumerate().map(|(i, v)| (i, *v)).collect();
+        b.iter(|| {
+            for _ in 0..TRIALS {
+                let rank_val = black_box(rng.gen_range(0, SIZE));
+                let mut counter = 0;
+                for k in m.values() {
+                    if *k < rank_val {
+                        counter += 1;
+                    }
+                }
+            }
+        })
+    }
+    */
+}
+
 pub(crate) fn test_vector() -> (Vec<u64>, SmallRng) {
     let mut rng: SmallRng = SmallRng::from_seed(SEED);
     let mut v = Vec::new();
@@ -366,48 +430,6 @@ mod z_bio {
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(rs.select_1(rng.gen_range(0, SIZE)));
-            }
-        })
-    }
-}
-
-
-mod vec {
-    use super::*;
-    
-    //#[bench]
-    fn rank(b: &mut Bencher) {
-        let (v, mut rng) = test_vector();
-        println!("{:?} Mib", (8 * (v.len() + 2)) as f64 / 1024.0 / 1024.0);
-        b.iter(|| {
-            for _ in 0..TRIALS {
-                black_box(v.binary_search(&rng.gen_range(0, SIZE)));
-            }
-        })
-    }
-
-    //#[bench]
-    fn select(b: &mut Bencher) {
-        let (v, mut rng) = test_vector();
-        b.iter(|| {
-            for _ in 0..TRIALS {
-                black_box(v[rng.gen_range(0, SIZE) as usize]);
-            }
-        })
-    }
-}
-
-mod hashmap {
-    use super::*;
-    use std::collections::HashMap;
-    
-    //#[bench]
-    fn select(b: &mut Bencher) {
-        let (v, mut rng) = test_vector();
-        let m : HashMap<usize, u64> = v.iter().enumerate().map(|(i, v)| (i, *v)).collect();
-        b.iter(|| {
-            for _ in 0..TRIALS {
-                black_box(m.get(&(rng.gen_range(0, SIZE) as usize)));
             }
         })
     }

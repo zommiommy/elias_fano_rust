@@ -1,13 +1,9 @@
 use std::mem::size_of;
 
 
-// Vigna uses 256 
-// I think 1024 could be a better trade-off
-// and the best memory wise would be 16'384
-// because it would index in which memory page
-// each value is, thus exploiting at best the 
-// TLB.
-pub const INDEX_SHIFT: u64 = 11;
+/// Vigna uses 8, but in our experiments 10 or 11 provide better trade-offs.
+/// more info in the crate documentation.
+pub const INDEX_SHIFT: u64 = 10;
 pub const INDEX_MASK:  u64 = (1 << INDEX_SHIFT) - 1;
 
 pub const WORD_SHIFT: u64 = 6; // log2(WORD_SIZE)

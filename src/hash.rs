@@ -1,7 +1,7 @@
 use super::*;
 use std::hash::{Hash, Hasher};
 
-impl<const QUANTUM_LOG2: usize> Hash for EliasFano<QUANTUM_LOG2> {
+impl Hash for EliasFano {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.iter().for_each(|x| x.hash(state));
     }

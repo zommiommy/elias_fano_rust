@@ -1,8 +1,9 @@
 use super::*;
 use rayon::iter::{ParallelIterator, IndexedParallelIterator};
 use rayon::prelude::*;
+use std::ops::Range;
 
-impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
+impl EliasFano {
     /// Return iterator for the values in elias fano.
     #[inline]
     pub fn par_iter(&self) -> impl IndexedParallelIterator<Item = u64> + '_ {

@@ -27,8 +27,9 @@ mod ef {
     #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let mut ef = elias_fano_rust::elias_fano::EliasFano::<10>::from_vec(&v).unwrap();
+        let mut ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
         ef.shrink_to_fit();
+        println!("k: {} u: {} n: {}", elias_fano_rust::INDEX_SHIFT, MAX, SIZE);
         println!("{:?} Mib", ef.size() as f64 / 1024.0 / 1024.0);
         b.iter(|| {
             for _ in 0..TRIALS {
@@ -40,7 +41,7 @@ mod ef {
     #[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::elias_fano::EliasFano::<10>::from_vec(&v).unwrap();
+        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(ef.select(rng.gen_range(0, SIZE)).unwrap());
@@ -49,13 +50,14 @@ mod ef {
     }
 }
 
-mod si {
+
+mod simple_select {
     use super::*;
         
     #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let mut ss = elias_fano_rust::sparse_index::SparseIndex::<10>::from_vec(v);
+        let mut ss = elias_fano_rust::SimpleSelect::from_vec(v);
         ss.shrink_to_fit();
         println!("{} Mib", ss.size().total() as f64 / 1024.0 / 1024.0);
         b.iter(|| {
@@ -68,7 +70,7 @@ mod si {
     #[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let ss = elias_fano_rust::sparse_index::SparseIndex::<10>::from_vec(v);
+        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
         b.iter(|| {
             for _ in 0..TRIALS {
                 black_box(ss.select1(rng.gen_range(0, SIZE)));

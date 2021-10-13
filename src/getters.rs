@@ -1,6 +1,9 @@
 use super::*;
+use rayon::iter::{ParallelIterator, IndexedParallelIterator};
+use rayon::prelude::*;
+use std::ops::Range;
 
-impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
+impl EliasFano {
     #[inline]
     pub fn len(&self) -> usize {
         self.current_number_of_elements as usize

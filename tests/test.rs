@@ -1,3 +1,6 @@
+use elias_fano_rust::EliasFano;
+use rayon::iter::ParallelBridge;
+use rayon::prelude::ParallelIterator;
 mod utils;
 use utils::*;
 

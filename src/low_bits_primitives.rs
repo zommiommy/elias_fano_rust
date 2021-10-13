@@ -1,7 +1,4 @@
-use crate::{
-    constants::*,
-    utils::*,
-};
+use super::*;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Return the size needed to allcoate the choosen number of bits
@@ -15,7 +12,15 @@ pub fn get_vec_size(n_bits: u64, size: usize) -> u64 {
 }
 
 #[inline(always)]
-#[allow(dead_code)]
+pub fn shl(value: u64, offset: u64) -> u64 {
+    value.checked_shl(offset as u32).unwrap_or(0)
+}
+
+#[inline(always)]
+pub fn shr(value: u64, offset: u64) -> u64 {
+    value.checked_shr(offset as u32).unwrap_or(0)
+}
+
 pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
@@ -29,8 +34,6 @@ pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64)
     array[base + 1] |= higher;
 }
 
-#[inline(always)]
-#[allow(dead_code)]
 pub fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, value_size: u64) {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
@@ -45,7 +48,6 @@ pub fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, value_si
 }
 
 #[inline(always)]
-#[allow(dead_code)]
 pub fn safe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
@@ -60,7 +62,6 @@ pub fn safe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
 }
 
 #[inline(always)]
-#[allow(dead_code)]
 pub fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
@@ -77,7 +78,6 @@ pub fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u6
 }
 
 #[inline(always)]
-#[allow(dead_code)]
 pub fn unsafe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
     let pos = index * value_size;
     let o1 = pos & WORD_MASK;
@@ -114,6 +114,24 @@ mod tests {
         vector.sort();
         vector
     }
+
+
+    /// Test that we can build successfully run all methods in elias fano.
+    pub fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
+        let vector = build_random_sorted_vector(size, max);
+        let ef = EliasFano::from_vec(&vector)?;
+        vector.iter().enumerate().for_each(|(i, v)| {
+            assert_eq!(*v, ef.select(i as u64).unwrap());
+            assert!(ef.contains(*v));
+            assert_eq!(*v, ef.unchecked_select(i as u64));
+            assert_eq!(ef.select(ef.unchecked_rank(*v)).unwrap(), *v);
+        });
+
+        //ef.debug();
+
+        Ok(())
+    }
+
 
     fn test_safe_low_bits(n_bits: u64, size: usize){
         let max_values = (1 << n_bits) - 1;

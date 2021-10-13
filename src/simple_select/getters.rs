@@ -1,7 +1,7 @@
 use super::*;
 
 /// # Getters
-impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
+impl SimpleSelect {
     #[inline]
     pub fn count_zeros(&self) -> u64 {
         self.number_of_zeros
@@ -20,7 +20,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
 
 /// # Core functionalities
-impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
+impl SimpleSelect {
     /// Returns the value of the bit of position `index`.
     pub fn get(&self, index: u64) -> bool {
         let word_idx = index >> WORD_SHIFT;
@@ -32,8 +32,8 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     /// Returns the position of the `index`-th bit set to one.
     pub fn select1(&self, index: u64) -> u64 {
         // use the index to find in which block the value is
-        let mut reminder_to_scan = index & power_of_two_to_mask(QUANTUM_LOG2);
-        let index_idx = index >> QUANTUM_LOG2;
+        let mut reminder_to_scan = index & INDEX_MASK;
+        let index_idx = index >> INDEX_SHIFT;
         // the bit position of the biggest multiple of INDEX_SIZE which is
         // smaller than the choosen index, this is were we will start our search
         let bit_pos = self.high_bits_index_ones[index_idx as usize];
@@ -71,8 +71,8 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     /// Returns the position of the `index`-th bit set to zero.
     pub fn select0(&self, index: u64) -> u64 {
         // use the index to find in which block the value is
-        let mut reminder_to_scan = index & power_of_two_to_mask(QUANTUM_LOG2);
-        let index_idx = index >> QUANTUM_LOG2;
+        let mut reminder_to_scan = index & INDEX_MASK;
+        let index_idx = index >> INDEX_SHIFT;
         // the bit position of the biggest multiple of INDEX_SIZE which is
         // smaller than the choosen index, this is were we will start our search
         let bit_pos = self.high_bits_index_zeros[index_idx as usize];
@@ -136,12 +136,12 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             // fast path, luckily the index is one found in the index
             // so we can directly compute the number of ones
             Ok(idx) => {
-                (idx as u64) << QUANTUM_LOG2
+                (idx as u64) << INDEX_SHIFT
             },
             Err(idx) => {
                 // Find the biggest index value smaller than the index
                 let idx = idx.saturating_sub(1);
-                let mut res = (idx as u64) << QUANTUM_LOG2;
+                let mut res = (idx as u64) << INDEX_SHIFT;
                 
                 // Read the index to start at a better position for the count
                 let bit_pos = self.high_bits_index_ones[idx];
@@ -195,12 +195,12 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             // fast path, luckily the index is one found in the index
             // so we can directly compute the number of ones
             Ok(idx) => {
-                (idx as u64) << QUANTUM_LOG2
+                (idx as u64) << INDEX_SHIFT
             },
             Err(idx) => {
                 // Find the biggest index value smaller than the index
                 let idx = idx.saturating_sub(1);
-                let mut res = (idx as u64) << QUANTUM_LOG2;
+                let mut res = (idx as u64) << INDEX_SHIFT;
                 
                 // Read the index to start at a better position for the count
                 let bit_pos = self.high_bits_index_zeros[idx];

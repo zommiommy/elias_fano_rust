@@ -1,7 +1,7 @@
 use super::*;
 use std::ops::Range;
 
-impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
+impl EliasFano {
     /// Return iterator for the values in elias fano using the old way with selects.
     /// This method is only meant for banchmarking.
     #[inline]
@@ -14,8 +14,8 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     pub fn iter(&self) -> impl Iterator<Item = u64> + '_ {
         self.high_bits.iter().enumerate().map(move |(index, high_bit_index)|{
             let high_value = high_bit_index - index as u64;
-            let low_bits = self.low_bits.read(index as u64);
-            (high_value << self.low_bits.word_size()) | low_bits
+            let low_bits = self.read_lowbits(index as u64);
+            (high_value << self.low_bit_count) | low_bits
         })
     }
 
@@ -27,15 +27,15 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
         } = range;
         
         let offset = self.unchecked_rank(start);
-        let high_end   = self.unchecked_rank(end).saturating_add(end >> self.low_bits.word_size());
-        let high_start = offset.saturating_add(start >> self.low_bits.word_size());
+        let high_end   = self.unchecked_rank(end).saturating_add(end >> self.low_bit_count);
+        let high_start = offset.saturating_add(start >> self.low_bit_count);
 
         self.high_bits.iter_in_range(high_start..high_end).enumerate()
             .map(move |(index, high_bit_index)| {
                 let index = index as u64 + offset;
                 let high_value = high_bit_index - index;
-                let low_bits = self.low_bits.read(index);
-                (high_value << self.low_bits.word_size()) | low_bits
+                let low_bits = self.read_lowbits(index);
+                (high_value << self.low_bit_count) | low_bits
             })
     }
 

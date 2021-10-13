@@ -36,7 +36,7 @@ mod ef {
     #[bench]
     fn iter_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        let ef = elias_fano_rust::elias_fano::EliasFano::<10>::from_vec(&v).unwrap();
         b.iter(|| {
             ef.iter_select().collect::<Vec<_>>()
         })
@@ -45,20 +45,20 @@ mod ef {
     #[bench]
     fn iter_new(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let ef = elias_fano_rust::EliasFano::from_vec(&v).unwrap();
+        let ef = elias_fano_rust::elias_fano::EliasFano::<10>::from_vec(&v).unwrap();
         b.iter(|| {
             ef.iter().collect::<Vec<_>>()
         })
     }
 }
 
-mod simpleselect {
+mod sparse_index {
     use super::*;
 
     #[bench]
     fn iter(b: &mut Bencher) {
         let (v, rng) = test_vector();
-        let ss = elias_fano_rust::SimpleSelect::from_vec(v);
+        let ss = elias_fano_rust::sparse_index::SparseIndex::<10>::from_vec(v);
         b.iter(|| {
             ss.iter().collect::<Vec<_>>()
         })

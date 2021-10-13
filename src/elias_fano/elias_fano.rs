@@ -1,91 +1,20 @@
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct EliasFano {
-    pub low_bits: Vec<u64>,
-    pub high_bits: SimpleSelect,
+pub struct EliasFano<const QUANTUM_LOG2: usize> {
+    pub low_bits: CompactArray,
+    pub high_bits: SparseIndex<QUANTUM_LOG2>,
+
     pub universe: u64,
     pub number_of_elements: u64,
-    pub low_bit_count: u64,
-    pub low_bit_mask: u64,
+
     pub last_high_value: u64,
     pub last_value: u64,
     pub last_index: u64,
     pub current_number_of_elements: u64,
 }
 
-#[derive(Clone, Debug)]
-pub struct EliasFanoMemoryStats {
-    pub metadata: usize,
-    pub low_bits: usize,
-    pub high_bits: SimpleSelectMemoryStats,
-}
-
-impl EliasFanoMemoryStats {
-    pub fn total(&self) -> usize {
-        self.metadata 
-        + self.low_bits 
-        + self.high_bits.total()
-    }
-}
-
-impl EliasFano {
-    /// Return the memory used by each sub-element in bytes
-    pub fn memory_stats(&self) -> EliasFanoMemoryStats {
-        use std::mem::size_of;
-        EliasFanoMemoryStats {
-            metadata: 8 * size_of::<u64>(),
-            low_bits: (self.low_bits.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),
-            high_bits: self.high_bits.size(),
-        }
-    }
-
-    /// Return the memory used in bytes
-    pub fn size(&self) -> usize {
-        self.memory_stats().total()
-    }
-
-    /// Return how much memory is spent for the indices
-    /// needed for constant time rank and select in ratio with
-    /// the high and low bits vectors.
-    pub fn overhead(&self) -> usize {
-        let vals = self.memory_stats();
-    
-        vals.high_bits.high_bits_index_zeros 
-        + vals.high_bits.high_bits_index_ones 
-        + vals.high_bits.metadata 
-        + vals.metadata  
-    }
-
-    /// Return how much memory is spent for the indices
-    /// needed for constant time rank and select in ratio with
-    /// the high and low bits vectors.
-    pub fn overhead_ratio(&self) -> f64 {
-        let vals = self.memory_stats();
-        (
-            vals.high_bits.high_bits_index_zeros 
-            + vals.high_bits.high_bits_index_ones 
-            + vals.high_bits.metadata 
-            + vals.metadata  
-        ) as f64 / (
-            vals.high_bits.high_bits 
-            + vals.low_bits 
-        ) as f64
-    }
-
-    /// Return how much memory is spent for the indices
-    /// needed for constant time rank and select in ratio with
-    /// the high bits vector.
-    pub fn overhead_high_bits_ratio(&self) -> f64 {
-        let vals = self.memory_stats();
-        (
-            vals.high_bits.high_bits_index_zeros 
-            + vals.high_bits.high_bits_index_ones 
-            + vals.high_bits.metadata 
-            + vals.metadata  
-        ) as f64 / vals.high_bits.high_bits as f64
-    }
-
+impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// Reduces the memory allocated to the minimum needed.
     pub fn shrink_to_fit(&mut self) {
         self.low_bits.shrink_to_fit();
@@ -94,12 +23,12 @@ impl EliasFano {
 
     #[inline]
     pub(crate) fn extract_high_bits(&self, value: u64) -> u64 {
-        value >> self.low_bit_count
+        value >> self.low_bits.word_size()
     }
 
     #[inline]
     pub(crate) fn extract_low_bits(&self, value: u64) -> u64 {
-        value & self.low_bit_mask
+        value & self.low_bits.word_mask()
     }
 
     #[inline]
@@ -122,14 +51,6 @@ impl EliasFano {
         values.map(move |value| self.push(value)).collect()
     }
 
-    #[inline]
-    pub(crate) fn read_lowbits(&self, index: u64) -> u64 {
-        #[cfg(not(feature = "unsafe"))]
-        return safe_read(&self.low_bits, index, self.low_bit_count);
-        #[cfg(feature = "unsafe")]
-        return unsafe_read(&self.low_bits, index, self.low_bit_count);
-    }
-
     /// Return the number of elements <= to the given value.
     /// If the element is in the set, this is equivalent to the
     /// index of the first instance of the given value.
@@ -146,9 +67,9 @@ impl EliasFano {
     /// Let's see an example. If I have the vector:
     ///
     /// ```rust
-    /// # use elias_fano_rust::EliasFano;
+    /// # use elias_fano_rust::elias_fano::EliasFano;
     /// let vector = [5, 8, 8, 15, 32];
-    /// let ef = EliasFano::from_vec(&vector).unwrap();
+    /// let ef = EliasFano::<10>::from_vec(&vector).unwrap();
     ///
     /// assert_eq!(ef.rank(15).unwrap(), 3);
     /// assert_eq!(ef.rank(8).unwrap(), 1);
@@ -171,12 +92,12 @@ impl EliasFano {
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.low_bits.read(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        if self.high_bits.get(index) && self.read_lowbits(ones) == low {
+        if self.high_bits.get(index) && self.low_bits.read(ones) == low {
             Some(ones)
         } else {
             None
@@ -199,9 +120,9 @@ impl EliasFano {
     /// Let's see an example. If I have the vector:
     ///
     /// ```rust
-    /// # use elias_fano_rust::EliasFano;
+    /// # use elias_fano_rust::elias_fano::EliasFano;
     /// let vector = [5, 8, 8, 15, 32];
-    /// let ef = EliasFano::from_vec(&vector).unwrap();
+    /// let ef = EliasFano::<10>::from_vec(&vector).unwrap();
     ///
     /// assert_eq!(ef.unchecked_rank(15), 3);
     /// assert_eq!(ef.unchecked_rank(8), 1);
@@ -226,7 +147,7 @@ impl EliasFano {
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.low_bits.read(ones) < low {
             ones += 1;
             index += 1;
         }
@@ -263,8 +184,8 @@ impl EliasFano {
     #[inline]
     pub fn unchecked_select(&self, index: u64) -> u64 {
         let high_bits = self.high_bits.select1(index) - index;
-        let low_bits = self.read_lowbits(index);
-        (high_bits << self.low_bit_count) | low_bits
+        let low_bits = self.low_bits.read(index);
+        (high_bits << self.low_bits.word_size()) | low_bits
     }
 
     #[inline]
@@ -281,11 +202,11 @@ impl EliasFano {
         // get the first guess
         let mut ones = index - high;
         // handle the case where
-        while self.high_bits.get(index) && self.read_lowbits(ones) < low {
+        while self.high_bits.get(index) && self.low_bits.read(ones) < low {
             ones += 1;
             index += 1;
         }
 
-        self.high_bits.get(index) && self.read_lowbits(ones) == low
+        self.high_bits.get(index) && self.low_bits.read(ones) == low
     }
 }

@@ -1,33 +1,33 @@
 use super::*;
 use std::intrinsics::unlikely;
 
-impl<'a> IntoIterator for &'a SimpleSelect {
+impl<'a, const QUANTUM_LOG2: usize> IntoIterator for &'a SparseIndex<QUANTUM_LOG2> {
     type Item = u64;
-    type IntoIter = SimpleSelectIterator<'a>;
+    type IntoIter = SparseIndexIterator<'a, QUANTUM_LOG2>;
 
     fn into_iter(self) -> Self::IntoIter {
-        SimpleSelectIterator::new(self)
+        SparseIndexIterator::new(self)
     }
 }
 
-impl<'a> SimpleSelect {
+impl<'a, const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     /// Return an iterator over all the indices of the bits set to one
     /// which are inside the provided range.
-    pub fn iter_in_range(&'a self, range: Range<u64>) -> SimpleSelectIterator<'a> {
-        SimpleSelectIterator::new_in_range(self, range)
+    pub fn iter_in_range(&'a self, range: Range<u64>) -> SparseIndexIterator<'a, QUANTUM_LOG2> {
+        SparseIndexIterator::new_in_range(self, range)
     }
     
-    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
-    pub fn iter(&'a self) -> SimpleSelectIterator<'a> {
+    /// return an Iterator over the indices of the bits set to one in the SparseIndex.
+    pub fn iter(&'a self) -> SparseIndexIterator<'a, QUANTUM_LOG2> {
         self.into_iter()
     }
 }
 
 #[derive(Debug)]
-pub struct SimpleSelectIterator<'a> {
-    /// reference to the SimpleSelect which is being iter
+pub struct SparseIndexIterator<'a, const QUANTUM_LOG2: usize> {
+    /// reference to the SparseIndex which is being iter
     /// this is needed to get the reference to the high-bits
-    father: &'a SimpleSelect,
+    father: &'a SparseIndex<QUANTUM_LOG2>,
     /// The current code already decoded
     current_code: u64,
     /// Current word index
@@ -39,14 +39,14 @@ pub struct SimpleSelectIterator<'a> {
 }
 
 
-impl<'a> SimpleSelectIterator<'a> {
+impl<'a, const QUANTUM_LOG2: usize> SparseIndexIterator<'a, QUANTUM_LOG2> {
 
     /// Create a structure that iter over all the indices of the bits set to one
     /// which are inside the provided range.
     #[inline]
-    pub fn new_in_range(father: &SimpleSelect, range: Range<u64>) -> SimpleSelectIterator {
+    pub fn new_in_range(father: &SparseIndex<QUANTUM_LOG2>, range: Range<u64>) -> SparseIndexIterator<QUANTUM_LOG2> {
         if unlikely(range.start >= father.len()) {
-            return SimpleSelectIterator{
+            return SparseIndexIterator{
                 father:father,
                 current_code: 0,
                 index: 0,
@@ -62,7 +62,7 @@ impl<'a> SimpleSelectIterator<'a> {
         // clean the "already parsed lower bits"
         code &= u64::MAX << in_word_reminder;
 
-        SimpleSelectIterator{
+        SparseIndexIterator{
             father:father,
             current_code: code,
             index: block_id as usize,
@@ -74,8 +74,8 @@ impl<'a> SimpleSelectIterator<'a> {
     
     /// Create a structure that iter over all the indices of the bits set to one.
     #[inline]
-    pub fn new(father: &SimpleSelect) -> SimpleSelectIterator {
-        SimpleSelectIterator{
+    pub fn new(father: &SparseIndex<QUANTUM_LOG2>) -> SparseIndexIterator<QUANTUM_LOG2> {
+        SparseIndexIterator{
             father:father,
             current_code: *father.high_bits.get(0).unwrap_or(&0),
             index: 0,
@@ -85,9 +85,9 @@ impl<'a> SimpleSelectIterator<'a> {
     }
 }
 
-impl<'a> Iterator for SimpleSelectIterator<'a> {
+impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexIterator<'a, QUANTUM_LOG2> {
     type Item = u64;
-    /// The iteration code takes inspiration from https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
+    /// The iteration code takes inspiration from <https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/>
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         while unlikely(self.current_code == 0) {

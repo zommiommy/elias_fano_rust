@@ -8,3 +8,6 @@ endif
 
 test:
 	RUSTFLAGS="-C target-cpu=native" cargo test --features fuzz --release -- --nocapture
+
+bench:
+	RUSTFLAGS="-C target-cpu=native" cargo bench --features fuzz -- --nocapture

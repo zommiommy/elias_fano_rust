@@ -1,6 +1,6 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use elias_fano_rust::*;
+use elias_fano_rust::elias_fano::*;
 use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
@@ -40,7 +40,7 @@ pub fn test_concurrent_builder() {
     println!("Concurrent Builder");
     let start = Instant::now();
     // build the elias-fano concurrently
-    let builder = ConcurrentEliasFanoBuilder::new(SIZE as u64, MAX).unwrap();
+    let builder = ConcurrentEliasFanoBuilder::<10>::new(SIZE as u64, MAX).unwrap();
     vector.par_iter().enumerate().for_each(|(i, v)| {
         builder.set(i as u64, *v);
     });
@@ -56,7 +56,7 @@ pub fn test_concurrent_builder() {
     println!("Sequential builder");
     let start = Instant::now();
     // build and hash the elias fano sequentially
-    let mut seq = EliasFano::from_vec(&vector).unwrap();
+    let mut seq = EliasFano::<10>::from_vec(&vector).unwrap();
     let mut hasher = DefaultHasher::new();
     seq.hash(&mut hasher);
     println!("Done: {} s", start.elapsed().as_secs_f64());

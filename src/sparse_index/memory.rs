@@ -1,15 +1,15 @@
-use super::*;
+use super::SparseIndex;
 
 #[derive(Clone, Debug)]
 /// Memory usage in bytes by the variuos fields of Simple Select
-pub struct SimpleSelectMemoryStats {
+pub struct SparseIndexMemoryStats {
     pub high_bits: usize,
     pub metadata: usize,
     pub high_bits_index_zeros: usize,
     pub high_bits_index_ones: usize,
 }
 
-impl SimpleSelectMemoryStats {
+impl SparseIndexMemoryStats {
     pub fn total(&self) -> usize {
         self.high_bits
         + self.high_bits_index_ones
@@ -18,11 +18,11 @@ impl SimpleSelectMemoryStats {
     }
 }
 
-impl SimpleSelect {
+impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     /// Return the memory used in bytes
-    pub fn size(&self) -> SimpleSelectMemoryStats {
+    pub fn size(&self) -> SparseIndexMemoryStats {
         use std::mem::size_of;
-        SimpleSelectMemoryStats {
+        SparseIndexMemoryStats {
             metadata: 3 * size_of::<u64>(),
             high_bits:  (self.high_bits.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),
             high_bits_index_zeros:  (self.high_bits_index_zeros.capacity() * size_of::<u64>()) + size_of::<Vec<u64>>(),

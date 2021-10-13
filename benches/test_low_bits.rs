@@ -4,7 +4,7 @@ extern crate test;
 use test::{Bencher, black_box};
 
 extern crate elias_fano_rust;
-use elias_fano_rust::*;
+use elias_fano_rust::compact_array::*;
 use vec_rand::gen_random_vec;
 
 const ARRAY_SIZE: usize = 1 << 16;

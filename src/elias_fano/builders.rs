@@ -1,17 +1,15 @@
 use super::*;
 
-impl EliasFano {
+impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
 
     #[inline]
-    pub fn new(universe: u64, number_of_elements: usize) -> Result<EliasFano, String> {
+    pub fn new(universe: u64, number_of_elements: usize) -> Result<EliasFano<QUANTUM_LOG2>, String> {
         if number_of_elements == 0 {
             return Ok(EliasFano{
                 universe: universe,
-                low_bit_count: 0,
-                low_bit_mask:  0,
                 number_of_elements: 0,
-                high_bits: SimpleSelect::new(),
-                low_bits: vec![],
+                high_bits: SparseIndex::new(),
+                low_bits: CompactArray::new(0),
                 last_high_value: 0,
                 last_value: 0,
                 last_index: 0,
@@ -36,16 +34,14 @@ impl EliasFano {
         }
 
         // add 2 to do the ceil and have brenchless primitives.
-        let low_size = get_vec_size(low_bit_count, number_of_elements);
+        let low_bits= CompactArray::with_capacity(low_bit_count, number_of_elements);
 
         Ok(EliasFano {
             universe,
-            low_bit_count,
             // Pre-rendered mask to execute a fast version of the mod operation.
-            low_bit_mask: shr(0xffffffffffffffff, 64 - low_bit_count),
-            high_bits: SimpleSelect::with_capacity(2 * number_of_elements),
+            high_bits: SparseIndex::with_capacity(2 * number_of_elements),
             number_of_elements: number_of_elements as u64,
-            low_bits: vec![0; low_size as usize],
+            low_bits,
             last_high_value: 0,
             last_value: 0,
             last_index: 0,
@@ -61,16 +57,16 @@ impl EliasFano {
     /// * values: &[u64] - Vector of sorted integers to encode.
     /// * max: u64 - The maximum value within the vector.
     /// ```
-    /// # use elias_fano_rust::EliasFano;
+    /// # use elias_fano_rust::elias_fano::EliasFano;
     /// let vector = [5, 8, 8, 15, 32];
-    /// let ef = EliasFano::from_iter(vector.iter().cloned(), *vector.last().unwrap(), vector.len()).unwrap();
+    /// let ef = EliasFano::<10>::from_iter(vector.iter().cloned(), *vector.last().unwrap(), vector.len()).unwrap();
     /// ```
     #[inline]
     pub fn from_iter(
         values: impl Iterator<Item = u64>,
         universe: u64,
         number_of_elements: usize,
-    ) -> Result<EliasFano, String> {
+    ) -> Result<EliasFano<QUANTUM_LOG2>, String> {
         let mut result = EliasFano::new(universe, number_of_elements)?;
 
         result.build_low_high_bits(values)?;
@@ -86,12 +82,12 @@ impl EliasFano {
     /// * max: u64 - The maximum value within the vector.
     ///
     /// ```
-    /// # use elias_fano_rust::EliasFano;
+    /// # use elias_fano_rust::elias_fano::EliasFano;
     /// let vector = [5, 8, 8, 15, 32];
-    /// let ef = EliasFano::from_vec(&vector).unwrap();
+    /// let ef = EliasFano::<10>::from_vec(&vector).unwrap();
     /// ```
     #[inline]
-    pub fn from_vec(values: &[u64]) -> Result<EliasFano, String> {
+    pub fn from_vec(values: &[u64]) -> Result<EliasFano<QUANTUM_LOG2>, String> {
         EliasFano::from_iter(
             values.iter().cloned(),
             *values.last().unwrap_or(&0),
@@ -114,11 +110,8 @@ impl EliasFano {
             self.high_bits.push(false);
         }
         self.high_bits.push(true);
-
-        #[cfg(not(feature = "unsafe"))]
-        safe_write(&mut self.low_bits, self.last_index, low, self.low_bit_count);
-        #[cfg(feature = "unsafe")]
-        unsafe_write(&mut self.low_bits, self.last_index, low, self.low_bit_count);
+        
+        self.low_bits.write(self.last_index, low);
 
         self.last_high_value = high;
         self.last_index += 1;

@@ -1,31 +1,31 @@
 use super::*;
 use std::intrinsics::unlikely;
-use rayon::prelude::*;
+//use rayon::prelude::*;
 use rayon::iter::plumbing::{
-    bridge_unindexed, 
+    //bridge_unindexed, 
     UnindexedProducer,
-    bridge,
-    Producer,
+    //bridge,
+    //Producer,
 };
 
-impl<'a> SimpleSelect {
-    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
-    pub fn iter_double_ended(&'a self) -> SimpleSelectDobuleEndedIterator<'a> {
-        SimpleSelectDobuleEndedIterator::new(self)
+impl<'a, const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
+    /// return an Iterator over the indices of the bits set to one in the SparseIndex.
+    pub fn iter_double_ended(&'a self) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+        SparseIndexDobuleEndedIterator::new(self)
     }
 
-    /// return an Iterator over the indices of the bits set to one in the SimpleSelect.
-    pub fn iter_in_range_double_ended(&'a self, range: Range<u64>) -> SimpleSelectDobuleEndedIterator<'a> {
-        SimpleSelectDobuleEndedIterator::new_in_range(self, range)
+    /// return an Iterator over the indices of the bits set to one in the SparseIndex.
+    pub fn iter_in_range_double_ended(&'a self, range: Range<u64>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+        SparseIndexDobuleEndedIterator::new_in_range(self, range)
     }
 }
 
 /// An iterator over the simple select ones
 /// that can be itered in both directions and has a known length
-pub struct SimpleSelectDobuleEndedIterator<'a> {
-    /// reference to the SimpleSelect which is being iter
+pub struct SparseIndexDobuleEndedIterator<'a, const QUANTUM_LOG2: usize> {
+    /// reference to the SparseIndex which is being iter
     /// this is needed to get the reference to the high-bits
-    father: &'a SimpleSelect,
+    father: &'a SparseIndex<QUANTUM_LOG2>,
 
     start_code: u64,
     start_index: usize,
@@ -34,9 +34,9 @@ pub struct SimpleSelectDobuleEndedIterator<'a> {
     len: usize,
 }
 
-impl<'a> std::fmt::Debug for SimpleSelectDobuleEndedIterator<'a> {
+impl<'a,const QUANTUM_LOG2: usize> std::fmt::Debug for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SimpleSelectDobuleEndedIterator")
+        f.debug_struct("SparseIndexDobuleEndedIterator")
             .field("start_code", &format!("{:064b}", self.start_code))
             .field("start_index", &self.start_index)
             .field("end_code", &format!("{:064b}", self.end_code))
@@ -47,9 +47,9 @@ impl<'a> std::fmt::Debug for SimpleSelectDobuleEndedIterator<'a> {
 }
 
 
-impl<'a> SimpleSelectDobuleEndedIterator<'a> {
-    pub fn new(father: &'a SimpleSelect) -> SimpleSelectDobuleEndedIterator<'a> {
-        SimpleSelectDobuleEndedIterator{
+impl<'a, const QUANTUM_LOG2: usize> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+    pub fn new(father: &'a SparseIndex<QUANTUM_LOG2>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+        SparseIndexDobuleEndedIterator{
             start_code: *father.high_bits.get(0).unwrap_or(&0),
             start_index: 0,
             end_code: *father.high_bits.last().unwrap_or(&0),
@@ -59,9 +59,9 @@ impl<'a> SimpleSelectDobuleEndedIterator<'a> {
         }
     }
 
-    pub fn new_in_range(father: &'a SimpleSelect, range: Range<u64>) -> SimpleSelectDobuleEndedIterator<'a> {
+    pub fn new_in_range(father: &'a SparseIndex<QUANTUM_LOG2>, range: Range<u64>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
         if range.start >= father.len() {
-            return SimpleSelectDobuleEndedIterator{
+            return SparseIndexDobuleEndedIterator{
                 start_code: 0,
                 start_index: 0,
                 end_code: 0,
@@ -80,7 +80,7 @@ impl<'a> SimpleSelectDobuleEndedIterator<'a> {
             code &= u64::MAX << (range.start & WORD_MASK);
             code &= !(!0_u64 << (64 - range.start & WORD_MASK));
             
-            return SimpleSelectDobuleEndedIterator{
+            return SparseIndexDobuleEndedIterator{
                 len: code.count_ones() as usize,
                 start_code: code,
                 start_index: idx,
@@ -101,7 +101,7 @@ impl<'a> SimpleSelectDobuleEndedIterator<'a> {
         let mut end_code = father.high_bits[end_index as usize];
         end_code &= !(!0_u64 << end_in_word_reminder);
 
-        SimpleSelectDobuleEndedIterator{
+        SparseIndexDobuleEndedIterator{
             start_code,
             start_index: start_index as usize,
             end_code,
@@ -115,7 +115,7 @@ impl<'a> SimpleSelectDobuleEndedIterator<'a> {
 }
 
 
-impl<'a> Iterator for SimpleSelectDobuleEndedIterator<'a> {
+impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
     type Item = u64;
 
     #[inline]
@@ -162,9 +162,9 @@ impl<'a> Iterator for SimpleSelectDobuleEndedIterator<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for SimpleSelectDobuleEndedIterator<'a> {}
+impl<'a, const QUANTUM_LOG2: usize> ExactSizeIterator for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {}
 
-impl<'a> DoubleEndedIterator for SimpleSelectDobuleEndedIterator<'a> {
+impl<'a, const QUANTUM_LOG2: usize> DoubleEndedIterator for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         while unlikely(self.end_code == 0) {
@@ -214,7 +214,7 @@ impl<'a> DoubleEndedIterator for SimpleSelectDobuleEndedIterator<'a> {
 /// which is slightly faster. 
 ///
 /// Thus, this trait is not really needed, but we have it ¯\_(ツ)_/¯ .
-impl<'a> UnindexedProducer for SimpleSelectDobuleEndedIterator<'a> {
+impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
     type Item = u64;
 
     /// Split the file in two approximately balanced streams
@@ -238,7 +238,7 @@ impl<'a> UnindexedProducer for SimpleSelectDobuleEndedIterator<'a> {
         let inword_offset = middle_bit_index & WORD_MASK;
 
         // Create the new iterator for the second half
-        let new_iter = SimpleSelectDobuleEndedIterator{
+        let new_iter = SparseIndexDobuleEndedIterator{
             father: self.father, 
 
             start_code: code & !(u64::MAX << inword_offset),
@@ -270,7 +270,7 @@ impl<'a> UnindexedProducer for SimpleSelectDobuleEndedIterator<'a> {
     }
 }
 
-// impl<'a> Producer for SimpleSelectDobuleEndedIterator<'a> {
+// impl<'a> Producer for SparseIndexDobuleEndedIterator<'a> {
 //     fn into_iter(self) -> Self::IntoIter {
 //         self
 //     }

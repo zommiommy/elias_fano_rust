@@ -1,6 +1,6 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use elias_fano_rust::EliasFano;
+use elias_fano_rust::elias_fano::EliasFano;
 use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
@@ -26,8 +26,8 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
 /// Test that we can build successfully run all methods in elias fano.
 pub fn test_hash() {
     let vector = build_random_sorted_vector(1_000, 1_000_000);
-    let ef1 = EliasFano::from_vec(&vector).unwrap();
-    let ef2 = EliasFano::from_vec(&vector).unwrap();
+    let ef1 = EliasFano::<10>::from_vec(&vector).unwrap();
+    let ef2 = EliasFano::<10>::from_vec(&vector).unwrap();
 
     let mut hasher = DefaultHasher::new();
     ef1.hash(&mut hasher);

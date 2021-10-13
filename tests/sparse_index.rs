@@ -1,4 +1,4 @@
-use elias_fano_rust::*;
+use elias_fano_rust::sparse_index::SparseIndex;
 use fid::*;
 
 use rand::Rng;
@@ -11,7 +11,7 @@ fn test_simple_select_against_fid() {
     let mut rng = rand::thread_rng();
 
     // initialize the two data structures
-    let mut hb = SimpleSelect::new();
+    let mut hb = SparseIndex::<10>::new();
     let mut rs = BitVector::new();
 
     // generate a dense bitvector

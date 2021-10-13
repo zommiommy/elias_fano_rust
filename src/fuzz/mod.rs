@@ -1,5 +1,8 @@
-
-use super::*;
+use crate::{
+    elias_fano::*,
+    sparse_index::*,
+    compact_array::*,
+};
 use arbitrary::{Arbitrary, Unstructured};
 use rayon::iter::*;
 use fid::*;
@@ -10,7 +13,7 @@ pub fn rank_and_select_harness(data: &[u8]) {
     // create a sorted vector
     data.sort();
 
-    let ef = EliasFano::from_vec(&data).unwrap();
+    let ef = EliasFano::<10>::from_vec(&data).unwrap();
 
     assert_eq!(ef.len() as usize, data.len() as usize, "the length of the vector do not match!");
     
@@ -58,7 +61,7 @@ pub fn iter_harness(data: &[u8]) {
     // create a sorted vector with no duplicates
     data.sort();
 
-    let ef = EliasFano::from_vec(&data).unwrap();
+    let ef = EliasFano::<10>::from_vec(&data).unwrap();
 
     assert_eq!(ef.len() as usize, data.len() as usize, "the length of the vector do not match!");
 
@@ -72,7 +75,7 @@ pub fn iter_harness(data: &[u8]) {
 }
 
 pub fn simple_select_harness(data: Vec<bool>) {
-    let mut hb = SimpleSelect::new();
+    let mut hb = SparseIndex::<10>::new();
     let mut rs = BitVector::new();
 
     for bit in data {
@@ -128,7 +131,7 @@ pub fn iter_in_range_harness(data: &[u8]) {
         return;
     }
 
-    let ef = EliasFano::from_vec(&indices).unwrap();
+    let ef = EliasFano::<10>::from_vec(&indices).unwrap();
 
     assert_eq!(ef.len() as usize, indices.len() as usize, "the length of the vector do not match!");
     
@@ -147,11 +150,11 @@ pub fn builders(data: &[u8]) {
     // create a sorted vector
     data.sort();
 
-    let ef = EliasFano::from_vec(&data).unwrap();
+    let ef = EliasFano::<10>::from_vec(&data).unwrap();
 
     assert_eq!( ef.len() as usize, data.len() as usize, "the sequential elias fano length do not match the vector!");
 
-    let cefb = ConcurrentEliasFanoBuilder::new(data.len() as u64, *data.last().unwrap_or(&0)).unwrap();
+    let cefb = ConcurrentEliasFanoBuilder::<10>::new(data.len() as u64, *data.last().unwrap_or(&0)).unwrap();
 
     data.par_iter().enumerate().for_each(|(i, x)| cefb.set(i as u64, *x));
 

@@ -37,3 +37,20 @@ path = "fuzz_targets/simple_select.rs"
 test = false
 doc = false
 
+[[bin]]
+name = "codes"
+path = "fuzz_targets/codes.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ef_builder"
+path = "fuzz_targets/ef_builder.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "si_doubleended_iter"
+path = "fuzz_targets/si_doubleended_iter.rs"
+test = false
+doc = false

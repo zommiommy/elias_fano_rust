@@ -9,7 +9,7 @@ pub fn shr(value: u64, offset: u64) -> u64 {
 }
 
 #[inline(always)]
-pub fn fast_log2(value: u64) -> u64 {
+pub const fn fast_log2(value: u64) -> u64 {
     64 - value.leading_zeros() as u64
 }
 

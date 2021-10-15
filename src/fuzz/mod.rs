@@ -2,6 +2,7 @@ use crate::{
     elias_fano::*,
     sparse_index::*,
     compact_array::*,
+    codes::*,
 };
 use arbitrary::{Arbitrary, Unstructured};
 use rayon::iter::*;
@@ -54,6 +55,51 @@ pub fn rank_and_select_harness(data: &[u8]) {
     }
 }
 
+
+pub fn si_doubleended_iter_harness(data: &[u8]) {
+    let (start, end, fb_nexts, values) = <(u16, u16, Vec<bool>, Vec<u16>)>::arbitrary(&mut Unstructured::new(data)).unwrap();
+    // create a sorted vector with no duplicates
+    let mut values = values.iter().map(|x| *x as u64).collect::<Vec<_>>();
+    values.sort();
+
+    let mut si = SparseIndex::<10>::new();
+
+    let mut iter = si.iter_double_ended();
+    let mut truth_iter = values.iter().map(|x| *x);
+    
+    for fb in &fb_nexts {
+        assert_eq!(
+            if *fb {
+                iter.next()
+            } else {
+                iter.next_back()
+            },
+            if *fb {
+                truth_iter.next()
+            } else {
+                truth_iter.next_back()
+            },
+        )
+    }
+
+    let mut iter = si.iter_in_range_double_ended(start as u64..end as u64);
+    let mut truth_iter = values.iter().filter(|x| (start as u64..end as u64).contains(x)).map(|x| *x);
+    
+    for fb in &fb_nexts {
+        assert_eq!(
+            if *fb {
+                iter.next()
+            } else {
+                iter.next_back()
+            },
+            if *fb {
+                truth_iter.next()
+            } else {
+                truth_iter.next_back()
+            },
+        )
+    }
+}
 
 pub fn iter_harness(data: &[u8]) {
     let data = <Vec<u16>>::arbitrary(&mut Unstructured::new(data)).unwrap();
@@ -113,13 +159,11 @@ pub fn iter_in_range_harness(data: &[u8]) {
     if data.is_err() {
         return;
     }
-
-    dbg!(&data);
     
     let InputData {
         start,
         end,
-        mut indices,
+        indices,
     } = data.unwrap();
     
 
@@ -144,7 +188,7 @@ pub fn iter_in_range_harness(data: &[u8]) {
     }
 }
 
-pub fn builders(data: &[u8]) {
+pub fn ef_builder_harness(data: &[u8]) {
     let data = <Vec<u16>>::arbitrary(&mut Unstructured::new(data)).unwrap();
     let mut data = data.iter().map(|x| *x as u64).collect::<Vec<u64>>();
     // create a sorted vector
@@ -165,5 +209,52 @@ pub fn builders(data: &[u8]) {
     for ((t, s), c) in data.iter().zip(ef.iter()).zip(cef.iter()) {
         assert_eq!(*t, s, "The sequetial iter do not match the truth data.");
         assert_eq!(*t, c, "The concurrent iter do not match the truth data.");
+    }
+}
+
+pub fn codes_harness(data: &[u8]) {
+    let data = <Vec<(u8, u64)>>::arbitrary(&mut Unstructured::new(data));
+    if data.is_err() {
+        return;
+    }
+    let data = data.unwrap();
+
+    let mut bs = BitStream::new();
+
+    for (t, v) in data.iter() {
+        match *t % 9 {
+            0 => bs.write_unary(*v),
+            1 => bs.write_zeta::<1>(*v),
+            2 => bs.write_zeta::<2>(*v),
+            3 => bs.write_zeta::<3>(*v),
+            4 => bs.write_zeta::<4>(*v),
+            5 => bs.write_zeta::<5>(*v),
+            6 => bs.write_zeta::<6>(*v),
+            7 => bs.write_zeta::<7>(*v),
+            8 => bs.write_zeta::<8>(*v),
+            9 => bs.write_gamma(*v),
+            _ => unreachable!(),
+        };
+    }
+
+    bs.seek(0);
+
+    for (t, v) in data.iter() {
+        assert_eq!(
+            *v, 
+            match *t % 9 {
+                0 => bs.read_unary(),
+                1 => bs.read_zeta::<1>(),
+                2 => bs.read_zeta::<2>(),
+                3 => bs.read_zeta::<3>(),
+                4 => bs.read_zeta::<4>(),
+                5 => bs.read_zeta::<5>(),
+                6 => bs.read_zeta::<6>(),
+                7 => bs.read_zeta::<7>(),
+                8 => bs.read_zeta::<8>(),
+                9 => bs.read_gamma(),
+                _ => unreachable!(),
+            }
+        );
     }
 }

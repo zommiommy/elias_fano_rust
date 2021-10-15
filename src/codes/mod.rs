@@ -15,6 +15,7 @@ use crate::utils::power_of_two_to_mask;
 mod unary;
 mod gamma;
 mod zeta;
+mod golomb;
 
 pub struct BitStream {
     data: Vec<u64>,

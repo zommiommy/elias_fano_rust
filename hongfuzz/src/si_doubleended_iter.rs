@@ -5,7 +5,7 @@ use elias_fano_rust::fuzz::*;
 fn main() {
     loop {
         fuzz!(|data: &[u8]| {
-            iter_harness(data);
+            si_doubleended_iter_harness(data);
         });
     }
 }

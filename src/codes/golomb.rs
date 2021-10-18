@@ -1,18 +1,28 @@
-use crate::utils::fast_log2;
+use crate::utils::fast_log2_ceil;
 use super::BitStream;
 
+
+#[inline]
+/// Given the ratio `p` of a geometric distribution
+pub fn compute_optimal_golomb_block(p: f64) -> u64 {
+    (-(2.0 - p).log2() / (1.0 - p).log2()).ceil() as u64
+}
+
+
+/// Optimal for gemetric distribution of ratio:
+/// $$\frac{1}{\sqrt^b{2}$$
 impl BitStream {
 
     #[inline]
     pub fn read_golomb<const B: u64>(&mut self) -> u64 {
         let blocks_count = self.read_unary();
-        blocks_count * B + self.read_bits(fast_log2(B))
+        blocks_count * B + self.read_bits(fast_log2_ceil(B))
     }
 
     #[inline]
     pub fn write_golomb<const B: u64>(&mut self, value: u64) {
         self.write_unary(value / B);
-        self.write_bits( fast_log2(B), value % B);
+        self.write_bits( fast_log2_ceil(B), value % B);
     }
 }
 

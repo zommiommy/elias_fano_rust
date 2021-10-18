@@ -70,7 +70,7 @@ impl WebGraphBuilder {
         unsafe{self.push_unchecked(u64::MAX, u64::MAX)};
 
         // compact the nodes_index array
-        let number_of_bits = crate::utils::fast_log2(self.data.tell() as _);
+        let number_of_bits = crate::utils::fast_log2_ceil(self.data.tell() as _);
         let mut compacted_nodes_index = CompactArray::with_capacity(
             number_of_bits as _,
             self.nodes_index.len() as _, 

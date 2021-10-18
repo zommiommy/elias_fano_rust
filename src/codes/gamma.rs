@@ -1,19 +1,30 @@
-use crate::utils::fast_log2;
+use crate::utils::fast_log2_floor;
 use super::BitStream;
 
+/// Optimal for Zipf of exponent 2
+/// Elias’ γ universal coding of x ∈ N+ is obtained by representing x in binary
+// preceded by a unary representation of its length (minus one).
+// More precisely, to represent x we write in unary floor(log(x)) and then in
+// binary x - 2^ceil(log(x)) (on floor(log(x)) bits)
 impl BitStream {
 
+    // TODO FIX THIS SHIT
     #[inline]
     pub fn read_gamma(&mut self) -> u64 {
         let len = self.read_unary();
-        self.read_bits(len)
+        self.read_bits(len) + (1 << len) - 1
     }
 
     #[inline]
-    pub fn write_gamma(&mut self, value: u64) {
-        let number_of_blocks_to_write = fast_log2(value);
+    pub fn write_gamma(&mut self, mut value: u64) {
+        value += 1;
+        let number_of_blocks_to_write = fast_log2_floor(value);
+        // remove the most significant 1
+        let short_value = value - (1 << number_of_blocks_to_write);
+        // TODO this can be optimized 
+        // Write the code
         self.write_unary(number_of_blocks_to_write);
-        self.write_bits(number_of_blocks_to_write, value);
+        self.write_bits(number_of_blocks_to_write, short_value);
     }
 }
 

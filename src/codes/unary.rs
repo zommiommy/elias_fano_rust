@@ -1,5 +1,7 @@
 use super::BitStream;
+use core::intrinsics::unlikely;
 
+/// Optimal for gemetric distribution of ratio 1/2
 impl BitStream {
     #[inline]
     pub fn read_unary(&mut self) -> u64 {
@@ -9,7 +11,7 @@ impl BitStream {
             let x = word.trailing_zeros() as u64;
             // if the code is not finished, continue to the next word
             let bound = (64 - self.bit_index) as u64;
-            if x >= bound {
+            if unlikely(x >= bound) {
                 self.word_index += 1;
                 self.bit_index = 0;
                 res += bound;
@@ -37,6 +39,7 @@ impl BitStream {
         self.bit_index += 1;
     }
 }
+
 #[cfg(test)]
 mod test_unary {
     use super::*;

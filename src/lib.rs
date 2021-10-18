@@ -56,15 +56,15 @@
 //! in our implementatione we use 1024 (10) as the default quantum (`INDEX_SHIFT`) because it provide a better time-memory tradeoff.
 #![feature(core_intrinsics)]
 
-pub(crate) mod utils;
-pub(crate) mod constants;
+pub mod utils;
+pub mod constants;
 pub mod compact_array;
 pub mod sparse_index;
 pub mod elias_fano;
 pub mod codes;
 pub mod traits;
 pub use codes::BitStream;
-pub mod webgraph;
+//pub mod webgraph;
 
 
 #[cfg(feature="fuzz")]

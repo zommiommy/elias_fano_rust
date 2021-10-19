@@ -185,6 +185,93 @@ mod golomb_4 {
     }
 }
 
+mod zeta_2 {
+    use super::*;
+
+    #[bench]
+    fn read(b: &mut Bencher) {
+        let mut bs = BitStream::with_capacity(CAPACITY as _);
+        for i in 0..MAX {
+            bs.write_zeta::<2>(i);
+        }
+        b.iter(|| {
+            bs.seek(0);
+            for i in 0..MAX {
+                assert_eq!(i, bs.read_zeta::<2>());
+            }
+        })
+    }
+
+    #[bench]
+    fn write(b: &mut Bencher) {
+        let mut bs = BitStream::with_capacity(CAPACITY as _);
+        b.iter(|| {
+            bs.seek(0);
+            for i in 0..MAX {
+                bs.write_zeta::<2>(i);
+            }
+        })
+    }
+}
+
+mod zeta_3 {
+    use super::*;
+
+    #[bench]
+    fn read(b: &mut Bencher) {
+        let mut bs = BitStream::with_capacity(CAPACITY as _);
+        for i in 0..MAX {
+            bs.write_zeta::<3>(i);
+        }
+        b.iter(|| {
+            bs.seek(0);
+            for i in 0..MAX {
+                assert_eq!(i, bs.read_zeta::<3>());
+            }
+        })
+    }
+
+    #[bench]
+    fn write(b: &mut Bencher) {
+        let mut bs = BitStream::with_capacity(CAPACITY as _);
+        b.iter(|| {
+            bs.seek(0);
+            for i in 0..MAX {
+                bs.write_zeta::<3>(i);
+            }
+        })
+    }
+}
+
+mod zeta_4 {
+    use super::*;
+
+    #[bench]
+    fn read(b: &mut Bencher) {
+        let mut bs = BitStream::with_capacity(CAPACITY as _);
+        for i in 0..MAX {
+            bs.write_zeta::<4>(i);
+        }
+        b.iter(|| {
+            bs.seek(0);
+            for i in 0..MAX {
+                assert_eq!(i, bs.read_zeta::<4>());
+            }
+        })
+    }
+
+    #[bench]
+    fn write(b: &mut Bencher) {
+        let mut bs = BitStream::with_capacity(CAPACITY as _);
+        b.iter(|| {
+            bs.seek(0);
+            for i in 0..MAX {
+                bs.write_zeta::<4>(i);
+            }
+        })
+    }
+}
+
 mod var_length_2 {
     use super::*;
 

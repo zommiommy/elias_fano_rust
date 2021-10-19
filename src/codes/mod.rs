@@ -19,6 +19,7 @@ mod minimal_binary;
 mod minimal_binary_bv;
 mod unary;
 mod var_length;
+mod zeta;
 pub use golomb::compute_optimal_golomb_block;
 
 pub struct BitStream {

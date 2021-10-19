@@ -35,7 +35,6 @@ mod test_var_length {
         for i in 0..100 {
             bs.write_var_length::<4>(i);
         }
-        println!("{:064b}", bs.data[0]);
         bs.seek(0);
         for i in 0..100 {
             assert_eq!(i, bs.read_var_length::<4>());

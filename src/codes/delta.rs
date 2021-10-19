@@ -31,7 +31,6 @@ mod test_delta {
         for i in 0..100 {
             bs.write_delta(i);
         }
-        println!("{:64b}", bs.data[0]);
         bs.seek(0);
         for i in 0..100 {
             assert_eq!(i, bs.read_delta());

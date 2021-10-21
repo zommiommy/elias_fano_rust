@@ -18,6 +18,12 @@ impl BitStream {
         self.write_gamma(number_of_blocks_to_write);
         self.write_bits(number_of_blocks_to_write, value);
     }
+
+    pub fn size_delta(&mut self, value: u64) -> u64 {
+        let number_of_blocks_to_write = fast_log2_ceil(value + 1);
+        self.size_gamma(number_of_blocks_to_write) 
+            + self.size_bits(number_of_blocks_to_write)
+    }
 }
 
 #[cfg(test)]
@@ -29,7 +35,9 @@ mod test_delta {
     fn test_delta_forward() {
         let mut bs = BitStream::new();
         for i in 0..100 {
+            let idx = bs.tell();
             bs.write_delta(i);
+            assert_eq!(bs.tell(), idx + bs.size_delta(i) as usize);
         }
         bs.seek(0);
         for i in 0..100 {
@@ -42,7 +50,9 @@ mod test_delta {
     fn test_delta_backward() {
         let mut bs = BitStream::new();
         for i in (0..10_000).rev() {
+            let idx = bs.tell();
             bs.write_delta(i);
+            assert_eq!(bs.tell(), idx + bs.size_delta(i) as usize);
         }
         bs.seek(0);
         for i in (0..10_000).rev() {

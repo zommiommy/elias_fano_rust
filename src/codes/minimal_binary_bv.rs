@@ -39,6 +39,18 @@ impl BitStream {
             self.write_bits(u, reverse_bits(value + scarto, u));
         }
     }
+
+    pub fn size_minimal_binary_bv(&mut self, value: u64, max: u64) -> u64 {
+        let u = fast_log2_ceil(max);
+        let l = fast_log2_floor(max);
+        let scarto = fast_pow_2(u) - max;
+        
+        if value < scarto {
+            l
+        } else {
+            u
+        }
+    }
 }
 
 #[cfg(test)]
@@ -58,7 +70,9 @@ mod test_minimal_binary_bv {
         let mut bs = BitStream::new();
         let max = 1_000;
         for i in 0..max {
+            let idx = bs.tell();
             bs.write_minimal_binary_bv(i, max);
+            assert_eq!(bs.tell(), idx + bs.size_minimal_binary_bv(i, max) as usize);
         }
         bs.seek(0);
         for i in 0..max {
@@ -72,7 +86,9 @@ mod test_minimal_binary_bv {
         let mut bs = BitStream::new();
         let max = 1_000;
         for i in (0..max).rev() {
+            let idx = bs.tell();
             bs.write_minimal_binary_bv(i, max);
+            assert_eq!(bs.tell(), idx + bs.size_minimal_binary_bv(i, max) as usize);
         }
         bs.seek(0);
         for i in (0..max).rev() {

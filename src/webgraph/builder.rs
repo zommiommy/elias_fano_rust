@@ -28,7 +28,6 @@ impl WebGraphBuilder {
     /// violating this assumptions might lead to 
     /// undefined behaviour
     pub unsafe fn push_unchecked(&mut self, src: u64, dst: u64) {
-        const ZETA_K: u64 = 3;
         // we need to encode the degree, so we need to
         // store in a vec the dsts of the current src
         if src == self.current_src {
@@ -42,8 +41,18 @@ impl WebGraphBuilder {
         self.data.write_gamma(self.current_dsts.len() as _);
         // Write the gaps between the dsts using zeta codes
 
+        // TODO: find which node to ref
+        let node_ref = 0;
+
+        // write the reference 
+        self.data.write_gamma(self.current_src - node_ref);
+
+        // TODO:  copy list
+         
+
+        // Extra nodes
         let first_dst = self.current_dsts[0];
-        self.data.write_zeta::<ZETA_K>(
+        self.data.write_zeta::<3>(
             if first_dst >= src {
                 2 * (first_dst - src)
             } else {
@@ -54,13 +63,81 @@ impl WebGraphBuilder {
         let mut tmp = first_dst;
         // TODO!: drain
         for dst in self.current_dsts.iter() {
-            self.data.write_zeta::<ZETA_K>(dst - tmp);
+            self.data.write_zeta::<3>(dst - tmp);
             tmp = *dst;
         }
         self.current_dsts.clear();
 
         self.current_src = src;
         self.current_dsts.push(dst);
+    }
+
+    pub fn get_degree(&mut self, node_id: u64) -> u64 {
+        let old_pos = self.data.tell();
+        self.data.seek(self.nodes_index[node_id as usize] as usize);
+        let res = self.data.read_gamma();
+        self.data.seek(old_pos);
+        res
+    }
+
+    pub fn get_neighbours(&mut self, node_id: u64) -> Vec<u64> {
+        let mut neigbours = Vec::new();
+
+        // backup the position so we can reset it later
+        let old_pos = self.data.tell();
+
+        // move to the node data
+        self.data.seek(self.nodes_index[node_id as usize] as usize);
+        
+        
+        // read the degree
+        let degree = self.data.read_gamma();
+        // if the degree is 0 we are done and don't need to decode anything
+        if degree == 0 {
+            self.data.seek(old_pos);
+            return vec![];
+        }
+    
+        // figure out the ref
+        let ref_delta = self.data.read_gamma();
+        if ref_delta != 0 {
+            // compute which node we are refering to
+            let ref_node = node_id - ref_delta;
+            let ref_degree = self.get_degree(node_id);
+            // recursive call to decode its neighbours
+            let ref_neighbours = self.get_neighbours(ref_node);
+
+            debug_assert_eq!(ref_neighbours.len() as u64, ref_degree);
+
+            // add the nodes to be copied
+            for node in ref_neighbours {
+                if self.data.read_bit() {
+                    neigbours.push(node);
+                }
+            }
+        }
+
+        // read the first neighbour
+        let first_neighbour_delta = self.data.read_gamma();
+        let first_neighbour = if first_neighbour_delta & 1 == 0 {
+            node_id + (first_neighbour_delta >> 1)
+        } else {
+            node_id - (first_neighbour_delta >> 1)
+        };
+        neigbours.push(
+            first_neighbour
+        );
+
+        // decode the other extra nodes
+        let mut tmp = first_neighbour;
+        for _  in 0..degree - 1 {
+            let new_node = self.data.read_zeta::<3>() + tmp;
+            tmp = new_node;
+        }
+
+        // reset the reader to where it was
+        self.data.seek(old_pos);
+        neigbours
     }
 
 

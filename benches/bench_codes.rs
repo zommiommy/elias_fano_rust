@@ -1,7 +1,6 @@
 #![feature(test)]
 #![allow(clippy::unreadable_literal)]
 
-extern crate rand;
 use elias_fano_rust::*;
 
 extern crate test;

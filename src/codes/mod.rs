@@ -20,7 +20,7 @@ mod minimal_binary_bv;
 mod unary;
 mod var_length;
 mod zeta;
-pub use golomb::compute_optimal_golomb_block;
+pub use golomb::compute_optimal_golomb_block_size;
 
 pub struct BitStream {
     data: Vec<u64>,
@@ -87,6 +87,22 @@ impl BitStream {
         self.word_index = 0;
         self.bit_index = 0;
         self.data.clear();
+    }
+
+    #[inline]
+    /// Read a single bit
+    pub fn read_bit(&mut self) -> bool {
+        let res = (self.data[self.word_index] >> self.bit_index) & 1;
+        self.skip(1);
+        res != 0
+    }
+
+    #[inline]
+    /// Read a single bit
+    pub fn write_bit(&mut self) {
+        self.data[self.word_index] |= 1 << self.bit_index;
+        self.skip(1);
+        self.data.resize(self.word_index, 0);
     }
 }
 

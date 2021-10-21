@@ -26,6 +26,13 @@ impl BitStream {
         self.write_unary(number_of_blocks_to_write);
         self.write_bits(number_of_blocks_to_write, short_value);
     }
+
+    pub fn size_gamma(&mut self, mut value: u64) -> u64 {
+        value += 1;
+        let number_of_blocks_to_write = fast_log2_floor(value);
+        self.size_unary(number_of_blocks_to_write) 
+            + self.size_bits(number_of_blocks_to_write)
+    }
 }
 
 #[cfg(test)]
@@ -37,7 +44,9 @@ mod test_gamma {
     fn test_gamma_forward() {
         let mut bs = BitStream::new();
         for i in 0..100 {
+            let idx = bs.tell();
             bs.write_gamma(i);
+            assert_eq!(bs.tell(), idx + bs.size_gamma(i) as usize);
         }
         bs.seek(0);
         for i in 0..100 {
@@ -50,7 +59,9 @@ mod test_gamma {
     fn test_gamma_backward() {
         let mut bs = BitStream::new();
         for i in (0..10_000).rev() {
+            let idx = bs.tell();
             bs.write_gamma(i);
+            assert_eq!(bs.tell(), idx + bs.size_gamma(i) as usize);
         }
         bs.seek(0);
         for i in (0..10_000).rev() {

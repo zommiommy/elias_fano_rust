@@ -64,7 +64,7 @@ pub mod elias_fano;
 pub mod codes;
 pub mod traits;
 pub use codes::BitStream;
-//pub mod webgraph;
+pub mod webgraph;
 
 
 #[cfg(feature="fuzz")]

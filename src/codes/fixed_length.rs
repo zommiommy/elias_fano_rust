@@ -53,6 +53,10 @@ impl BitStream {
         // Update the pointers to after where we wrote
         self.skip(number_of_bits as usize);
     }
+
+    pub fn size_bits(&mut self, number_of_bits: u64) -> u64 {
+        number_of_bits
+    }
 }
 
 #[cfg(test)]
@@ -64,7 +68,9 @@ mod test_bitstream_utils {
     fn test_read_bits() {
         let mut bs = BitStream::new();
         for i in 0..10_000 {
+            let idx = bs.tell();
             bs.write_bits(14, i);
+            assert_eq!(bs.tell(), idx + bs.size_bits(14) as usize);
         }
         bs.seek(0);
         for i in 0..10_000 {
@@ -77,7 +83,9 @@ mod test_bitstream_utils {
     fn test_read_bits_backward() {
         let mut bs = BitStream::new();
         for i in (0..10_000).rev() {
+            let idx = bs.tell();
             bs.write_bits(14, i);
+            assert_eq!(bs.tell(), idx + bs.size_bits(14) as usize);
         }
         bs.seek(0);
         for i in (0..10_000).rev() {

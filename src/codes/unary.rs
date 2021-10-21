@@ -26,17 +26,22 @@ impl BitStream {
 
     #[inline]
     pub fn write_unary(&mut self, value: u64) {
-        // TODO!: check if simplifiable
         // Update the reminder
-        self.bit_index  += (value & 63) as usize; 
-        let reminder = self.bit_index >> 6;
-        self.bit_index  &= 63;
-        self.word_index += (value >> 6) as usize + reminder;
+        let idx = (value + self.tell() as u64) as usize;
+
+        let bit_index  = idx & 63; 
+        let word_index = idx >> 6;
+
+        self.data.resize(word_index + 2, 0);
 
         // Write the bit
-        self.data.resize(self.word_index + 1, 0);
-        self.data[self.word_index] |= 1 << self.bit_index;
-        self.bit_index += 1;
+        self.data[word_index] |= 1 << bit_index;
+        
+        self.seek(idx + 1);
+    }
+
+    pub fn size_unary(&mut self, value: u64) -> u64 {
+        value + 1
     }
 }
 
@@ -49,7 +54,9 @@ mod test_unary {
     fn test_unary_forward() {
         let mut bs = BitStream::new();
         for i in 0..10_000 {
+            let idx = bs.tell();
             bs.write_unary(i);
+            assert_eq!(bs.tell(), idx + bs.size_unary(i) as usize);
         }
         bs.seek(0);
         for i in 0..10_000 {
@@ -62,7 +69,9 @@ mod test_unary {
     fn test_unary_backward() {
         let mut bs = BitStream::new();
         for i in (0..10_000).rev() {
+            let idx = bs.tell();
             bs.write_unary(i);
+            assert_eq!(bs.tell(), idx + bs.size_unary(i) as usize);
         }
         bs.seek(0);
         for i in (0..10_000).rev() {

@@ -1,7 +1,6 @@
 use crate::BitStream;
 use crate::compact_array::CompactArray;
 
-mod graph_utils;
 mod builder;
 pub use builder::*;
 

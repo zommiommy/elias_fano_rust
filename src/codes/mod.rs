@@ -92,6 +92,7 @@ impl BitStream {
     #[inline]
     /// Read a single bit
     pub fn read_bit(&mut self) -> bool {
+        // TODO!; optimize?
         let res = (self.data[self.word_index] >> self.bit_index) & 1;
         self.skip(1);
         res != 0
@@ -99,10 +100,13 @@ impl BitStream {
 
     #[inline]
     /// Read a single bit
-    pub fn write_bit(&mut self) {
-        self.data[self.word_index] |= 1 << self.bit_index;
+    pub fn write_bit(&mut self, value: bool) {
+        // TODO!: optimize brenchless?
+        self.data.resize(self.word_index + 1, 0);
+        if value {
+            self.data[self.word_index] |= 1 << self.bit_index;
+        }
         self.skip(1);
-        self.data.resize(self.word_index, 0);
     }
 }
 
@@ -124,7 +128,6 @@ mod test_bitstream {
         bs.seek(1);
         assert_eq!(bs.tell(), 1);
         bs.skip(3);
-        assert_eq!(bs.tell(), 4);
-        
+        assert_eq!(bs.tell(), 4);   
     }
 }

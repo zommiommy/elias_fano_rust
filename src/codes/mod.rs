@@ -23,9 +23,9 @@ mod zeta;
 pub use golomb::compute_optimal_golomb_block_size;
 
 pub struct BitStream {
-    data: Vec<u64>,
-    word_index: usize,
-    bit_index: usize,
+    pub data: Vec<u64>,
+    pub word_index: usize,
+    pub bit_index: usize,
 }
 
 impl crate::traits::MemoryFootprint for BitStream {
@@ -102,11 +102,13 @@ impl BitStream {
     /// Read a single bit
     pub fn write_bit(&mut self, value: bool) {
         // TODO!: optimize brenchless?
-        self.data.resize(self.word_index + 1, 0);
         if value {
             self.data[self.word_index] |= 1 << self.bit_index;
         }
         self.skip(1);
+        if self.word_index >= self.data.len() - 1 {
+            self.data.resize(self.word_index + 1, 0);
+        }
     }
 }
 
@@ -117,7 +119,7 @@ mod test_bitstream {
 
     #[test]
     /// Test that we encode and decode low bits properly.
-    fn test_bitsream() {
+    fn test_bitstream() {
         let mut bs = BitStream::new();
         assert_eq!(bs.tell(), 0);
         bs.write_bits(10, 7);
@@ -129,5 +131,30 @@ mod test_bitstream {
         assert_eq!(bs.tell(), 1);
         bs.skip(3);
         assert_eq!(bs.tell(), 4);   
+    }
+
+    #[test]
+    /// Test that we encode and decode low bits properly.
+    fn test_bitstream_() {
+        let mut bs = BitStream::new();
+        for _ in 0..513 {
+            bs.write_bit(true);
+        }
+        for _ in 0..513 {
+            bs.write_bit(false);
+        }
+        for i in 0..513 {
+            bs.write_bit(i % 2 == 0);
+        }
+        bs.seek(0);
+        for _ in 0..513 {
+            assert_eq!(bs.read_bit(), true);
+        }
+        for _ in 0..513 {
+            assert_eq!(bs.read_bit(), false);
+        }
+        for i in 0..513 {
+            assert_eq!(bs.read_bit(), i % 2 == 0);
+        }
     }
 }

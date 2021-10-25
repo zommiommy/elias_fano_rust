@@ -40,7 +40,9 @@ impl BitStream {
         let second_word_number_of_bits = number_of_bits - first_word_number_of_bits;
 
         // this solve the assumptions in read_bits that we always have an extra word
-        self.data.resize(self.data.len() + 1, 0);
+        if self.word_index >= self.data.len() - 1 {
+            self.data.resize(self.data.len() + 1, 0);
+        }
 
         // write the data in the first word
         let first_word_bits = value & power_of_two_to_mask(first_word_number_of_bits as usize);

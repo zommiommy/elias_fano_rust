@@ -1,28 +1,41 @@
 use super::*;
+use rayon::iter::{
+    ParallelIterator,
+    IntoParallelRefIterator,
+};
+use std::convert::TryInto;
 
 /// FLAG if the struct should use differential compression or not.
 const USE_REFERENCES: bool = true;
 /// Maximum depth of references, lower values will result in faster
 /// decompression but worse compression
-const MAX_REFERENCE_RECURSION: u64 = 10;
+const MAX_REFERENCE_RECURSION: usize = 256;
 /// Maximum distance between the current node and the reference one
 /// an higher value can result in better compression but slows down 
 /// the reference finding algorithm, so the compression will be slower
-const MAX_REFERENCE_DISTANCE: u64 = 32;
+const MAX_REFERENCE_DISTANCE: usize = 1 << 11;
 /// Minimum score that a neighbour has to have to be a reference
-const MIN_SCORE_THRESHOLD: usize = 1;
+const MIN_SCORE_THRESHOLD: f64 = 1.0;
 /// If we should use a bitmap for the copy list or
 /// the runlength encoding of it
-const USE_COPY_LIST: bool = true;
+const USE_COPY_LIST: bool = false;
 /// If the extra nodes shold be encoded as dense ranges and residuals
 /// or just deltas
 const USE_INTERVALIZZATION: bool = false;
+const MIN_INTERVALIZZATION_LEN: u64 = 3;
+// If during the compression we should employ the swap_remove trick
+// which requires then sorting the current_dsts possibly multiple times
+// TODO!: FOR SOME REASON ENABLING THIS WORSEN THE COMPRESSIO, WTF 
+const SWAP_REMOVE: bool = false;
 
 pub struct WebGraphBuilder {
     current_src: u64,
     current_dsts: Vec<u64>,
     data: BitStream,
     nodes_index: Vec<u64>,
+
+    neighbours_cache: [(u64, usize, Vec<u64>); MAX_REFERENCE_DISTANCE],
+    neighbours_cache_index: usize,
 }
 
 impl WebGraphBuilder {
@@ -32,6 +45,10 @@ impl WebGraphBuilder {
             current_dsts: Vec::new(),
             data: BitStream::new(),
             nodes_index: Vec::new(),
+            neighbours_cache: vec![
+                (0, 0, Vec::new()); MAX_REFERENCE_DISTANCE
+            ].try_into().unwrap(),
+            neighbours_cache_index: 0,
         }
     }
 
@@ -50,23 +67,27 @@ impl WebGraphBuilder {
 
         // Save in the outbounds vector the current position
         let index = self.data.tell() as _;
-        for _ in self.current_src..src {
+        for _ in self.nodes_index.len()..=self.current_src as usize {
             self.nodes_index.push(index);
         }
 
+        // backup the dsts to be added to the cache
+        let old_dts = self.current_dsts.clone();
         // Encode the degree and the neighbours, 
         // we are guaranteed that degree >= 1
         let degree = self.current_dsts.len();
-        println!("Encoding: {}, deg: {}, neighbours: {:?}", self.current_src, degree, self.current_dsts);
-        
         self.data.write_gamma(degree as _);
         if USE_REFERENCES {
-            self.encode_references();
-        }
-        self.encode_extra_nodes();
+            let ref_depth = self.encode_references();
+            // update the cache
+            if ref_depth < MAX_REFERENCE_RECURSION {
+                self.neighbours_cache[self.neighbours_cache_index % MAX_REFERENCE_DISTANCE] = (self.current_src, ref_depth, old_dts);
+                self.neighbours_cache_index = self.neighbours_cache_index.wrapping_add(1);
+            }
 
-        let d = self.get_neighbours(self.current_src);
-        assert_eq!(self.current_dsts, d);
+        }
+        self.encode_extra_nodes();   
+
         // clean up the 
         self.current_dsts.clear();
         self.current_src = src;
@@ -93,16 +114,15 @@ impl WebGraphBuilder {
         let index = self.nodes_index[node_id as usize];
         // if the index is the same as the next one, then
         // we have no stuff to read
+        // also, if it's the last one we know that it's not empty
         if self.nodes_index.get(1 + node_id as usize)
             .map(|x| index == *x)
             .unwrap_or(false) {
             return vec![];
         }
         self.data.seek(index as usize);
-        
         // read the degree
         let degree = self.data.read_gamma();
-
         // if the degree is 0 we are done and don't need to decode anything
         if degree == 0 {
             self.data.seek(old_pos);
@@ -118,13 +138,13 @@ impl WebGraphBuilder {
         // reset the reader to where it was
         self.data.seek(old_pos);
 
-        //println!("Decoding: {}, deg: {} neighbours: {:?}", node_id, degree, neighbours);
         neighbours
     }
 
+
     #[inline]
     /// Find the best reference for the 
-    fn reference_finder(&mut self) -> (u64, Vec<u64>) {        
+    fn reference_finder(&mut self) -> (u64, usize, Vec<u64>) {        
         // TODO!: write an actually good algorithm
         // we could compute explicitely how big the encoding
         // would be using each node as a ref, so we have an exact
@@ -145,29 +165,44 @@ impl WebGraphBuilder {
         // at least 5 edges shared, and distance < 1_000
         // or some shit like that
 
-        let mut max_score = 0;
-        let mut max_node_id = self.current_src;
-        let mut max_neighbours = vec![];
+        let (max_score, max_node_id, max_depth, max_neighbours) = self.neighbours_cache.par_iter()
+            .map(|(node_id, depth, neighbours)| {
 
-        let min_node_id = self.current_src.saturating_sub(MAX_REFERENCE_DISTANCE);
-        for node_id in min_node_id..self.current_src {
-            let neighbours = self.get_neighbours(node_id);
-            let score = self.current_dsts.iter()
-                .filter(|n| neighbours.contains(n))
-                .count();
-            if score > max_score {
-                max_score = score;
-                max_node_id = node_id;
-                max_neighbours = neighbours;
-            }
+                // Compute how many neighbours the node share with the current_src
+                // assuming that both vecs are sorted!
+                let mut sharing_count = 0;
+                let mut i = 0;
+                let mut j = 0;
 
-        }
+                while let (Some(n1), Some(n2)) = (
+                    self.current_dsts.get(i), neighbours.get(j)
+                ) {
+                    use std::cmp::Ordering;
+                    match n1.cmp(n2) {
+                        Ordering::Equal => {
+                            i += 1;
+                            j += 1;
+                            sharing_count += 1;
+                        }
+                        Ordering::Less => {i += 1;},
+                        Ordering::Greater => {j += 1;},
+                    }
+                } 
+
+                (sharing_count as f64, node_id, depth, neighbours)
+            }).max_by(|(score_a, node_id_a, _, _), (score_b, node_id_b, _, _)| {
+                match score_a.partial_cmp(score_b).unwrap() {
+                    std::cmp::Ordering::Equal => node_id_a.cmp(node_id_b),
+                    x @ _ => x,
+                }
+            }).unwrap();
 
         // if the reference is sufficently useful, use it
         if max_score >= MIN_SCORE_THRESHOLD {
-            (max_node_id, max_neighbours)
+            // TODO!: can we remove this clone?
+            (*max_node_id, *max_depth, max_neighbours.clone())
         } else {
-            (self.current_src, vec![])
+            (self.current_src, 0, vec![])
         }
     }
 
@@ -178,17 +213,16 @@ impl WebGraphBuilder {
     //}
 
     #[inline]
-    fn encode_references(&mut self) {
-        let (ref_node_id, ref_neighbours) = self.reference_finder();
-
-        println!("ref_node_id: {}", ref_node_id);
+    fn encode_references(&mut self) -> usize {
+        let (ref_node_id, ref_depth, ref_neighbours) = self.reference_finder();
+        
         // write the reference 
         let delta = self.current_src - ref_node_id;
         self.data.write_gamma(delta);
 
         // If the delta is 0, we don't need to encode the copy list/block 
         if delta == 0 {
-            return;
+            return ref_depth;
         }
 
         if USE_COPY_LIST {
@@ -198,7 +232,11 @@ impl WebGraphBuilder {
                 match self.current_dsts.binary_search(&node) {
                     Ok(idx) => {
                         self.data.write_bit(true);
-                        self.current_dsts.remove(idx);
+                        if SWAP_REMOVE {
+                            self.current_dsts.swap_remove(idx);
+                        } else {
+                            self.current_dsts.remove(idx);
+                        }
                     },
                     Err(_) => {
                         self.data.write_bit(false);
@@ -207,31 +245,75 @@ impl WebGraphBuilder {
             }
         } else {
             // Copy Blocks with run length encoding
-            unimplemented!("TODO!");
+            let mut current_bit_value = true;
+            let mut counter = 0;
+
+            // write the copy list (if any)
+            for node in ref_neighbours {
+                // TODO! optimize, shit this is slow
+                let curr_bit = match self.current_dsts.binary_search(&node) {
+                    Ok(idx) => {
+                        if SWAP_REMOVE {
+                            self.current_dsts.swap_remove(idx);
+                        } else {
+                            self.current_dsts.remove(idx);
+                        }
+                        true
+                    },
+                    Err(_) => {
+                        false
+                    }
+                };
+
+                // during run length encoding change the enc at each rising / 
+                // falling edges
+                if curr_bit != current_bit_value {
+                    self.data.write_gamma(counter);
+                    current_bit_value = curr_bit;
+                    counter = 0;
+                }
+                counter += 1;
+            }
+            self.data.write_gamma(counter); // TODO!: maybe we can do a -1
         }
+        ref_depth + 1
     }
 
     #[inline]
     fn decode_references(&mut self, node_id: u64, neighbours: &mut Vec<u64>) {
         // figure out the ref
         let ref_delta = self.data.read_gamma();
-        if ref_delta != 0 {
-            // compute which node we are refering to
-            let ref_node = node_id - ref_delta;
-            // recursive call to decode its neighbours
-            let ref_neighbours = self.get_neighbours(ref_node);
+        if ref_delta == 0 {
+            return;
+        }
 
-            if USE_COPY_LIST {
-                // add the nodes to be copied
-                for node in ref_neighbours {
-                    if self.data.read_bit() {
-                        neighbours.push(node);
-                    }
+        // compute which node we are refering to
+        let ref_node = node_id - ref_delta;
+        // recursive call to decode its neighbours
+        let ref_neighbours = self.get_neighbours(ref_node);
+        if USE_COPY_LIST {
+            // add the nodes to be copied
+            for node in ref_neighbours {
+                if self.data.read_bit() {
+                    neighbours.push(node);
                 }
-            } else {
-                // Copy blocks, decode the run length encoding, and then 
-                // proceed as the copy list read
-                unimplemented!("TODO!");
+            }
+        } else {
+            // Copy blocks, decode the run length encoding, and then 
+            // proceed as the copy list read
+            let mut curr_bit_value = true;
+            let mut counter = self.data.read_gamma();
+            for node in ref_neighbours {
+                if counter == 0 {
+                    curr_bit_value ^= true;
+                    counter = self.data.read_gamma();
+                }
+
+                if curr_bit_value && counter > 0 {
+                    neighbours.push(node);
+                }
+
+                counter -= 1;
             }
         }
     }
@@ -239,65 +321,117 @@ impl WebGraphBuilder {
     #[inline]
     /// Encode the list of extra nodes as deltas using zeta3 codes.
     fn encode_extra_nodes(&mut self) {
-        if USE_INTERVALIZZATION {
-            unimplemented!("TODO")
-        } else {
             // if there are no extra nodes ignore
-            if self.current_dsts.is_empty() {
-                return;
-            }
-            // encode the first extra node
-            let first_dst = self.current_dsts[0];
-            self.data.write_gamma(
-                if first_dst >= self.current_src {
-                    2 * (first_dst - self.current_src)
-                } else {
-                    2 * (self.current_src - first_dst) - 1
-                }
-            );
+        if self.current_dsts.is_empty() {
+            return;
+        }
 
-            // encode the remaining nodes as deltas
-            let mut tmp = first_dst;
-            // TODO!: drain
-            for dst in self.current_dsts.iter().skip(1) {
-                self.data.write_zeta::<3>(dst - tmp);
-                tmp = *dst;
+        if SWAP_REMOVE || USE_INTERVALIZZATION {
+            self.current_dsts.sort();
+        }
+
+        if USE_INTERVALIZZATION {
+            // ensure that the dsts are sorted
+            // during the ref for speed sake we can brake sorting
+            let mut counter = 0;
+            let mut start = self.current_dsts[0];
+            let mut ranges = Vec::new();
+            // compute the ranges of sequential values big enought to be encoded
+            for node_id in &self.current_dsts[1..] {
+                if *node_id == start + counter {
+                    counter += 1;
+                } else {
+                    if counter > MIN_INTERVALIZZATION_LEN {
+                        ranges.push((start, counter));
+                    }
+                    start = *node_id;
+                    counter = 0;
+                }
             }
+
+            // encode the ranges and remove the values form the current_dsts
+            self.data.write_gamma(ranges.len() as _);
+
+            for (start, delta) in ranges {
+                // encode the ranges
+                self.data.write_gamma(start);
+                self.data.write_gamma(delta);
+                // delete the nodes
+                for id in start..start + delta {
+                    let idx = self.current_dsts.binary_search(&id).unwrap();
+                    if SWAP_REMOVE {
+                        self.current_dsts.swap_remove(idx);
+                    } else {
+                        self.current_dsts.remove(idx);
+                    }
+                }                
+            }
+
+            if SWAP_REMOVE {
+                self.current_dsts.sort();
+            }
+        }
+
+        // encode the first extra node
+        let first_dst = self.current_dsts[0];
+        self.data.write_gamma(
+            if first_dst >= self.current_src {
+                2 * (first_dst - self.current_src)
+            } else {
+                2 * (self.current_src - first_dst) - 1
+            }
+        );
+
+        // encode the remaining nodes as deltas
+        let mut tmp = first_dst;
+        // TODO!: drain
+        for dst in self.current_dsts.iter().skip(1) {
+            // If we don't have multigraphs we can do - 1 in the delta
+            // and save 0.1 bits per edge (Experimental)
+            self.data.write_zeta::<3>(dst - tmp);
+            tmp = *dst;
         }
     }
 
     #[inline]
     /// Dencode the list of extra nodes as deltas using zeta3 codes.
     fn dencode_extra_nodes(&mut self, node_id: u64, degree: u64, neighbours: &mut Vec<u64>) {
-        if USE_INTERVALIZZATION {
-            unimplemented!("TODO")
-        } else {
-            let nodes_to_decode = degree - neighbours.len() as u64;
-            // early stop
-            if nodes_to_decode == 0 {
-                return;
-            }
-            // read the first neighbour
-            let first_neighbour_delta = self.data.read_gamma();
-            // decode the first neighbour
-            let first_neighbour = if first_neighbour_delta & 1 == 0 {
-                node_id + (first_neighbour_delta >> 1)
-            } else {
-                node_id - (first_neighbour_delta >> 1) - 1
-            };
-            neighbours.push(
-                first_neighbour
-            );
+        let nodes_to_decode = degree - neighbours.len() as u64;
+        // early stop
+        if nodes_to_decode == 0 {
+            return;
+        }
 
-            // decode the other extra nodes
-            let mut tmp = first_neighbour;
-            for _  in 0..nodes_to_decode - 1 {
-                let code = self.data.read_zeta::<3>();
-                let new_node = code + tmp;
-                neighbours.push(new_node);
-                tmp = new_node;
+        if USE_INTERVALIZZATION {
+            let number_of_ranges = self.data.read_gamma();
+
+            for _ in 0..number_of_ranges {
+                let start = self.data.read_gamma();
+                let delta = self.data.read_gamma();
+                self.current_dsts.extend(start..start + delta);
             }
         }
+
+        // read the first neighbour
+        let first_neighbour_delta = self.data.read_gamma();
+        // decode the first neighbour
+        let first_neighbour = if first_neighbour_delta & 1 == 0 {
+            node_id + (first_neighbour_delta >> 1)
+        } else {
+            node_id - (first_neighbour_delta >> 1) - 1
+        };
+        neighbours.push(
+            first_neighbour
+        );
+
+        // decode the other extra nodes
+        let mut tmp = first_neighbour;
+        for _  in 0..nodes_to_decode - 1 {
+            let new_node = self.data.read_zeta::<3>() + tmp;
+            neighbours.push(new_node);
+            tmp = new_node;
+        }
+        
     }
 
 
@@ -321,5 +455,12 @@ impl WebGraphBuilder {
             data: self.data,
             nodes_index: compacted_nodes_index,
         }
+    }
+}
+
+impl crate::traits::MemoryFootprint for WebGraphBuilder {
+    fn total_size(&self) -> usize {
+        self.data.total_size() 
+            + std::mem::size_of::<u64>() * (self.nodes_index.len() + 3)
     }
 }

@@ -110,8 +110,8 @@ impl ConcurrentEliasFanoBuilder {
                 "The number of elements given on construction to EliasFano's concurrent builder was {}",
                 " but on the high bits there are {} ones, so either you inserted less elements, or",
                 " there were duplicated indices! This might also happen if the values inserted are not sorted.",
-                " Please ensure that the file is checked (specifically if you are using the coreutil sort it might"
-                " fail silently)."
+                " Please ensure that the file is checked (specifically if you are using the coreutil sort it might",
+                " fail silently).",
             ),
             self.number_of_elements,
             actual_number_of_inserted_values,

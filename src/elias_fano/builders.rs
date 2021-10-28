@@ -1,9 +1,10 @@
 use super::*;
+use alloc::string::String;
 
 impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
 
     #[inline]
-    pub fn new(universe: u64, number_of_elements: usize) -> Result<EliasFano<QUANTUM_LOG2>, String> {
+    pub fn new(universe: usize, number_of_elements: usize) -> Result<EliasFano<QUANTUM_LOG2>, String> {
         if number_of_elements == 0 {
             return Ok(EliasFano{
                 universe: universe,
@@ -16,9 +17,11 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
                 current_number_of_elements: 0,
             });
         }
+
+        use core::intrinsics::{floorf64, log2f64};
         // Compute the size of the low bits.
-        let low_bit_count = if universe >= number_of_elements as u64 {
-            (universe as f64 / number_of_elements as f64).log2().floor() as u64
+        let low_bit_count = if universe >= number_of_elements as usize {
+            unsafe{floorf64(log2f64(universe as f64 / number_of_elements as f64)) as usize}
         } else {
             0
         };
@@ -40,7 +43,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
             universe,
             // Pre-rendered mask to execute a fast version of the mod operation.
             high_bits: SparseIndex::with_capacity(2 * number_of_elements),
-            number_of_elements: number_of_elements as u64,
+            number_of_elements: number_of_elements,
             low_bits,
             last_high_value: 0,
             last_value: 0,
@@ -50,12 +53,12 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     /// Create a new elias-fano from an iterable of **sorted values**.
-    ///    low_bits: Vec<u64>,
+    ///    low_bits: Vec<usize>,
 
     /// # Arguments
     ///
-    /// * values: &[u64] - Vector of sorted integers to encode.
-    /// * max: u64 - The maximum value within the vector.
+    /// * values: &[usize] - Vector of sorted integers to encode.
+    /// * max: usize - The maximum value within the vector.
     /// ```
     /// # use elias_fano_rust::elias_fano::EliasFano;
     /// let vector = [5, 8, 8, 15, 32];
@@ -63,8 +66,8 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// ```
     #[inline]
     pub fn from_iter(
-        values: impl Iterator<Item = u64>,
-        universe: u64,
+        values: impl Iterator<Item = usize>,
+        universe: usize,
         number_of_elements: usize,
     ) -> Result<EliasFano<QUANTUM_LOG2>, String> {
         let mut result = EliasFano::new(universe, number_of_elements)?;
@@ -78,8 +81,8 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     ///
     /// # Arguments
     ///
-    /// * values: &[u64] - Vector of sorted integers to encode.
-    /// * max: u64 - The maximum value within the vector.
+    /// * values: &[usize] - Vector of sorted integers to encode.
+    /// * max: usize - The maximum value within the vector.
     ///
     /// ```
     /// # use elias_fano_rust::elias_fano::EliasFano;
@@ -87,7 +90,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// let ef = EliasFano::<10>::from_vec(&vector).unwrap();
     /// ```
     #[inline]
-    pub fn from_vec(values: &[u64]) -> Result<EliasFano<QUANTUM_LOG2>, String> {
+    pub fn from_vec(values: &[usize]) -> Result<EliasFano<QUANTUM_LOG2>, String> {
         EliasFano::from_iter(
             values.iter().cloned(),
             *values.last().unwrap_or(&0),
@@ -96,7 +99,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     #[inline]
-    pub fn unchecked_push(&mut self, value: u64) {
+    pub fn unchecked_push(&mut self, value: usize) {
         self.last_value = value;
         self.current_number_of_elements += 1;
 
@@ -118,7 +121,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     #[inline]
-    pub fn push(&mut self, value: u64) -> Result<(), String> {
+    pub fn push(&mut self, value: usize) -> Result<(), String> {
         if self.last_value > value {
             return Err(format!(
                 concat!(

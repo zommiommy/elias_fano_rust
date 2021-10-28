@@ -2,7 +2,8 @@ use crate::{
     constants::*,
     utils::*,
 };
-use std::sync::atomic::{AtomicU64, Ordering};
+use alloc::vec::Vec;
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// Return the size needed to allcoate the choosen number of bits
 /// This is a bit bigger than the minimum amount because doing so allows
@@ -10,16 +11,16 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// so we pay 3 extra words of memory to speed up the operations which is usually
 /// worth because it would be an overhead of 24 bytes over the vector which could
 /// occupy GiB of memory.
-pub fn get_vec_size(n_bits: u64, size: usize) -> u64 {
-    3 + ((size as u64 * n_bits) >> WORD_SHIFT)
+pub fn get_vec_size(n_bits: usize, size: usize) -> usize {
+    3 + ((size as usize * n_bits) >> WORD_SHIFT)
 }
 
 #[inline(always)]
 #[allow(dead_code)]
-pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
+pub fn safe_write(array: &mut Vec<usize>, index: usize, value: usize, value_size: usize) {
     let pos = index * value_size;
-    let o1 = pos & WORD_MASK;
-    let o2 = WORD_SIZE - o1;
+    let o1 = pos & WORD_BIT_SIZE_MASK;
+    let o2 = WORD_BIT_SIZE - o1;
 
     let lower = shl(value, o1);
     let higher = shr(value, o2);
@@ -31,10 +32,10 @@ pub fn safe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64)
 
 #[inline(always)]
 #[allow(dead_code)]
-pub fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, value_size: u64) {
+pub fn concurrent_write(array: &Vec<AtomicUsize>, index: usize, value: usize, value_size: usize) {
     let pos = index * value_size;
-    let o1 = pos & WORD_MASK;
-    let o2 = WORD_SIZE - o1;
+    let o1 = pos & WORD_BIT_SIZE_MASK;
+    let o2 = WORD_BIT_SIZE - o1;
 
     let lower = shl(value, o1);
     let higher = shr(value, o2);
@@ -46,10 +47,10 @@ pub fn concurrent_write(array: &Vec<AtomicU64>, index: u64, value: u64, value_si
 
 #[inline(always)]
 #[allow(dead_code)]
-pub fn safe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
+pub fn safe_read(array: &[usize], index: usize, value_size: usize) -> usize {
     let pos = index * value_size;
-    let o1 = pos & WORD_MASK;
-    let o2 = WORD_SIZE - o1;
+    let o1 = pos & WORD_BIT_SIZE_MASK;
+    let o2 = WORD_BIT_SIZE - o1;
 
     let mask = (1 << value_size) - 1;
     let base = (pos >> WORD_SHIFT) as usize;
@@ -61,10 +62,10 @@ pub fn safe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
 
 #[inline(always)]
 #[allow(dead_code)]
-pub fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u64) {
+pub fn unsafe_write(array: &mut Vec<usize>, index: usize, value: usize, value_size: usize) {
     let pos = index * value_size;
-    let o1 = pos & WORD_MASK;
-    let o2 = WORD_SIZE - o1;
+    let o1 = pos & WORD_BIT_SIZE_MASK;
+    let o2 = WORD_BIT_SIZE - o1;
 
     let base = (pos >> WORD_SHIFT) as usize;
     let lower = shl(value, o1);
@@ -78,10 +79,10 @@ pub fn unsafe_write(array: &mut Vec<u64>, index: u64, value: u64, value_size: u6
 
 #[inline(always)]
 #[allow(dead_code)]
-pub fn unsafe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
+pub fn unsafe_read(array: &[usize], index: usize, value_size: usize) -> usize {
     let pos = index * value_size;
-    let o1 = pos & WORD_MASK;
-    let o2 = WORD_SIZE - o1;
+    let o1 = pos & WORD_BIT_SIZE_MASK;
+    let o2 = WORD_BIT_SIZE - o1;
 
     let mask = (1 << value_size) - 1;
     let base = (pos >> WORD_SHIFT) as usize;
@@ -95,8 +96,8 @@ pub fn unsafe_read(array: &[u64], index: u64, value_size: u64) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::Rng;
     use rand::rngs::SmallRng;
-    use rand::RngCore;
     use rand::SeedableRng;
 
     pub const SEED: [u8; 16] = [
@@ -104,58 +105,56 @@ mod tests {
     ];
 
     /// Test that everything runs properly in the PPI graph.
-    pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
+    pub fn build_random_sorted_vector(size: usize, max: usize) -> Vec<usize> {
         let mut rng: SmallRng = SmallRng::from_seed(SEED);
         let mut vector = Vec::new();
         for _ in 0..size {
-            let t = rng.next_u64() % max;
+            let t = rng.gen::<usize>() % max;
             vector.push(t);
         }
         vector.sort();
         vector
     }
 
-    fn test_safe_low_bits(n_bits: u64, size: usize){
+    fn test_safe_low_bits(n_bits: usize, size: usize){
         let max_values = (1 << n_bits) - 1;
         let mut low_bits = vec![0; get_vec_size(n_bits, size) as usize];
 
         
         let vector = build_random_sorted_vector(size, max_values);
-        let values: Vec<u64> = vector.iter().map(|x| x % max_values).collect();
+        let values: Vec<usize> = vector.iter().map(|x| x % max_values).collect();
         
         for (i, v) in values.iter().enumerate() {
-            safe_write(&mut low_bits, i as u64, *v, n_bits);
+            safe_write(&mut low_bits, i as usize, *v, n_bits);
         }
 
         for (i, v) in values.iter().enumerate() {
             assert_eq!(
                 *v,
-                safe_read(&low_bits, i as u64, n_bits)
+                safe_read(&low_bits, i as usize, n_bits)
             );
         }
     }
 
-    fn test_unsafe_low_bits(n_bits: u64, size: usize){
+    fn test_unsafe_low_bits(n_bits: usize, size: usize){
         let max_values = (1 << n_bits) - 1;
         let mut low_bits = vec![0; get_vec_size(n_bits, size) as usize];
 
         
         let vector = build_random_sorted_vector(size, max_values);
-        let values: Vec<u64> = vector.iter().map(|x| x % max_values).collect();
+        let values: Vec<usize> = vector.iter().map(|x| x % max_values).collect();
         
         for (i, v) in values.iter().enumerate() {
-            unsafe_write(&mut low_bits, i as u64, *v, n_bits);
+            unsafe_write(&mut low_bits, i as usize, *v, n_bits);
         }
 
         for (i, v) in values.iter().enumerate() {
             assert_eq!(
                 *v,
-                unsafe_read(&low_bits, i as u64, n_bits)
+                unsafe_read(&low_bits, i as usize, n_bits)
             );
         }
     }
-
-    use rand::Rng;
 
     #[test]
     /// Test that we encode and decode low bits properly.

@@ -4,7 +4,6 @@ use elias_fano_rust::elias_fano::*;
 use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
-use rayon::prelude::*;
 use std::time::Instant;
 
 pub const SEED: [u8; 16] = [
@@ -12,14 +11,14 @@ pub const SEED: [u8; 16] = [
 ];
 
 /// Test that everything runs properly in the PPI graph.
-pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
+pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<usize> {
     let mut rng: SmallRng = SmallRng::from_seed(SEED);
     let mut vector = Vec::new();
     for _ in 0..size {
-        let t = rng.next_u64() % max;
+        let t = (rng.next_u64() % max) as usize;
         vector.push(t);
     }
-    vector.par_sort_unstable();
+    vector.sort_unstable();
     vector
 }
 
@@ -27,6 +26,7 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
 const SIZE: usize = 23_751_196;
 const MAX : u64 = 462_304 * 462_304;
 
+#[cfg(feature="par_iter")]
 #[test]
 /// Test that we can build successfully run all methods in elias fano.
 pub fn test_concurrent_builder() {

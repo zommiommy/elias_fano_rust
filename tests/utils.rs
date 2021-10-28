@@ -8,11 +8,11 @@ pub const SEED: [u8; 16] = [
 ];
 
 /// Test that everything runs properly in the PPI graph.
-pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
+pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<usize> {
     let mut rng: SmallRng = SmallRng::from_seed(SEED);
     let mut vector = Vec::new();
     for _ in 0..size {
-        let t = rng.next_u64() % max;
+        let t = (rng.next_u64() % max) as usize;
         vector.push(t);
     }
     vector.sort();
@@ -25,9 +25,9 @@ pub fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
     let vector = build_random_sorted_vector(size, max);
     let ef = EliasFano::<10>::from_vec(&vector)?;
     vector.iter().enumerate().for_each(|(i, v)| {
-        assert_eq!(*v, ef.select(i as u64).unwrap());
+        assert_eq!(*v, ef.select(i).unwrap());
         assert!(ef.contains(*v));
-        assert_eq!(*v, ef.unchecked_select(i as u64));
+        assert_eq!(*v, ef.unchecked_select(i));
         assert_eq!(ef.select(ef.unchecked_rank(*v)).unwrap(), *v);
     });
 

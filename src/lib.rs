@@ -55,17 +55,42 @@
 //! **TLDR**: [Vigna uses 256 (8)](https://shonan.nii.ac.jp/archives/seminar/029/wp-content/uploads/sites/12/2013/07/Sebastiano_Shonan.pdf) but 
 //! in our implementatione we use 1024 (10) as the default quantum (`INDEX_SHIFT`) because it provide a better time-memory tradeoff.
 #![feature(core_intrinsics)]
+#![feature(const_generics_defaults)]
 
+// No std so that all these structures can be used in
+// bare metal environments (not making any assumption about architecture width),
+// but we require to have an allocator
+#![no_std]
+#[macro_use]
+extern crate alloc;
+
+pub(crate) mod constants;
 pub mod utils;
-pub mod constants;
 pub mod compact_array;
 pub mod sparse_index;
 pub mod elias_fano;
 pub mod codes;
 pub mod traits;
-pub use codes::BitStream;
+pub use codes::*;
 pub mod webgraph;
+// mod bitstream;
+// use bitstream::BitStream;
+mod bitarray;
+pub use bitarray::BitArray;
 
+/// Simple prelude module that import everything
+pub mod prelude {
+    pub use super::BitArray;
+    pub use super::traits::*;
+    pub use super::codes::*;
+    pub use super::compact_array::CompactArray;
+    pub use super::sparse_index::SparseIndex;
+    pub use super::elias_fano::{
+        EliasFano,
+        ConcurrentEliasFanoBuilder
+    };
+    pub use super::utils;
+}
 
 #[cfg(feature="fuzz")]
 pub mod fuzz;

@@ -1,4 +1,4 @@
-use crate::BitStream;
+use crate::BitArray;
 use crate::compact_array::CompactArray;
 
 mod builder;
@@ -8,7 +8,7 @@ pub struct WebGraph {
     /// The codes.
     /// For each node we are going to write its encoded degree,
     /// the first neighbour, and then the encoded gaps between neighbours.
-    data: BitStream,
+    data: BitArray,
 
     /// store the bit-index in the BitStream of each node
     /// Should we use elias-fano here?
@@ -17,12 +17,12 @@ pub struct WebGraph {
 
 // impl GraphUtils for WebGraph {
 //     /// Get the degree of a node
-//     fn degree(&self, node_id: u64) -> u64 {
+//     fn degree(&self, node_id: usize) -> usize {
 //         self.data.seek(self.nodes_index.read(src));
 //         self.data.read_gamma()
 //     }
 // 
-//     fn iter_neighbours(&self, src: u64) {
+//     fn iter_neighbours(&self, src: usize) {
 //         self.data.seek(self.nodes_index.read(src));
 //         let degree = self.data.read_gamma();
 // 

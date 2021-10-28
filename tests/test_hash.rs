@@ -10,11 +10,11 @@ pub const SEED: [u8; 16] = [
 ];
 
 /// Test that everything runs properly in the PPI graph.
-pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<u64> {
+pub fn build_random_sorted_vector(size: usize, max: usize) -> Vec<usize> {
     let mut rng: SmallRng = SmallRng::from_seed(SEED);
     let mut vector = Vec::new();
     for _ in 0..size {
-        let t = rng.next_u64() % max;
+        let t = rng.next_u64() as usize % max;
         vector.push(t);
     }
     vector.sort();

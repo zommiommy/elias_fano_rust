@@ -1,6 +1,8 @@
 use crate::utils::power_of_two_to_mask;
-use std::sync::atomic::AtomicU64;
+use core::sync::atomic::AtomicUsize;
+use core::mem::size_of;
 mod primitives;
+use alloc::vec::Vec;
 
 #[cfg(feature="fuzz")]
 pub use primitives::*;
@@ -13,20 +15,19 @@ use primitives::*;
 /// the i-th value can be written / read from the bits
 /// (word_size * i..word_size * (i + 1))
 pub struct CompactArray{
-    data: Vec<u64>,
-    word_size: u64,
-    word_mask: u64,
+    data: Vec<usize>,
+    word_size: usize,
+    word_mask: usize,
 }
 
 impl crate::traits::MemoryFootprint for CompactArray {
     fn total_size(&self) -> usize {
-        std::mem::size_of::<u64>() * (2 + self.data.len())
-        + 2 * std::mem::size_of::<usize>()
+        size_of::<usize>() * 2 + self.data.total_size()
     }
 }
 
 impl CompactArray {
-    pub fn new(word_size: u64) -> CompactArray {
+    pub fn new(word_size: usize) -> CompactArray {
         CompactArray{
             data: Vec::new(),
             word_mask: power_of_two_to_mask(word_size as usize),
@@ -34,7 +35,7 @@ impl CompactArray {
         }
     }
 
-    pub fn with_capacity(word_size: u64, capacity: usize) -> CompactArray {
+    pub fn with_capacity(word_size: usize, capacity: usize) -> CompactArray {
         CompactArray{
             data: vec![0; get_vec_size(word_size, capacity) as usize],
             word_mask: power_of_two_to_mask(word_size as usize),
@@ -48,7 +49,7 @@ impl CompactArray {
 
     #[inline]
     /// Read a value from the compact array
-    pub fn read(&self, index: u64) -> u64 {
+    pub fn read(&self, index: usize) -> usize {
         #[cfg(not(feature = "unsafe"))]
         return safe_read(&self.data, index, self.word_size);
         #[cfg(feature = "unsafe")]
@@ -60,7 +61,7 @@ impl CompactArray {
     /// 
     /// # Safety
     /// This assumes that `value` fit in `word_size` bits.
-    pub fn write(&mut self, index: u64, value: u64) {
+    pub fn write(&mut self, index: usize, value: usize) {
         #[cfg(not(feature = "unsafe"))]
         safe_write(&mut self.data, index, value, self.word_size);
         #[cfg(feature = "unsafe")]
@@ -72,9 +73,9 @@ impl CompactArray {
     /// 
     /// # Safety
     /// This assumes that `value` fit in `word_size` bits.
-    pub fn concurrent_write(&self, index: u64, value: u64) {
+    pub fn concurrent_write(&self, index: usize, value: usize) {
         let ptr = unsafe {
-            std::mem::transmute::<&Vec<u64>, &Vec<AtomicU64>>(&self.data)
+            core::mem::transmute::<&Vec<usize>, &Vec<AtomicUsize>>(&self.data)
         };
         concurrent_write(
             ptr, 
@@ -85,16 +86,12 @@ impl CompactArray {
     }
 
     #[inline]
-    pub fn word_size(&self) -> u64 {
+    pub fn word_size(&self) -> usize {
         self.word_size
     }
 
     #[inline]
-    pub fn word_mask(&self) -> u64 {
+    pub fn word_mask(&self) -> usize {
         self.word_mask
-    }
-
-    pub fn size(&self) -> usize {
-        (self.data.capacity() * std::mem::size_of::<u64>()) + 2 * std::mem::size_of::<Vec<u64>>()
     }
 }

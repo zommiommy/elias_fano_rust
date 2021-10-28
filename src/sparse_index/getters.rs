@@ -3,17 +3,17 @@ use super::*;
 /// # Getters
 impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     #[inline]
-    pub fn count_zeros(&self) -> u64 {
+    pub fn count_zeros(&self) -> usize {
         self.number_of_zeros
     }
     
     #[inline]
-    pub fn count_ones(&self) -> u64 {
+    pub fn count_ones(&self) -> usize {
         self.number_of_ones
     }
 
     #[inline]
-    pub fn len(&self) -> u64 {
+    pub fn len(&self) -> usize {
         self.len
     }
 }
@@ -22,15 +22,15 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 /// # Core functionalities
 impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     /// Returns the value of the bit of position `index`.
-    pub fn get(&self, index: u64) -> bool {
+    pub fn get(&self, index: usize) -> bool {
         let word_idx = index >> WORD_SHIFT;
-        let bit_idx = index & WORD_MASK;
+        let bit_idx = index & WORD_BIT_SIZE_MASK;
         let bit_value = (self.high_bits[word_idx as usize] >> bit_idx) & 1;
         bit_value == 1
     }
 
     /// Returns the position of the `index`-th bit set to one.
-    pub fn select1(&self, index: u64) -> u64 {
+    pub fn select1(&self, index: usize) -> usize {
         // use the index to find in which block the value is
         let mut reminder_to_scan = index & power_of_two_to_mask(QUANTUM_LOG2);
         let index_idx = index >> QUANTUM_LOG2;
@@ -40,17 +40,17 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
         // find in which word the start value is
         let mut block_id = bit_pos >> WORD_SHIFT;
-        let in_word_reminder = bit_pos & WORD_MASK;
+        let in_word_reminder = bit_pos & WORD_BIT_SIZE_MASK;
 
         // build the standard word to start scanning
         let mut code = self.high_bits[block_id as usize];
 
         // clean the "already parsed lower bits"
-        code &= u64::MAX << in_word_reminder;
+        code &= usize::MAX << in_word_reminder;
 
         // use popcnt to find the right word
         loop {
-            let popcnt = code.count_ones() as u64;
+            let popcnt = code.count_ones() as usize;
             if popcnt > reminder_to_scan {
                 break
             } 
@@ -65,11 +65,11 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             code &= code - 1;
         }
 
-        (block_id * WORD_SIZE) + code.trailing_zeros() as u64
+        (block_id * WORD_BIT_SIZE) + code.trailing_zeros() as usize
     }
 
     /// Returns the position of the `index`-th bit set to zero.
-    pub fn select0(&self, index: u64) -> u64 {
+    pub fn select0(&self, index: usize) -> usize {
         // use the index to find in which block the value is
         let mut reminder_to_scan = index & power_of_two_to_mask(QUANTUM_LOG2);
         let index_idx = index >> QUANTUM_LOG2;
@@ -79,7 +79,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
         // find in which word the start value is
         let mut block_id = bit_pos >> WORD_SHIFT;
-        let in_word_reminder = bit_pos & WORD_MASK;
+        let in_word_reminder = bit_pos & WORD_BIT_SIZE_MASK;
 
         // build the standard word to start scanning
         let mut code = self.high_bits[block_id as usize];
@@ -91,7 +91,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
         // use popcnt to find the right word
         loop {
-            let popcnt = code.count_zeros() as u64;
+            let popcnt = code.count_zeros() as usize;
             if popcnt > reminder_to_scan {
                 break
             } 
@@ -116,7 +116,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             code |= code + 1;
         }
 
-        (block_id * WORD_SIZE) + code.trailing_ones() as u64
+        (block_id * WORD_BIT_SIZE) + code.trailing_ones() as usize
     }
 
     /// Return the number of bits set to one from the start to the given `index` 
@@ -124,7 +124,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     ///
     /// This is basically a select + a binary search so it should be a bit
     /// slower than a select.
-    pub fn rank1(&self, index: u64) -> u64 {
+    pub fn rank1(&self, index: usize) -> usize {
         if index >= self.len() {
             return self.count_ones();   
         }
@@ -136,32 +136,32 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             // fast path, luckily the index is one found in the index
             // so we can directly compute the number of ones
             Ok(idx) => {
-                (idx as u64) << QUANTUM_LOG2
+                (idx as usize) << QUANTUM_LOG2
             },
             Err(idx) => {
                 // Find the biggest index value smaller than the index
                 let idx = idx.saturating_sub(1);
-                let mut res = (idx as u64) << QUANTUM_LOG2;
+                let mut res = (idx as usize) << QUANTUM_LOG2;
                 
                 // Read the index to start at a better position for the count
                 let bit_pos = self.high_bits_index_ones[idx];
 
                 // find the word index and the bit index inside the word
                 let mut current_idx = bit_pos >> WORD_SHIFT;
-                let bits_to_ignore  = bit_pos & WORD_MASK;
+                let bits_to_ignore  = bit_pos & WORD_BIT_SIZE_MASK;
 
                 // setup the word of memory so that the already counted
                 // bits are cleaned to avoid double counting
                 let mut current_word = self.high_bits[current_idx as usize];
-                current_word &= !0_u64 << bits_to_ignore;
+                current_word &= !0_usize << bits_to_ignore;
 
                 // compute how many bits are left to be scanned
                 let mut bits_left = (index + bits_to_ignore).saturating_sub(bit_pos);
                 
                 // We can quickly skip words by popcnt-ing them
-                while bits_left > 63 {
-                    res += current_word.count_ones() as u64;
-                    bits_left -= 64;
+                while bits_left >= WORD_BIT_SIZE {
+                    res += current_word.count_ones() as usize;
+                    bits_left -= WORD_BIT_SIZE;
                     current_idx += 1;
                     current_word = self.high_bits[current_idx as usize];
                 }
@@ -170,8 +170,8 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
                 // we will clean out the bits we don't care about and popcnt
                 res += (
                         current_word 
-                        & !(!0_u64 << (bits_left as u32))
-                    ).count_ones() as u64;
+                        & !(!0_usize << (bits_left as u32))
+                    ).count_ones() as usize;
 
                 res
             }
@@ -183,7 +183,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     ///
     /// This is basically a select + a binary search so it should be a bit
     /// slower than a select.
-    pub fn rank0(&self, index: u64) -> u64 {
+    pub fn rank0(&self, index: usize) -> usize {
         if index >= self.len() {
             return self.count_zeros();
         }
@@ -195,32 +195,32 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             // fast path, luckily the index is one found in the index
             // so we can directly compute the number of ones
             Ok(idx) => {
-                (idx as u64) << QUANTUM_LOG2
+                (idx as usize) << QUANTUM_LOG2
             },
             Err(idx) => {
                 // Find the biggest index value smaller than the index
                 let idx = idx.saturating_sub(1);
-                let mut res = (idx as u64) << QUANTUM_LOG2;
+                let mut res = (idx as usize) << QUANTUM_LOG2;
                 
                 // Read the index to start at a better position for the count
                 let bit_pos = self.high_bits_index_zeros[idx];
 
                 // find the word index and the bit index inside the word
                 let mut current_idx = bit_pos >> WORD_SHIFT;
-                let bits_to_ignore  = bit_pos & WORD_MASK;
+                let bits_to_ignore  = bit_pos & WORD_BIT_SIZE_MASK;
 
                 // setup the word of memory so that the already counted
                 // bits are cleaned to avoid double counting
                 let mut current_word = !self.high_bits[current_idx as usize];
-                current_word &= !0_u64 << bits_to_ignore;
+                current_word &= !0_usize << bits_to_ignore;
 
                 // compute how many bits are left to be scanned
                 let mut bits_left = (index + bits_to_ignore).saturating_sub(bit_pos);
                 
                 // We can quickly skip words by popcnt-ing them
-                while bits_left > 63 {
-                    res += current_word.count_ones() as u64;
-                    bits_left -= 64;
+                while bits_left >= WORD_BIT_SIZE {
+                    res += current_word.count_ones() as usize;
+                    bits_left -= WORD_BIT_SIZE;
                     current_idx += 1;
                     current_word = !self.high_bits[current_idx as usize];
                 }
@@ -229,8 +229,8 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
                 // we will clean out the bits we don't care about and popcnt
                 res += (
                         current_word 
-                        & !(!0_u64 << (bits_left as u32))
-                    ).count_ones() as u64;
+                        & !(!0_usize << (bits_left as u32))
+                    ).count_ones() as usize;
 
                 res
             }

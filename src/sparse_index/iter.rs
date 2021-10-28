@@ -1,8 +1,9 @@
 use super::*;
-use std::intrinsics::unlikely;
+use core::intrinsics::unlikely;
+use core::ops::Range;
 
 impl<'a, const QUANTUM_LOG2: usize> IntoIterator for &'a SparseIndex<QUANTUM_LOG2> {
-    type Item = u64;
+    type Item = usize;
     type IntoIter = SparseIndexIterator<'a, QUANTUM_LOG2>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -13,7 +14,7 @@ impl<'a, const QUANTUM_LOG2: usize> IntoIterator for &'a SparseIndex<QUANTUM_LOG
 impl<'a, const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     /// Return an iterator over all the indices of the bits set to one
     /// which are inside the provided range.
-    pub fn iter_in_range(&'a self, range: Range<u64>) -> SparseIndexIterator<'a, QUANTUM_LOG2> {
+    pub fn iter_in_range(&'a self, range: Range<usize>) -> SparseIndexIterator<'a, QUANTUM_LOG2> {
         SparseIndexIterator::new_in_range(self, range)
     }
     
@@ -29,13 +30,13 @@ pub struct SparseIndexIterator<'a, const QUANTUM_LOG2: usize> {
     /// this is needed to get the reference to the high-bits
     father: &'a SparseIndex<QUANTUM_LOG2>,
     /// The current code already decoded
-    current_code: u64,
+    current_code: usize,
     /// Current word index
     index: usize,
     /// Maximum index of where to stop
     max_index: usize,
     /// Maximum value the iter will return
-    max: Option<u64>,
+    max: Option<usize>,
 }
 
 
@@ -44,7 +45,7 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndexIterator<'a, QUANTUM_LOG2> {
     /// Create a structure that iter over all the indices of the bits set to one
     /// which are inside the provided range.
     #[inline]
-    pub fn new_in_range(father: &SparseIndex<QUANTUM_LOG2>, range: Range<u64>) -> SparseIndexIterator<QUANTUM_LOG2> {
+    pub fn new_in_range(father: &SparseIndex<QUANTUM_LOG2>, range: Range<usize>) -> SparseIndexIterator<QUANTUM_LOG2> {
         if unlikely(range.start >= father.len()) {
             return SparseIndexIterator{
                 father:father,
@@ -56,11 +57,11 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndexIterator<'a, QUANTUM_LOG2> {
         }
 
         let block_id = range.start >> WORD_SHIFT;
-        let in_word_reminder = range.start & WORD_MASK;
+        let in_word_reminder = range.start & WORD_BIT_SIZE_MASK;
         let mut code = father.high_bits[block_id as usize];
 
         // clean the "already parsed lower bits"
-        code &= u64::MAX << in_word_reminder;
+        code &= usize::MAX << in_word_reminder;
 
         SparseIndexIterator{
             father:father,
@@ -86,7 +87,7 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndexIterator<'a, QUANTUM_LOG2> {
 }
 
 impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexIterator<'a, QUANTUM_LOG2> {
-    type Item = u64;
+    type Item = usize;
     /// The iteration code takes inspiration from <https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/>
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -107,7 +108,7 @@ impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexIterator<'a, QUANTUM
         self.current_code &= self.current_code - 1;
 
         // compute the result value
-        let result = (self.index as u64 * WORD_SIZE) + t as u64;
+        let result = (self.index as usize * WORD_BIT_SIZE_MASK) + t as usize;
 
         // Check if we exceeds the max value
         if let Some(_max) = &self.max {

@@ -10,7 +10,7 @@ use fid::*;
 
 pub fn rank_and_select_harness(data: &[u8]) {
     let data = <Vec<u16>>::arbitrary(&mut Unstructured::new(data)).unwrap();
-    let mut data = data.iter().map(|x| *x as u64).collect::<Vec<u64>>();
+    let mut data = data.iter().map(|x| *x as usize).collect::<Vec<usize>>();
     // create a sorted vector
     data.sort();
 
@@ -20,7 +20,7 @@ pub fn rank_and_select_harness(data: &[u8]) {
     
     for i in 0..data.len() {
         let truth = data[i];
-        let ours = ef.unchecked_select(i as u64);
+        let ours = ef.unchecked_select(i as usize);
         assert_eq!(
             truth, 
             ours,
@@ -35,7 +35,7 @@ pub fn rank_and_select_harness(data: &[u8]) {
     }
 
     for x in &data {
-        let mut truth = data.binary_search(x).unwrap() as u64;
+        let mut truth = data.binary_search(x).unwrap() as usize;
         while truth > 0 && data[truth as usize - 1] == *x {
             truth -= 1;
         }
@@ -59,7 +59,7 @@ pub fn rank_and_select_harness(data: &[u8]) {
 pub fn si_doubleended_iter_harness(data: &[u8]) {
     let (start, end, fb_nexts, values) = <(u16, u16, Vec<bool>, Vec<u16>)>::arbitrary(&mut Unstructured::new(data)).unwrap();
     // create a sorted vector with no duplicates
-    let mut values = values.iter().map(|x| *x as u64).collect::<Vec<_>>();
+    let mut values = values.iter().map(|x| *x as usize).collect::<Vec<_>>();
     values.sort();
 
     let mut si = SparseIndex::<10>::new();
@@ -82,8 +82,8 @@ pub fn si_doubleended_iter_harness(data: &[u8]) {
         )
     }
 
-    let mut iter = si.iter_in_range_double_ended(start as u64..end as u64);
-    let mut truth_iter = values.iter().filter(|x| (start as u64..end as u64).contains(x)).map(|x| *x);
+    let mut iter = si.iter_in_range_double_ended(start as usize..end as usize);
+    let mut truth_iter = values.iter().filter(|x| (start as usize..end as usize).contains(x)).map(|x| *x);
     
     for fb in &fb_nexts {
         assert_eq!(
@@ -103,7 +103,7 @@ pub fn si_doubleended_iter_harness(data: &[u8]) {
 
 pub fn iter_harness(data: &[u8]) {
     let data = <Vec<u16>>::arbitrary(&mut Unstructured::new(data)).unwrap();
-    let mut data = data.iter().map(|x| *x as u64).collect::<Vec<u64>>();
+    let mut data = data.iter().map(|x| *x as usize).collect::<Vec<usize>>();
     // create a sorted vector with no duplicates
     data.sort();
 
@@ -129,19 +129,19 @@ pub fn simple_select_harness(data: Vec<bool>) {
         rs.push(bit);
     }
 
-    for i in 0..rs.rank1(rs.len()) as u64 {
+    for i in 0..rs.rank1(rs.len()) as usize {
         assert_eq!(hb.select1(i), rs.select1(i), "error seleting the {}-th one", i);
     }
 
-    for i in 0..rs.rank0(rs.len()) as u64 {
+    for i in 0..rs.rank0(rs.len()) as usize {
         assert_eq!(hb.select0(i), rs.select0(i), "error seleting the {}-th zero", i);
     }
 
-    for i in 0..rs.len() as u64 {
+    for i in 0..rs.len() as usize {
         assert_eq!(hb.rank1(i), rs.rank1(i), "error ranking ones up to {}", i);
     }
 
-    for i in 0..rs.len() as u64 {
+    for i in 0..rs.len() as usize {
         assert_eq!(hb.rank0(i), rs.rank0(i), "error ranking zeros up to {}", i);
     }
 }
@@ -149,8 +149,8 @@ pub fn simple_select_harness(data: Vec<bool>) {
 
 #[derive(Arbitrary, Debug)]
 struct InputData {
-    start: u64,
-    end: u64,
+    start: usize,
+    end: usize,
     indices: Vec<u16>,
 }
 
@@ -167,7 +167,7 @@ pub fn iter_in_range_harness(data: &[u8]) {
     } = data.unwrap();
     
 
-    let mut indices = indices.iter().map(|x| *x as u64).collect::<Vec<u64>>();
+    let mut indices = indices.iter().map(|x| *x as usize).collect::<Vec<usize>>();
     // create a sorted vector with no duplicates
     indices.sort();
 
@@ -179,9 +179,9 @@ pub fn iter_in_range_harness(data: &[u8]) {
 
     assert_eq!(ef.len() as usize, indices.len() as usize, "the length of the vector do not match!");
     
-    let truth = indices.iter().filter(|i| (start..end).contains(&i)).cloned().collect::<Vec<u64>>();
+    let truth = indices.iter().filter(|i| (start..end).contains(&i)).cloned().collect::<Vec<usize>>();
 
-    let ours = ef.iter_in_range(start..end).collect::<Vec<u64>>();
+    let ours = ef.iter_in_range(start..end).collect::<Vec<usize>>();
 
     for (a, b) in truth.iter().zip(ours.iter()) {
         assert_eq!(*a, *b, "The values inside elias-fano");
@@ -190,7 +190,7 @@ pub fn iter_in_range_harness(data: &[u8]) {
 
 pub fn ef_builder_harness(data: &[u8]) {
     let data = <Vec<u16>>::arbitrary(&mut Unstructured::new(data)).unwrap();
-    let mut data = data.iter().map(|x| *x as u64).collect::<Vec<u64>>();
+    let mut data = data.iter().map(|x| *x as usize).collect::<Vec<usize>>();
     // create a sorted vector
     data.sort();
 
@@ -198,9 +198,9 @@ pub fn ef_builder_harness(data: &[u8]) {
 
     assert_eq!( ef.len() as usize, data.len() as usize, "the sequential elias fano length do not match the vector!");
 
-    let cefb = ConcurrentEliasFanoBuilder::<10>::new(data.len() as u64, *data.last().unwrap_or(&0)).unwrap();
+    let cefb = ConcurrentEliasFanoBuilder::<10>::new(data.len() as usize, *data.last().unwrap_or(&0)).unwrap();
 
-    data.par_iter().enumerate().for_each(|(i, x)| cefb.set(i as u64, *x));
+    data.par_iter().enumerate().for_each(|(i, x)| cefb.set(i as usize, *x));
 
     let cef = cefb.build().unwrap();
 
@@ -213,7 +213,7 @@ pub fn ef_builder_harness(data: &[u8]) {
 }
 
 pub fn codes_harness(data: &[u8]) {
-    let data = <Vec<(u8, u64)>>::arbitrary(&mut Unstructured::new(data));
+    let data = <Vec<(u8, usize)>>::arbitrary(&mut Unstructured::new(data));
     if data.is_err() {
         return;
     }

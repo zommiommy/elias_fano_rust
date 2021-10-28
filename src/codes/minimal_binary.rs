@@ -1,47 +1,81 @@
 use crate::utils::{fast_log2_ceil, fast_log2_floor, fast_pow_2};
-use super::BitStream;
+use super::fixed_length::CodeFixedLength;
+use crate::traits::*;
 
 /// Huffman Optimal code for uniform distribution
-impl BitStream {
+/// 
+/// # Example
+/// ```rust
+/// use elias_fano_rust::prelude::*;
+/// 
+/// let mut ba = BitArray::new();
+/// 
+/// let max = 1_000;
+/// // write values to the stream
+/// for i in 0..max {
+///     let idx = ba.tell_bits().unwrap();
+/// 
+///     // write the value
+///     ba.write_minimal_binary(i, max).unwrap();
+/// 
+/// 
+///     // ensure that size is consistent with the seek forwarding
+///     assert_eq!(
+///         ba.tell_bits().unwrap(), 
+///         idx + ba.size_minimal_binary(i, max)
+///     );
+/// }
+/// 
+/// // rewind the stream
+/// ba.seek_bits(0).unwrap();
+/// 
+/// // read back the values
+/// for i in 0..max {
+///     assert_eq!(i, ba.read_minimal_binary(max).unwrap());
+/// }
+///
+pub trait CodeMinimalBinary: CodeFixedLength + ReadBit {
 
     #[inline]
-    pub fn read_minimal_binary(&mut self, max: u64) -> u64 {
+    fn read_minimal_binary(&mut self, max: usize) -> Result<usize, CoreIoError> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
-        let n = self.read_bits(l) ;
+        let n = self.read_fixed_length(l)?;
         let scarto = fast_pow_2(u) - max; 
         
         if n  < scarto {
-            return n;
+            return Ok(n);
         } 
         // rewind to read the code again
-        self.rewind(l as _);
+        self.rewind_bits(l as _)?;
         // decode the value
-        let r = self.read_bits(u);
+        let r = self.read_fixed_length(u)?;
 
         if r < fast_pow_2(l) {
-            r
+            Ok(r)
         } else {
-            r - scarto
+            Ok(r - scarto)
         }
     }
 
     #[inline]
-    pub fn write_minimal_binary(&mut self, value: u64, max: u64) {
+    fn write_minimal_binary(&mut self, value: usize, max: usize) -> Result<(), CoreIoError> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
         let scarto = fast_pow_2(u) - max;
 
         if value < scarto {
-            self.write_bits(l, value);
+            self.write_fixed_length(l, value)
         } else if value < fast_pow_2(l) {
-            self.write_bits(u, value);
+            self.write_fixed_length(u, value)
         } else {
-            self.write_bits(u, value + scarto);
+            self.write_fixed_length(u, value + scarto)
         }
     }
     
-    pub fn size_minimal_binary(&mut self, value: u64, max: u64) -> u64 {
+    #[inline]
+    /// Return how many bits the code for the given value is long
+    fn size_minimal_binary(&mut self, value: usize, max: usize) -> usize {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
         let scarto = fast_pow_2(u) - max;
@@ -54,39 +88,5 @@ impl BitStream {
     }
 }
 
-#[cfg(test)]
-mod test_minimal_binary {
-    use super::*;
-
-    #[test]
-    /// Test that we encode and decode low bits properly.
-    fn test_minimal_binary_forward() {
-        let mut bs = BitStream::new();
-        let max = 1_000;
-        for i in 0..max {
-            let idx = bs.tell();
-            bs.write_minimal_binary(i, max);
-            assert_eq!(bs.tell(), idx + bs.size_minimal_binary(i, max) as usize);
-        }
-        bs.seek(0);
-        for i in 0..max {
-            assert_eq!(i, bs.read_minimal_binary(max));
-        }
-    }
-
-    #[test]
-    /// Test that we encode and decode low bits properly.
-    fn test_minimal_binary_backward() {
-        let mut bs = BitStream::new();
-        let max = 1_000;
-        for i in (0..max).rev() {
-            let idx = bs.tell();
-            bs.write_minimal_binary(i, max);
-            assert_eq!(bs.tell(), idx + bs.size_minimal_binary(i, max) as usize);
-        }
-        bs.seek(0);
-        for i in (0..max).rev() {
-            assert_eq!(i, bs.read_minimal_binary(max));
-        }
-    }
-}
+/// blanket implementation
+impl<T: ReadBit + CodeFixedLength> CodeMinimalBinary for T {}

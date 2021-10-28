@@ -1,19 +1,19 @@
 use elias_fano_rust::elias_fano::EliasFano;
-use rayon::prelude::*;
 mod utils;
 use utils::*;
 
 /// Test that we can build successfully run all methods in elias fano.
 fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
-    let vector = build_random_sorted_vector(size, max);
+    let vector = build_random_sorted_vector(size, max).
+        iter().map(|x| *x as usize).collect::<Vec<_>>();
     let true_max = *vector.last().unwrap();
     let ef = EliasFano::<10>::from_vec(&vector)?;
     (0..max).for_each(|i| {
-        let index = ef.unchecked_rank(i);
-        if i <= true_max {
-            assert!(ef.select(index).unwrap() >= i);
+        let index = ef.unchecked_rank(i as usize);
+        if i as usize <= true_max {
+            assert!(ef.select(index).unwrap() >= i as usize);
         } else {
-            assert!(index == vector.len() as u64);
+            assert!(index == vector.len());
         }
     });
 
@@ -21,8 +21,10 @@ fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
 }
 
 #[test]
+#[cfg(feature="par_iter")]
 /// Check that elias fano runs considering a lot of possible combinations.
 fn test_extended_fuzzing() {
+    use rayon::prelude::*;
     (0..10).into_par_iter().for_each(|size| {
         let size:usize = 1 + (size as usize)*100;
         for max in (size..1_000).step_by(100){

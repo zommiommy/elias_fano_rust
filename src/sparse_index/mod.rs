@@ -1,12 +1,9 @@
-use super::{
-    constants::*,
-    utils::*,   
-};
-use std::ops::Range;
-use std::sync::Arc;
+use super::utils::*;
+use alloc::sync::Arc;
+use alloc::vec::Vec;
+use crate::constants::*;
+use crate::traits::MemoryFootprint;
 
-mod memory;
-pub use memory::*;
 mod iter;
 pub use iter::*;
 mod iter_double_ended;
@@ -15,19 +12,31 @@ mod getters;
 mod concurrent;
 pub use concurrent::*;
 
+#[cfg(feature="par_iter")]
+mod par_iter;
+
 #[derive(Clone, Debug)]
 /// This structure is efficient for **DENSE** bitvectors
 /// Sparse Index which stores the position of every q-th 1 and 0
 pub struct SparseIndex<const QUANTUM_LOG2: usize> {
-    pub high_bits: Vec<u64>,
-    pub high_bits_index_zeros: Vec<u64>,
-    pub high_bits_index_ones: Vec<u64>,
-    pub number_of_ones: u64,
-    pub number_of_zeros: u64,
-    pub len: u64,
+    pub high_bits: Vec<usize>,
+    pub high_bits_index_zeros: Vec<usize>,
+    pub high_bits_index_ones: Vec<usize>,
+    pub number_of_ones: usize,
+    pub number_of_zeros: usize,
+    pub len: usize,
 
     /// Make rust happy about having a fixed index size for a given structure
-    phantom: std::marker::PhantomData<[(); QUANTUM_LOG2]>,
+    phantom: core::marker::PhantomData<[(); QUANTUM_LOG2]>,
+}
+
+impl<const QUANTUM_LOG2: usize> MemoryFootprint for SparseIndex<QUANTUM_LOG2> {
+    fn total_size(&self) -> usize {
+        self.high_bits.total_size() + 
+        self.high_bits_index_ones.total_size() +
+        self.high_bits_index_zeros.total_size() +
+        (core::mem::size_of::<usize>() * 3)
+    }
 }
 
 impl<const QUANTUM_LOG2: usize> PartialEq for SparseIndex<QUANTUM_LOG2> {
@@ -48,7 +57,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             number_of_ones: 0,
             number_of_zeros: 0,
             len: 0,
-            phantom: std::marker::PhantomData::default(),
+            phantom: core::marker::PhantomData::default(),
         }
     }
 
@@ -61,8 +70,15 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             number_of_ones: 0,
             number_of_zeros: 0,
             len: 0,
-            phantom: std::marker::PhantomData::default(),
+            phantom: core::marker::PhantomData::default(),
         }
+    }
+
+    /// Reduce the memory allocations to the minimum needed
+    pub fn shrink_to_fit(&mut self){
+        self.high_bits.shrink_to_fit();
+        self.high_bits_index_zeros.shrink_to_fit();
+        self.high_bits_index_ones.shrink_to_fit();
     }
 
     /// Add the given bit to the end of the high-bits
@@ -79,14 +95,14 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
             self.number_of_zeros += 1;
         }
 
-        if self.len & WORD_MASK == 0{
+        if self.len & WORD_BIT_SIZE_MASK == 0{
             self.high_bits.push(0);
         }
 
         if value {
             let last_idx = self.high_bits.len() - 1;
             let mut code = self.high_bits[last_idx];
-            code |= 1 << (self.len & WORD_MASK);
+            code |= 1 << (self.len & WORD_BIT_SIZE_MASK);
             self.high_bits[last_idx] = code;
         }
 
@@ -94,7 +110,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     }
 
     /// Take the given bit-vector and build the indices on it.
-    pub fn from_vec(bitvector: Vec<u64>) -> SparseIndex<QUANTUM_LOG2> {
+    pub fn from_vec(bitvector: Vec<usize>) -> SparseIndex<QUANTUM_LOG2> {
 
         let bitvector = Arc::new(bitvector);
 
@@ -106,17 +122,17 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         // to the middle
         ////////////////////////////////////////////////////////////////////////
         let ones_bitvector_copy = bitvector.clone();
-        let ones_counter = std::thread::spawn(move || {
+        let count_zeros = move || {
             let mut high_bits_index_ones = Vec::with_capacity(ones_bitvector_copy.len() >> QUANTUM_LOG2);
             let mut number_of_ones = 0;
             for (i, mut word) in ones_bitvector_copy.iter().cloned().enumerate() {
                 while word != 0 {
                     // Get the bit position of the current one
-                    let idx = (i << WORD_SHIFT) as u64 + word.trailing_zeros() as u64;
+                    let idx = (i << WORD_SHIFT) as usize + word.trailing_zeros() as usize;
 
                     // write the index
                     if number_of_ones & power_of_two_to_mask(QUANTUM_LOG2) == 0 {
-                        high_bits_index_ones.push(idx as u64);
+                        high_bits_index_ones.push(idx as usize);
                     }
 
                     // Clean the one so that we can get to the next one.
@@ -125,18 +141,23 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
                 }
             }
             (number_of_ones, high_bits_index_ones)
-        });
+        };
+        
+        // spawn a new thread if we can parallellize, otherwise just call it
+        // sequentially
+        #[cfg(feature="par_iter")]
+        let ones_counter = std::thread::spawn();
 
         let mut high_bits_index_zeros = Vec::with_capacity(bitvector.len() >> QUANTUM_LOG2);
         let mut number_of_zeros = 0;
         for (i, mut word) in bitvector.iter().cloned().enumerate() {
-            while word != u64::MAX {
+            while word != usize::MAX {
                 // Get the bit position of the current one
-                let idx = (i << WORD_SHIFT) as u64 + word.trailing_ones() as u64;
+                let idx = (i << WORD_SHIFT) as usize + word.trailing_ones() as usize;
 
                 // write the index
                 if number_of_zeros & power_of_two_to_mask(QUANTUM_LOG2) == 0 {
-                    high_bits_index_zeros.push(idx as u64);
+                    high_bits_index_zeros.push(idx as usize);
                 }
 
                 // set the zero so that we can get to the next zero.
@@ -144,19 +165,21 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
                 number_of_zeros += 1;
             }
         }
-
+        #[cfg(feature="par_iter")]
         let (number_of_ones, high_bits_index_ones) = ones_counter.join().unwrap();
+        #[cfg(not(feature="par_iter"))]
+        let (number_of_ones, high_bits_index_ones) = count_zeros();
 
         let bitvector = Arc::try_unwrap(bitvector).unwrap();
 
         SparseIndex{
-            len: (bitvector.len() << WORD_SHIFT) as u64,
+            len: (bitvector.len() << WORD_SHIFT) as usize,
             number_of_zeros,
             number_of_ones,
             high_bits: bitvector,
             high_bits_index_zeros,
             high_bits_index_ones,
-            phantom: std::marker::PhantomData::default(),
+            phantom: core::marker::PhantomData::default(),
         }
     }
 }

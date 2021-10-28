@@ -1,71 +1,71 @@
 use crate::utils::fast_log2_floor;
-use super::BitStream;
+use crate::traits::CoreIoError;
+use super::{
+    unary::CodeUnary, 
+    fixed_length::CodeFixedLength,
+};
 
 /// Optimal for Zipf of exponent 2
 /// Elias’ γ universal coding of x ∈ N+ is obtained by representing x in binary
 // preceded by a unary representation of its length (minus one).
 // More precisely, to represent x we write in unary floor(log(x)) and then in
 // binary x - 2^ceil(log(x)) (on floor(log(x)) bits)
-impl BitStream {
+/// 
+/// # Example
+/// ```rust
+/// use elias_fano_rust::prelude::*;
+/// 
+/// let mut ba = BitArray::new();
+/// 
+/// // write values to the stream
+/// for i in 0..100 {
+///     let idx = ba.tell_bits().unwrap();
+/// 
+///     // write the value
+///     ba.write_gamma(i).unwrap();
+/// 
+///     // ensure that size is consistent with the seek forwarding
+///     assert_eq!(ba.tell_bits().unwrap(), idx + ba.size_gamma(i));
+/// }
+/// 
+/// // rewind the stream
+/// ba.seek_bits(0).unwrap();
+/// 
+/// // read back the values
+/// for i in 0..100 {
+///     assert_eq!(i, ba.read_gamma().unwrap());
+/// }
+/// ```
+pub trait CodeGamma: CodeUnary + CodeFixedLength {
 
-    // TODO FIX THIS SHIT
     #[inline]
-    pub fn read_gamma(&mut self) -> u64 {
-        let len = self.read_unary();
-        self.read_bits(len) + (1 << len) - 1
+    fn read_gamma(&mut self) -> Result<usize, CoreIoError> {
+        let len = self.read_unary()?;
+        Ok(self.read_fixed_length(len)? + (1 << len) - 1)
     }
 
     #[inline]
-    pub fn write_gamma(&mut self, mut value: u64) {
+    fn write_gamma(&mut self, mut value: usize) -> Result<(), CoreIoError> {
         value += 1;
         let number_of_blocks_to_write = fast_log2_floor(value);
         // remove the most significant 1
         let short_value = value - (1 << number_of_blocks_to_write);
         // TODO this can be optimized 
         // Write the code
-        self.write_unary(number_of_blocks_to_write);
-        self.write_bits(number_of_blocks_to_write, short_value);
+        self.write_unary(number_of_blocks_to_write)?;
+        self.write_fixed_length(number_of_blocks_to_write, short_value)?;
+        Ok(())
     }
 
-    pub fn size_gamma(&mut self, mut value: u64) -> u64 {
+    #[inline]
+    /// Return how many bits the code for the given value is long
+    fn size_gamma(&mut self, mut value: usize) -> usize {
         value += 1;
         let number_of_blocks_to_write = fast_log2_floor(value);
         self.size_unary(number_of_blocks_to_write) 
-            + self.size_bits(number_of_blocks_to_write)
+            + self.size_fixed_length(number_of_blocks_to_write)
     }
 }
 
-#[cfg(test)]
-mod test_gamma {
-    use super::*;
-
-    #[test]
-    /// Test that we encode and decode low bits properly.
-    fn test_gamma_forward() {
-        let mut bs = BitStream::new();
-        for i in 0..100 {
-            let idx = bs.tell();
-            bs.write_gamma(i);
-            assert_eq!(bs.tell(), idx + bs.size_gamma(i) as usize);
-        }
-        bs.seek(0);
-        for i in 0..100 {
-            assert_eq!(i, bs.read_gamma());
-        }
-    }
-
-    #[test]
-    /// Test that we encode and decode low bits properly.
-    fn test_gamma_backward() {
-        let mut bs = BitStream::new();
-        for i in (0..10_000).rev() {
-            let idx = bs.tell();
-            bs.write_gamma(i);
-            assert_eq!(bs.tell(), idx + bs.size_gamma(i) as usize);
-        }
-        bs.seek(0);
-        for i in (0..10_000).rev() {
-            assert_eq!(i, bs.read_gamma());
-        }
-    }
-}
+/// blanket implementation
+impl<T: CodeUnary + CodeFixedLength> CodeGamma for T {}

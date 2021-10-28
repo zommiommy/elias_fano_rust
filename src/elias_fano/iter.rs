@@ -1,26 +1,26 @@
 use super::*;
-use std::ops::Range;
+use core::ops::Range;
 
 impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// Return iterator for the values in elias fano using the old way with selects.
     /// This method is only meant for banchmarking.
     #[inline]
-    pub fn iter_select(&self) -> impl Iterator<Item = u64> + '_ {
+    pub fn iter_select(&self) -> impl Iterator<Item = usize> + '_ {
         (0..self.current_number_of_elements).map(move |index| self.unchecked_select(index))
     }
 
     /// Return iterator for the values in elias fano.
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = u64> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
         self.high_bits.iter().enumerate().map(move |(index, high_bit_index)|{
-            let high_value = high_bit_index - index as u64;
-            let low_bits = self.low_bits.read(index as u64);
+            let high_value = high_bit_index - index as usize;
+            let low_bits = self.low_bits.read(index as usize);
             (high_value << self.low_bits.word_size()) | low_bits
         })
     }
 
     #[inline]
-    pub fn iter_in_range(&self, range: Range<u64>) -> impl Iterator<Item=u64> + '_ {
+    pub fn iter_in_range(&self, range: Range<usize>) -> impl Iterator<Item=usize> + '_ {
         let Range{
             start,
             end
@@ -32,7 +32,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
 
         self.high_bits.iter_in_range(high_start..high_end).enumerate()
             .map(move |(index, high_bit_index)| {
-                let index = index as u64 + offset;
+                let index = index as usize + offset;
                 let high_value = high_bit_index - index;
                 let low_bits = self.low_bits.read(index);
                 (high_value << self.low_bits.word_size()) | low_bits
@@ -41,7 +41,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
 
     /// Return iterator for the values in elias fano.
     #[inline]
-    pub fn iter_uniques(&self) -> impl Iterator<Item = u64> + '_ {
+    pub fn iter_uniques(&self) -> impl Iterator<Item = usize> + '_ {
         let mut last_value = 0;
         let mut first = true;
         self.iter().filter_map(move |value| {
@@ -58,7 +58,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
 
     /// Return iterator for the values in elias fano.
     #[inline]
-    pub fn enumerate(&self) -> impl Iterator<Item = (u64, u64)> + '_ {
+    pub fn enumerate(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
         (0..self.current_number_of_elements).map(move |index| (index, self.unchecked_select(index)))
     }
 }

@@ -1,17 +1,18 @@
 use super::*;
+use alloc::string::String;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EliasFano<const QUANTUM_LOG2: usize> {
     pub low_bits: CompactArray,
     pub high_bits: SparseIndex<QUANTUM_LOG2>,
 
-    pub universe: u64,
-    pub number_of_elements: u64,
+    pub universe: usize,
+    pub number_of_elements: usize,
 
-    pub last_high_value: u64,
-    pub last_value: u64,
-    pub last_index: u64,
-    pub current_number_of_elements: u64,
+    pub last_high_value: usize,
+    pub last_value: usize,
+    pub last_index: usize,
+    pub current_number_of_elements: usize,
 }
 
 impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
@@ -22,17 +23,17 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     #[inline]
-    pub(crate) fn extract_high_bits(&self, value: u64) -> u64 {
+    pub(crate) fn extract_high_bits(&self, value: usize) -> usize {
         value >> self.low_bits.word_size()
     }
 
     #[inline]
-    pub(crate) fn extract_low_bits(&self, value: u64) -> u64 {
+    pub(crate) fn extract_low_bits(&self, value: usize) -> usize {
         value & self.low_bits.word_mask()
     }
 
     #[inline]
-    pub(crate) fn extract_high_low_bits(&self, value: u64) -> (u64, u64) {
+    pub(crate) fn extract_high_low_bits(&self, value: usize) -> (usize, usize) {
         // The following is an efficient mod operation
         // It is the equivalent of executing:
         //
@@ -46,7 +47,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     #[inline]
     pub(crate) fn build_low_high_bits(
         &mut self,
-        values: impl Iterator<Item = u64>,
+        values: impl Iterator<Item = usize>,
     ) -> Result<(), String> {
         values.map(move |value| self.push(value)).collect()
     }
@@ -60,7 +61,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     ///
     /// # Arguments
     ///
-    /// * `value`: u64 - Value whose rank is to be extracted.
+    /// * `value`: usize - Value whose rank is to be extracted.
     ///
     /// # Usage example
     ///
@@ -76,7 +77,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// ```
     ///
     #[inline]
-    pub fn rank(&self, value: u64) -> Option<u64> {
+    pub fn rank(&self, value: usize) -> Option<usize> {
         if self.is_empty() {
             return None;
         }
@@ -113,7 +114,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     ///
     /// # Arguments
     ///
-    /// * `value`: u64 - Value whose rank is to be extracted.
+    /// * `value`: usize - Value whose rank is to be extracted.
     ///
     /// # Usage example
     ///
@@ -130,7 +131,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// ```
     ///
     #[inline]
-    pub fn unchecked_rank(&self, value: u64) -> u64 {
+    pub fn unchecked_rank(&self, value: usize) -> usize {
         if self.is_empty() {
             return 0;
         }
@@ -164,9 +165,9 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     ///
     /// # Arguments
     ///
-    /// * index: u64 - Index of the value to be extract.
+    /// * index: usize - Index of the value to be extract.
     #[inline]
-    pub fn select(&self, index: u64) -> Result<u64, String> {
+    pub fn select(&self, index: usize) -> Result<usize, String> {
         match index < self.number_of_elements {
             true => Ok(self.unchecked_select(index)),
             false =>Err(format!(
@@ -180,16 +181,16 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     ///
     /// # Arguments
     ///
-    /// * index: u64 - Index of the value to be extract.
+    /// * index: usize - Index of the value to be extract.
     #[inline]
-    pub fn unchecked_select(&self, index: u64) -> u64 {
+    pub fn unchecked_select(&self, index: usize) -> usize {
         let high_bits = self.high_bits.select1(index) - index;
         let low_bits = self.low_bits.read(index);
         (high_bits << self.low_bits.word_size()) | low_bits
     }
 
     #[inline]
-    pub fn contains(&self, value: u64) -> bool {
+    pub fn contains(&self, value: usize) -> bool {
         if value > self.last_value {
             return false;
         }

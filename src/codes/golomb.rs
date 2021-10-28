@@ -1,69 +1,78 @@
 use crate::utils::fast_log2_ceil;
-use super::BitStream;
-
+use crate::traits::CoreIoError;
+use super::{
+    unary::CodeUnary, 
+    fixed_length::CodeFixedLength,
+};
 
 #[inline]
 /// Given the ratio `p` of a geometric distribution
 /// compute the optimal golomb block size
-pub fn compute_optimal_golomb_block_size(p: f64) -> u64 {
-    (-(2.0 - p).log2() / (1.0 - p).log2()).ceil() as u64
+/// 
+/// # Safety
+/// This could fail if LLVM does not support floating values for the current 
+/// arch
+pub fn compute_optimal_golomb_block_size(p: f64) -> usize {
+    use core::intrinsics::{
+        log2f64,
+        ceilf64,
+    };
+    unsafe{
+        ceilf64(
+            -log2f64(2.0 - p) / log2f64(1.0 - p)) as usize
+    }
 }
 
 
 /// Optimal for gemetric distribution of ratio:
 /// $$\frac{1}{\sqrt^b{2}$$
-impl BitStream {
+/// 
+/// # Example
+/// ```rust
+/// use elias_fano_rust::prelude::*;
+/// 
+/// let mut ba = BitArray::new();
+/// 
+/// // write values to the stream
+/// for i in 0..100 {
+///     let idx = ba.tell_bits().unwrap();
+/// 
+///     // write the value
+///     ba.write_golomb::<8>(i).unwrap();
+/// 
+///     // ensure that size is consistent with the seek forwarding
+///     assert_eq!(ba.tell_bits().unwrap(), idx + ba.size_golomb::<8>(i));
+/// }
+/// // rewind the stream
+/// ba.seek_bits(0).unwrap();
+/// 
+/// // read back the values
+/// for i in 0..100 {
+///     assert_eq!(i, ba.read_golomb::<8>().unwrap());
+/// }
+/// ```
+pub trait CodeGolomb: CodeUnary + CodeFixedLength {
 
     #[inline]
-    pub fn read_golomb<const B: u64>(&mut self) -> u64 {
-        let blocks_count = self.read_unary();
-        blocks_count * B + self.read_bits(fast_log2_ceil(B))
+    fn read_golomb<const B: usize>(&mut self) -> Result<usize, CoreIoError> {
+        let blocks_count = self.read_unary()?;
+        Ok(blocks_count * B + self.read_fixed_length(fast_log2_ceil(B))?)
     }
 
     #[inline]
-    pub fn write_golomb<const B: u64>(&mut self, value: u64) {
-        self.write_unary(value / B);
-        self.write_bits( fast_log2_ceil(B), value % B);
+    fn write_golomb<const B: usize>(&mut self, value: usize) -> Result<(), CoreIoError> {
+        self.write_unary(value / B)?;
+        self.write_fixed_length( fast_log2_ceil(B), value % B)?;
+        Ok(())
     }
 
     #[inline]
-    pub fn size_golomb<const B: u64>(&mut self, value: u64) -> u64 {
+    /// Return how many bits the code for the given value is long
+    fn size_golomb<const B: usize>(&mut self, value: usize) -> usize {
         self.size_unary(value / B)
-            + self.size_bits( fast_log2_ceil(B))
+            + self.size_fixed_length( fast_log2_ceil(B))
     }
 }
 
-#[cfg(test)]
-mod test_golomb {
-    use super::*;
-
-    #[test]
-    /// Test that we encode and decode low bits properly.
-    fn test_golomb_forward() {
-        let mut bs = BitStream::new();
-        for i in 0..100 {
-            let idx = bs.tell();
-            bs.write_golomb::<8>(i);
-            assert_eq!(bs.tell(), idx + bs.size_golomb::<8>(i) as usize);
-        }
-        bs.seek(0);
-        for i in 0..100 {
-            assert_eq!(i, bs.read_golomb::<8>());
-        }
-    }
-
-    #[test]
-    /// Test that we encode and decode low bits properly.
-    fn test_golomb_backward() {
-        let mut bs = BitStream::new();
-        for i in (0..10_000).rev() {
-            let idx = bs.tell();
-            bs.write_golomb::<8>(i);
-            assert_eq!(bs.tell(), idx + bs.size_golomb::<8>(i) as usize);
-        }
-        bs.seek(0);
-        for i in (0..10_000).rev() {
-            assert_eq!(i, bs.read_golomb::<8>());
-        }
-    }
-}
+/// blanket implementation
+impl<T: CodeUnary + CodeFixedLength> CodeGolomb for T {}

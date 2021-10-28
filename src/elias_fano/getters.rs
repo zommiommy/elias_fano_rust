@@ -13,7 +13,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
 
     /// Return universe of the elias fano data structure.
     #[inline]
-    pub fn get_universe(&self) -> u64 {
+    pub fn get_universe(&self) -> usize {
         self.universe
     }
 }

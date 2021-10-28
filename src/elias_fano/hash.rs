@@ -1,5 +1,5 @@
 use super::*;
-use std::hash::{Hash, Hasher};
+use core::hash::{Hash, Hasher};
 
 impl<const QUANTUM_LOG2: usize> Hash for EliasFano<QUANTUM_LOG2> {
     fn hash<H: Hasher>(&self, state: &mut H) {

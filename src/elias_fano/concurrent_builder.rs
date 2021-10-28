@@ -1,8 +1,10 @@
 use super::*;
 use crate::{
-    constants::*, 
+    constants::WORD_BIT_SIZE,
     sparse_index::SparseIndexConcurrentBuilder,
 };
+use alloc::string::String;
+
 
 
 #[derive(Debug)]
@@ -14,8 +16,8 @@ use crate::{
 pub struct ConcurrentEliasFanoBuilder<const QUANTUM_LOG2: usize> {
     high_bits:SparseIndexConcurrentBuilder<QUANTUM_LOG2>,
     low_bits: CompactArray,
-    number_of_elements: u64,
-    universe: u64,
+    number_of_elements: usize,
+    universe: usize,
 }
 impl<const QUANTUM_LOG2: usize> Default for ConcurrentEliasFanoBuilder<QUANTUM_LOG2> {
     fn default() -> ConcurrentEliasFanoBuilder<QUANTUM_LOG2> {
@@ -29,22 +31,23 @@ impl<const QUANTUM_LOG2: usize> Default for ConcurrentEliasFanoBuilder<QUANTUM_L
 }
 
 impl<const QUANTUM_LOG2: usize> ConcurrentEliasFanoBuilder<QUANTUM_LOG2> {
-    pub fn new(number_of_elements: u64, universe: u64) -> Result<ConcurrentEliasFanoBuilder<QUANTUM_LOG2>, String> {
+    pub fn new(number_of_elements: usize, universe: usize) -> Result<ConcurrentEliasFanoBuilder<QUANTUM_LOG2>, String> {
         // If the user says that there will be no elements, the builder will 
         // only use the high-bits to store the eventual values
         if number_of_elements == 0 {
             return Ok(ConcurrentEliasFanoBuilder::default());
         }
 
+        use core::intrinsics::{floorf64, ceilf64, log2f64};
         // Compute the size of the low bits.
-        let low_bit_count = if universe >= number_of_elements as u64 {
-            (universe as f64 / number_of_elements as f64).log2().floor() as u64
+        let low_bit_count = if universe >= number_of_elements as usize {
+            unsafe{floorf64(log2f64(universe as f64 / number_of_elements as f64)) as usize}
         } else {
             0
         };
 
         // saturate at the max we can handle
-        if low_bit_count > 64 {
+        if low_bit_count > WORD_BIT_SIZE {
             return Err(format!(concat!(
                     "The lowbits are too big, in EliasFano we only support 64 bits for the low parts.",
                     "The value were universe {} number_of_elements {}"
@@ -58,21 +61,24 @@ impl<const QUANTUM_LOG2: usize> ConcurrentEliasFanoBuilder<QUANTUM_LOG2> {
 
         // the number of bits will be at max the number of elements + max(high)
         // we need a ceil, but >> is floor so we add 1
-        let high_size = ((number_of_elements + (universe >> low_bit_count)) as f64 / WORD_SIZE as f64).ceil() as usize;
+        let high_size = unsafe{ceilf64(
+            (number_of_elements + (universe >> low_bit_count)) as f64 
+            / WORD_BIT_SIZE as f64
+        ) as usize};
         let high_bits = SparseIndex::new_concurrent(high_size, number_of_elements);
 
         Ok(ConcurrentEliasFanoBuilder {
             low_bits,
             high_bits,
             universe,
-            number_of_elements: number_of_elements as u64,
+            number_of_elements: number_of_elements as usize,
         })
     }
 
     /// Write the given value in the elias-fano, this method is
     /// safe from concurrency and allows to build elias-fano in parallel
     /// if the indices of the values are known in advance.
-    pub fn set(&self, index: u64, value: u64) {
+    pub fn set(&self, index: usize, value: usize) {
         let high = value >> self.low_bits.word_size();
         let low  = value & self.low_bits.word_mask();
 

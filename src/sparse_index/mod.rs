@@ -146,7 +146,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         // spawn a new thread if we can parallellize, otherwise just call it
         // sequentially
         #[cfg(feature="par_iter")]
-        let ones_counter = std::thread::spawn();
+        let ones_counter = std::thread::spawn(count_zeros);
 
         let mut high_bits_index_zeros = Vec::with_capacity(bitvector.len() >> QUANTUM_LOG2);
         let mut number_of_zeros = 0;

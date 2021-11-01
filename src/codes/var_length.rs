@@ -15,25 +15,28 @@ use super::{
 /// ```rust
 /// use elias_fano_rust::prelude::*;
 /// 
-/// let mut bs = BitArray::new();
+/// let mut ba = BitArray::new();
 /// 
 /// // write values to the stream
 /// for i in 0..100 {
-///     let idx = bs.tell_bits().unwrap();
+///     let idx = ba.tell_bits().unwrap();
 /// 
 ///     // write the value
-///     bs.write_var_length::<3>(i).unwrap();
+///     ba.write_var_length::<3>(i).unwrap();
 /// 
 ///     // ensure that size is consistent with the seek forwarding
-///     assert_eq!(bs.tell_bits().unwrap(), idx + bs.size_var_length::<3>(i));
+///     assert_eq!(ba.tell_bits().unwrap(), idx + ba.size_var_length::<3>(i));
 /// }
 /// // rewind the stream
-/// bs.seek_bits(0).unwrap();
+/// ba.seek_bits(0).unwrap();
 /// 
 /// // read back the values
 /// for i in 0..100 {
-///     assert_eq!(i, bs.read_var_length::<3>().unwrap());
+///     assert_eq!(i, ba.read_var_length::<3>().unwrap());
 /// }
+/// 
+/// let expected_size: usize = (0..100).map(|x| ba.size_var_length::<3>(x)).sum();
+/// assert_eq!(expected_size, ba.tell_bits().unwrap())
 /// ```
 pub trait CodeVarLength: CodeUnary + CodeFixedLength {
     #[inline]

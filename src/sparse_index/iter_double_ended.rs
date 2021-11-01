@@ -19,13 +19,13 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 pub struct SparseIndexDobuleEndedIterator<'a, const QUANTUM_LOG2: usize> {
     /// reference to the SparseIndex which is being iter
     /// this is needed to get the reference to the high-bits
-    father: &'a SparseIndex<QUANTUM_LOG2>,
+    pub(crate) father: &'a SparseIndex<QUANTUM_LOG2>,
 
-    start_code: usize,
-    start_index: usize,
-    end_index: usize,
-    end_code: usize,
-    len: usize,
+    pub(crate) start_code: usize,
+    pub(crate) start_index: usize,
+    pub(crate) end_index: usize,
+    pub(crate) end_code: usize,
+    pub(crate) len: usize,
 }
 
 impl<'a,const QUANTUM_LOG2: usize> core::fmt::Debug for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {

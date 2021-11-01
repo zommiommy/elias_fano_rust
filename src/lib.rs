@@ -60,7 +60,7 @@
 // No std so that all these structures can be used in
 // bare metal environments (not making any assumption about architecture width),
 // but we require to have an allocator
-#![no_std]
+//#![no_std]
 #[macro_use]
 extern crate alloc;
 
@@ -87,7 +87,12 @@ pub mod prelude {
     pub use super::sparse_index::SparseIndex;
     pub use super::elias_fano::{
         EliasFano,
-        ConcurrentEliasFanoBuilder
+        ConcurrentEliasFanoBuilder,
+    };
+    pub use super::webgraph::{
+        WebGraph,
+        WebGraphBackend,
+        WebGraphBuilder,
     };
     pub use super::utils;
 }

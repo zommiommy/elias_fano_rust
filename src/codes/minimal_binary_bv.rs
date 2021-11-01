@@ -52,6 +52,10 @@ fn reverse_bits(value: usize, number_of_bits: usize) -> usize {
 /// for i in 0..max {
 ///     assert_eq!(i, ba.read_minimal_binary_bv(max).unwrap());
 /// }
+/// 
+/// let expected_size: usize = (0..max).map(|x| ba.size_minimal_binary_bv(x, max)).sum();
+/// assert_eq!(expected_size, ba.tell_bits().unwrap())
+/// ```
 ///
 pub trait CodeMinimalBinaryBV: CodeFixedLength + ReadBit {
     #[inline]

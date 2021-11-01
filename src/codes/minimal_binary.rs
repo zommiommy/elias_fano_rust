@@ -33,7 +33,9 @@ use crate::traits::*;
 /// for i in 0..max {
 ///     assert_eq!(i, ba.read_minimal_binary(max).unwrap());
 /// }
-///
+/// let expected_size: usize = (0..max).map(|x| ba.size_minimal_binary(x, max)).sum();
+/// assert_eq!(expected_size, ba.tell_bits().unwrap())
+/// ```
 pub trait CodeMinimalBinary: CodeFixedLength + ReadBit {
 
     #[inline]

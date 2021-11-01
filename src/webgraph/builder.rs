@@ -1,13 +1,11 @@
 use super::*;
-use crate::{BitArray, traits::CoreIoError};
+use crate::traits::CoreIoError;
 
 #[cfg(feature="par_iter")]
 use rayon::iter::{
     ParallelIterator,
     IntoParallelRefIterator,
 };
-use crate::codes::*;
-use crate::traits::*;
 use core::mem::size_of;
 use core::convert::TryInto;
 use alloc::{vec, vec::Vec};
@@ -16,11 +14,11 @@ use alloc::{vec, vec::Vec};
 const USE_REFERENCES: bool = true;
 /// Maximum depth of references, lower values will result in faster
 /// decompression but worse compression
-const MAX_REFERENCE_RECURSION: usize = 256;
+const MAX_REFERENCE_RECURSION: usize = 128;
 /// Maximum distance between the current node and the reference one
 /// an higher value can result in better compression but slows down 
 /// the reference finding algorithm, so the compression will be slower
-const MAX_REFERENCE_DISTANCE: usize = 1 << 11;
+const MAX_REFERENCE_DISTANCE: usize = 1 << 10;
 /// Minimum score that a neighbour has to have to be a reference
 const MIN_SCORE_THRESHOLD: f64 = 1.0;
 /// If we should use a bitmap for the copy list or
@@ -35,22 +33,30 @@ const MIN_INTERVALIZZATION_LEN: usize = 3;
 // TODO!: FOR SOME REASON ENABLING THIS WORSEN THE COMPRESSIO, WTF 
 const SWAP_REMOVE: bool = false;
 
-pub struct WebGraphBuilder {
+pub struct WebGraphBuilder<BACKEND: WebGraphBackend> {
     current_src: usize,
     current_dsts: Vec<usize>,
-    data: BitArray,
+    data: BACKEND,
     nodes_index: Vec<usize>,
 
     neighbours_cache: [(usize, usize, Vec<usize>); MAX_REFERENCE_DISTANCE],
     neighbours_cache_index: usize,
 }
 
-impl WebGraphBuilder {
-    pub fn new() -> WebGraphBuilder {
+impl<BACKEND: WebGraphBackend> crate::traits::MemoryFootprint for WebGraphBuilder<BACKEND> {
+    fn total_size(&self) -> usize {
+        self.data.total_size() 
+            + size_of::<usize>() * (self.nodes_index.len() + 3)
+    }
+}
+
+
+impl<BACKEND: WebGraphBackend> WebGraphBuilder<BACKEND> {
+    pub fn new(backend: BACKEND) -> WebGraphBuilder<BACKEND> {
         WebGraphBuilder {
             current_src: 0,
             current_dsts: Vec::new(),
-            data: BitArray::new(),
+            data: backend,
             nodes_index: Vec::new(),
             neighbours_cache: vec![
                 (0, 0, Vec::new()); MAX_REFERENCE_DISTANCE
@@ -179,6 +185,11 @@ impl WebGraphBuilder {
         #[cfg(not(feature="par_iter"))]
         let iter =  self.neighbours_cache.iter();
         
+        // make an immutable reference to the dsts so that in the parallel case
+        // we can just share that (which is safe because it's immutable)
+        // so we don't need to require Sync for the Backend.
+        let dsts_reference = &self.current_dsts; 
+        
         let (max_score, max_node_id, max_depth, max_neighbours) =
             iter.map(|(node_id, depth, neighbours)| {
 
@@ -189,7 +200,7 @@ impl WebGraphBuilder {
                 let mut j = 0;
 
                 while let (Some(n1), Some(n2)) = (
-                    self.current_dsts.get(i), neighbours.get(j)
+                    dsts_reference.get(i), neighbours.get(j)
                 ) {
                     use core::cmp::Ordering;
                     match n1.cmp(n2) {
@@ -226,7 +237,6 @@ impl WebGraphBuilder {
     #[inline]
     fn encode_references(&mut self) -> Result<usize, CoreIoError> {
         let (ref_node_id, ref_depth, ref_neighbours) = self.reference_finder();
-        
         // write the reference 
         let delta = self.current_src - ref_node_id;
         self.data.write_gamma(delta)?;
@@ -261,7 +271,7 @@ impl WebGraphBuilder {
             let mut blocks = Vec::new();
             // write the copy list (if any)
             for node in ref_neighbours {
-                // TODO! optimize, shit this is slow
+                // TODO! optimize this
                 let curr_bit = match self.current_dsts.binary_search(&node) {
                     Ok(idx) => {
                         if SWAP_REMOVE {
@@ -285,13 +295,15 @@ impl WebGraphBuilder {
                 }
                 counter += 1;
             }
-             
+            if counter > 0 {
+                blocks.push(counter);
+            }
             self.data.write_gamma(blocks.len() as usize)?;
+            // TODO!: should this be a panic?
             self.data.write_gamma(blocks[0])?; 
             for counter in &blocks[1..] {
                 self.data.write_gamma(*counter - 1)?; 
             }
-
         }
         Ok(ref_depth + 1)
     }
@@ -461,7 +473,7 @@ impl WebGraphBuilder {
     }
 
 
-    pub fn build(mut self) -> Result<WebGraph, CoreIoError> {
+    pub fn build(mut self) -> Result<WebGraph<BACKEND>, CoreIoError> {
         // add a fake node that will not be written to the
         // stream, but forces the flush of the current data
         unsafe{self.push_unchecked(usize::MAX, usize::MAX)?};
@@ -481,12 +493,5 @@ impl WebGraphBuilder {
             data: self.data,
             nodes_index: compacted_nodes_index,
         })
-    }
-}
-
-impl crate::traits::MemoryFootprint for WebGraphBuilder {
-    fn total_size(&self) -> usize {
-        self.data.total_size() 
-            + size_of::<usize>() * (self.nodes_index.len() + 3)
     }
 }

@@ -1,3 +1,5 @@
+use crate::constants::*;
+use super::*;
 use rayon::iter::plumbing::{
     //bridge_unindexed, 
     UnindexedProducer,
@@ -22,7 +24,7 @@ impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEnded
         }
 
         // compute the current parsing index
-        let start_value = (self.start_index as usize * WORD_SIZE) 
+        let start_value = (self.start_index as usize * WORD_BIT_SIZE) 
             + self.start_code.trailing_zeros() as usize;
 
         // compute how many ones there where
@@ -32,7 +34,7 @@ impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEnded
         // Find it's index, so we can split the iterator exactly in half
         let middle_bit_index = self.father.select1(middle_point as usize);
         let code = self.father.high_bits[middle_bit_index as usize];
-        let inword_offset = middle_bit_index & WORD_MASK;
+        let inword_offset = middle_bit_index & WORD_BIT_SIZE_MASK;
 
         // Create the new iterator for the second half
         let new_iter = SparseIndexDobuleEndedIterator{

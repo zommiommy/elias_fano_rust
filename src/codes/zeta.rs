@@ -33,6 +33,9 @@ use super::{
 /// for i in 0..100 {
 ///     assert_eq!(i, ba.read_zeta::<8>().unwrap());
 /// }
+/// 
+/// let expected_size: usize = (0..100).map(|x| ba.size_zeta::<8>(x)).sum();
+/// assert_eq!(expected_size, ba.tell_bits().unwrap())
 /// ```
 pub trait CodeZeta: CodeUnary + CodeMinimalBinary {
 

@@ -50,6 +50,9 @@ pub fn compute_optimal_golomb_block_size(p: f64) -> usize {
 /// for i in 0..100 {
 ///     assert_eq!(i, ba.read_golomb::<8>().unwrap());
 /// }
+/// 
+/// let expected_size: usize = (0..100).map(|x| ba.size_golomb::<8>(x)).sum();
+/// assert_eq!(expected_size, ba.tell_bits().unwrap())
 /// ```
 pub trait CodeGolomb: CodeUnary + CodeFixedLength {
 

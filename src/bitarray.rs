@@ -58,7 +58,6 @@ impl MemoryFootprint for BitArray {
     }
 }
 
-
 impl BitArray {
     /// Create a new empty bitarray
     pub fn new() -> BitArray {
@@ -223,23 +222,45 @@ impl CodeFixedLength for BitArray {
     /// Write `value` using `number_of_bits` in the stream.
     fn write_fixed_length(&mut self, number_of_bits: usize, value: usize) -> Result<(), CoreIoError> {
         debug_assert!(number_of_bits >= fast_log2_ceil(value), "value: {} n: {}", value, number_of_bits);
+
+        // We want to append a given number of bits to the stream, the values 
+        // can span two words:
+        //
+        //  L  Word 1       M L       Word 2  M
+        // |.................|.................|
+        //              |....|.......|
+        //               L  Bits    M
+        //
+        // So we need to compute how many bits we can write in the current Word
+        // and then how many bits are left to write in the second one
+        //
+        // Then we can compose the words 
+    
+
         // Compute how many bits we are going to write to each word
         let space_left = WORD_BIT_SIZE - self.bit_index;
         let first_word_number_of_bits = number_of_bits.min(space_left as usize);
         let second_word_number_of_bits = number_of_bits - first_word_number_of_bits;
 
+        // write the data in the first word
+        let first_word_bits = value 
+            & power_of_two_to_mask(first_word_number_of_bits as usize);
+        // write the data in the second word
+        let second_word_bits = (value >> first_word_number_of_bits) 
+            & power_of_two_to_mask(second_word_number_of_bits as usize);
+
         // this solve the assumptions in read_bits that we always have an extra word
-        if self.word_index >= self.data.len() - 1 {
+        // and also we can avoid bound checking
+        if self.word_index + 1 >= self.data.len() {
             self.data.resize(self.data.len() + 1, 0);
         }
 
-        // write the data in the first word
-        let first_word_bits = value & power_of_two_to_mask(first_word_number_of_bits as usize);
-        self.data[self.word_index] |= first_word_bits.checked_shl(self.bit_index as u32).unwrap_or(0);
+        unsafe{
+            *self.data.get_unchecked_mut(self.word_index) |= 
+                first_word_bits << (self.bit_index & WORD_BIT_SIZE_MASK);
 
-        // write the data in the second word
-        let second_word_bits = (value >> first_word_number_of_bits) & power_of_two_to_mask(second_word_number_of_bits as usize);
-        self.data[self.word_index + 1] |= second_word_bits;
+            *self.data.get_unchecked_mut(self.word_index + 1) |= second_word_bits;
+        }
 
         // Update the pointers to after where we wrote
         self.skip_bits(number_of_bits as usize)

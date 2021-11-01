@@ -35,6 +35,9 @@ use super::{
 /// for i in 0..100 {
 ///     assert_eq!(i, ba.read_gamma().unwrap());
 /// }
+/// 
+/// let expected_size: usize = (0..100).map(|x| ba.size_gamma(x)).sum();
+/// assert_eq!(expected_size, ba.tell_bits().unwrap())
 /// ```
 pub trait CodeGamma: CodeUnary + CodeFixedLength {
 

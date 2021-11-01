@@ -29,6 +29,9 @@ use super::{CodeUnary, CodeGamma};
 /// for i in 0..100 {
 ///     assert_eq!(i, ba.read_delta().unwrap());
 /// }
+/// 
+/// let expected_size: usize = (0..100).map(|x| ba.size_delta(x)).sum();
+/// assert_eq!(expected_size, ba.tell_bits().unwrap()); 
 pub trait CodeDelta: CodeUnary + CodeGamma {
 
     #[inline]

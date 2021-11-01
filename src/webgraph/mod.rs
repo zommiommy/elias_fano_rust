@@ -1,14 +1,25 @@
-use crate::BitArray;
 use crate::compact_array::CompactArray;
+use crate::traits::*;
+use crate::codes::*;
 
 mod builder;
 pub use builder::*;
 
-pub struct WebGraph {
+/// General trait that captures which traits we need for a struct to be a backend
+/// of webgraph.
+pub trait WebGraphBackend: ReadBit + WriteBit + CodeUnary + CodeFixedLength + MemoryFootprint {}
+/// Blanket implementation
+impl<T> WebGraphBackend for T 
+where
+    T: ReadBit + WriteBit + CodeUnary + CodeFixedLength + MemoryFootprint
+{}
+
+
+pub struct WebGraph<BACKEND: WebGraphBackend> {
     /// The codes.
     /// For each node we are going to write its encoded degree,
     /// the first neighbour, and then the encoded gaps between neighbours.
-    data: BitArray,
+    data: BACKEND,
 
     /// store the bit-index in the BitStream of each node
     /// Should we use elias-fano here?
@@ -33,7 +44,7 @@ pub struct WebGraph {
 //     }
 // }
 
-impl crate::traits::MemoryFootprint for WebGraph {
+impl<BACKEND: WebGraphBackend> crate::traits::MemoryFootprint for WebGraph<BACKEND> {
     fn total_size(&self) -> usize {
         self.data.total_size() + self.nodes_index.total_size()
     }

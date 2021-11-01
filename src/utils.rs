@@ -33,6 +33,7 @@ pub const fn fast_pow_2(exp: usize) -> usize {
     1 << exp
 }
 
+#[inline(always)]
 /// Centralized way to convert from a power of 2 to a binary mask
 /// to compute the modulo fast
 /// 

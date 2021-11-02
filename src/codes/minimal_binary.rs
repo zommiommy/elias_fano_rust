@@ -39,6 +39,7 @@ use crate::traits::*;
 pub trait CodeMinimalBinary: CodeFixedLength + ReadBit {
 
     #[inline]
+    /// Read a minimal binary value from the stream
     fn read_minimal_binary(&mut self, max: usize) -> Result<usize, CoreIoError> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
@@ -61,6 +62,7 @@ pub trait CodeMinimalBinary: CodeFixedLength + ReadBit {
     }
 
     #[inline]
+    /// Write a minimal binary value from the stream
     fn write_minimal_binary(&mut self, value: usize, max: usize) -> Result<(), CoreIoError> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
@@ -76,7 +78,7 @@ pub trait CodeMinimalBinary: CodeFixedLength + ReadBit {
     }
     
     #[inline]
-    /// Return how many bits the code for the given value is long
+    /// Return how many bits the minimal binary code for the given value is long
     fn size_minimal_binary(&mut self, value: usize, max: usize) -> usize {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);

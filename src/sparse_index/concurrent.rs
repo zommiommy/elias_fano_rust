@@ -8,6 +8,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use rayon::prelude::*;
 
 #[derive(Debug)]
+/// Concurrent / parallel builder for the SparseIndex
 pub struct SparseIndexConcurrentBuilder<const QUANTUM_LOG2: usize> {
     data: Vec<AtomicUsize>, 
     expected_number_of_elements: usize,

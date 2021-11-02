@@ -1,3 +1,6 @@
+//! A simple array that stores conescutively values using a fixed length binary 
+//! encoding
+//! 
 use crate::utils::power_of_two_to_mask;
 use core::sync::atomic::AtomicUsize;
 use core::mem::size_of;
@@ -27,6 +30,7 @@ impl crate::traits::MemoryFootprint for CompactArray {
 }
 
 impl CompactArray {
+    /// Create a new empty CompactArray
     pub fn new(word_size: usize) -> CompactArray {
         CompactArray{
             data: Vec::new(),
@@ -35,6 +39,8 @@ impl CompactArray {
         }
     }
 
+    /// Create a new empty CompactArray that can write up to `capacity` elements
+    /// without the need for re-allocation 
     pub fn with_capacity(word_size: usize, capacity: usize) -> CompactArray {
         CompactArray{
             data: vec![0; get_vec_size(word_size, capacity) as usize],
@@ -43,6 +49,7 @@ impl CompactArray {
         }
     }
 
+    /// Reduce any spurious memory preventively allocated in vectors 
     pub fn shrink_to_fit(&mut self) {
         self.data.shrink_to_fit();
     }
@@ -86,11 +93,13 @@ impl CompactArray {
     }
 
     #[inline]
+    /// Return the word size associated with the current CompactArray
     pub fn word_size(&self) -> usize {
         self.word_size
     }
 
     #[inline]
+    /// Return the word mask associated with the current CompactArray
     pub fn word_mask(&self) -> usize {
         self.word_mask
     }

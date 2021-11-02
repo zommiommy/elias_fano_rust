@@ -4,6 +4,14 @@ use alloc::string::String;
 impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
 
     #[inline]
+    /// Instantiate a new empty Elias-Fano tuned to the given number of elements
+    /// and universe.
+    /// 
+    /// # Arguments
+    /// * `universe`: usize, the maximum value that could be encoded in the
+    ///     Elias-Fano data structure
+    /// * `number_of_elements`: usize, the number of values that will be encoded 
+    ///     in the Elias-Fano data structure
     pub fn new(universe: usize, number_of_elements: usize) -> Result<EliasFano<QUANTUM_LOG2>, String> {
         if number_of_elements == 0 {
             return Ok(EliasFano{
@@ -99,6 +107,8 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     #[inline]
+    /// Add a value to Elias-Fano without checking if it's sorted or 
+    /// a reasonable value.
     pub fn unchecked_push(&mut self, value: usize) {
         self.last_value = value;
         self.current_number_of_elements += 1;
@@ -121,6 +131,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     #[inline]
+    /// Add a value to Elias-Fano (the values added should be sorted)
     pub fn push(&mut self, value: usize) -> Result<(), String> {
         if self.last_value > value {
             return Err(format!(

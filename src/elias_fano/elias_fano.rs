@@ -2,17 +2,37 @@ use super::*;
 use alloc::string::String;
 
 #[derive(Clone, Debug, PartialEq)]
+/// Elias-Fano Quasi-Succint Index by Sebastiano Vigna.
+/// 
+/// This index can store a sequence of non-decreasing positive integers using
+/// space close to the theoretical minimum.
+/// More precisely, given a sequence of values of length $n$ with upperbound 
+/// (universe) $u$ this datastructure will use:
+/// $$ 2 e + e \left \lceil \log_2 \frac{u}{n} \right \rceil$$ 
 pub struct EliasFano<const QUANTUM_LOG2: usize> {
-    pub low_bits: CompactArray,
-    pub high_bits: SparseIndex<QUANTUM_LOG2>,
+    /// The lowbits are sotred contiguously using a fixed-length binary encoding
+    pub(crate) low_bits: CompactArray,
+    /// The high-bits are encoded using a sparse-index which with O(n) extra space
+    /// allows for O(1) rank and select. In practice this O(n) is ~1% of overhead
+    pub(crate) high_bits: SparseIndex<QUANTUM_LOG2>,
 
-    pub universe: usize,
-    pub number_of_elements: usize,
+    /// The maximum value encodable
+    pub(crate) universe: usize,
+    /// The number of elements in the encoding
+    pub(crate) number_of_elements: usize,
 
-    pub last_high_value: usize,
-    pub last_value: usize,
-    pub last_index: usize,
-    pub current_number_of_elements: usize,
+    // Builder arguments
+    // TODO!: we should split the builder form the actual datastructure
+
+    /// The last encountered high-bits value, this is used to ensure sorting
+    pub(crate) last_high_value: usize,
+    /// The last value encountered, this is used to ensure sorting
+    pub(crate) last_value: usize,
+    /// The index of the last value, this is used to ensure sorting
+    pub(crate) last_index: usize,
+    /// Number of elements currently pushed, this is used to ensure that 
+    /// the number of elements inserted matches the one expected.
+    pub(crate) current_number_of_elements: usize,
 }
 
 impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
@@ -190,6 +210,7 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     #[inline]
+    /// Returns whether the given value is present or not
     pub fn contains(&self, value: usize) -> bool {
         if value > self.last_value {
             return false;

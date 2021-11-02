@@ -20,6 +20,8 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     }
 
     #[inline]
+    /// Return a new iterator that is optimized to return only the values in the
+    /// given range
     pub fn iter_in_range(&self, range: Range<usize>) -> impl Iterator<Item=usize> + '_ {
         let Range{
             start,

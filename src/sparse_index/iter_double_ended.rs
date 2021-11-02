@@ -42,6 +42,7 @@ impl<'a,const QUANTUM_LOG2: usize> core::fmt::Debug for SparseIndexDobuleEndedIt
 
 
 impl<'a, const QUANTUM_LOG2: usize> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+    /// Create a new double-ended iterator for a given sparse index
     pub fn new(father: &'a SparseIndex<QUANTUM_LOG2>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
         SparseIndexDobuleEndedIterator{
             start_code: *father.high_bits.get(0).unwrap_or(&0),
@@ -53,6 +54,8 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndexDobuleEndedIterator<'a, QUANTUM_L
         }
     }
 
+    /// Create a new double-ended iterator for a given sparse index optimized 
+    /// to only return the values in the given range
     pub fn new_in_range(father: &'a SparseIndex<QUANTUM_LOG2>, range: Range<usize>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
         if range.start >= father.len() {
             return SparseIndexDobuleEndedIterator{

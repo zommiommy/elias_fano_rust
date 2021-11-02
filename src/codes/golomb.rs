@@ -57,12 +57,14 @@ pub fn compute_optimal_golomb_block_size(p: f64) -> usize {
 pub trait CodeGolomb: CodeUnary + CodeFixedLength {
 
     #[inline]
+    /// Read a golomb code from the stream
     fn read_golomb<const B: usize>(&mut self) -> Result<usize, CoreIoError> {
         let blocks_count = self.read_unary()?;
         Ok(blocks_count * B + self.read_fixed_length(fast_log2_ceil(B))?)
     }
 
     #[inline]
+    /// Write a golomb code to the stream
     fn write_golomb<const B: usize>(&mut self, value: usize) -> Result<(), CoreIoError> {
         self.write_unary(value / B)?;
         self.write_fixed_length( fast_log2_ceil(B), value % B)?;

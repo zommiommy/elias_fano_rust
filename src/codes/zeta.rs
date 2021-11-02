@@ -40,6 +40,7 @@ use super::{
 pub trait CodeZeta: CodeUnary + CodeMinimalBinary {
 
     #[inline]
+    /// Read a Zeta code from the stream
     fn read_zeta<const K: usize>(&mut self) -> Result<usize, CoreIoError> {
         let h = self.read_unary()?;
         let u = fast_pow_2((h + 1) * K);
@@ -49,9 +50,10 @@ pub trait CodeZeta: CodeUnary + CodeMinimalBinary {
     }
 
     #[inline]
+    /// Write a Zeta code to the stream
     fn write_zeta<const K: usize>(&mut self, mut value: usize) -> Result<(), CoreIoError> {
         value += 1;
-        let h = fast_log2_floor(value) / K; // wtf
+        let h = fast_log2_floor(value) / K;
         let u = fast_pow_2((h + 1) * K);
         let l =  fast_pow_2(h * K);
 
@@ -66,7 +68,7 @@ pub trait CodeZeta: CodeUnary + CodeMinimalBinary {
     /// Return how many bits the code for the given value is long
     fn size_zeta<const K: usize>(&mut self, mut value: usize) -> usize {
         value += 1;
-        let h = fast_log2_floor(value) / K; // wtf
+        let h = fast_log2_floor(value) / K;
         let u = fast_pow_2((h + 1) * K);
         let l =  fast_pow_2(h * K);
         self.size_unary(h) 

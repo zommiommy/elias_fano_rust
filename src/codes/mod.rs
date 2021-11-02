@@ -22,6 +22,9 @@ pub use gamma::CodeGamma;
 mod golomb;
 pub use golomb::CodeGolomb;
 
+// mod interpolative;
+// pub use interpolative::CodeInterpolative;
+
 mod minimal_binary;
 pub use minimal_binary::CodeMinimalBinary;
 

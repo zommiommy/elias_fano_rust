@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 use crate::compact_array::CompactArray;
 use crate::traits::*;
 use crate::codes::*;
@@ -14,7 +15,7 @@ where
     T: ReadBit + WriteBit + CodeUnary + CodeFixedLength + MemoryFootprint
 {}
 
-
+/// Webgraph by Sebastiano Vigna e Paolo Boldi
 pub struct WebGraph<BACKEND: WebGraphBackend> {
     /// The codes.
     /// For each node we are going to write its encoded degree,

@@ -1,3 +1,8 @@
+//! This is a sparse index over a bitmap.
+//! 
+//! In this index we use two vectors to save the position of every 
+//! `2**QUANTUM_LOG2` zeros and ones to be able to execute ranks and selects
+//! in constant time in average.
 use super::utils::*;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -19,12 +24,12 @@ mod par_iter;
 /// This structure is efficient for **DENSE** bitvectors
 /// Sparse Index which stores the position of every q-th 1 and 0
 pub struct SparseIndex<const QUANTUM_LOG2: usize> {
-    pub high_bits: Vec<usize>,
-    pub high_bits_index_zeros: Vec<usize>,
-    pub high_bits_index_ones: Vec<usize>,
-    pub number_of_ones: usize,
-    pub number_of_zeros: usize,
-    pub len: usize,
+    pub(crate) high_bits: Vec<usize>,
+    pub(crate) high_bits_index_zeros: Vec<usize>,
+    pub(crate) high_bits_index_ones: Vec<usize>,
+    pub(crate) number_of_ones: usize,
+    pub(crate) number_of_zeros: usize,
+    pub(crate) len: usize,
 
     /// Make rust happy about having a fixed index size for a given structure
     phantom: core::marker::PhantomData<[(); QUANTUM_LOG2]>,

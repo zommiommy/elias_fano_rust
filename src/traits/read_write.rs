@@ -78,10 +78,21 @@ pub trait ReadBit {
 }
 
 #[derive(Debug)]
+/// Enumeration of the possible errors that might ariase in this crate
 pub enum CoreIoError {
+    /// This error is returned when the backend could not write a word of memory
+    /// to the stream
     WriteFailed,
+    /// This error is returned when the backend could not write a bit
+    /// to the stream
     WriteBitFailed,
+    /// This error is returned when the backend could not read a word of memory
+    /// from the stream
     ReadFailed,
+    /// This error is returned when the backend could not read a bit
+    /// from the stream
     ReadBitFailed,
-    OutOfBound,
+    /// This error is returned when the Interpolative encoding routine is called
+    /// with an empty array.
+    InterpolativeCodeWithEmptyArray,
 }

@@ -1,9 +1,13 @@
+//! Collection of fast utilities that are used in all the crate
+
 #[inline(always)]
+/// Shift left x86_64 instruction
 pub fn shl(value: usize, offset: usize) -> usize {
     value.checked_shl(offset as u32).unwrap_or(0)
 }
 
 #[inline(always)]
+/// Shift right x86_64 instruction
 pub fn shr(value: usize, offset: usize) -> usize {
     value.checked_shr(offset as u32).unwrap_or(0)
 }
@@ -23,12 +27,21 @@ pub const fn fast_log2_floor(value: usize) -> usize {
 }
 
 #[inline(always)]
+/// based on https://bugzilla.mozilla.org/show_bug.cgi?id=327129
+/// 
+/// On `x86_64` this should compile to:
+/// ```asm
+/// or      rdi, 1
+/// lzcnt   rax, rdi
+/// xor     rax, 63
+/// ```
 pub const fn fast_log2_ceil(value: usize) -> usize {
     const WORD_SIZE: usize = 8 * core::mem::size_of::<usize>();
     WORD_SIZE - (value.saturating_sub(1)).leading_zeros() as usize
 }
 
 #[inline(always)]
+/// Convert an exponent to a power of two
 pub const fn fast_pow_2(exp: usize) -> usize {
     1 << exp
 }

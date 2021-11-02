@@ -40,6 +40,7 @@ use super::{
 /// ```
 pub trait CodeVarLength: CodeUnary + CodeFixedLength {
     #[inline]
+    /// Read a Variable Length code from the stream
     fn read_var_length<const K: usize>(&mut self) -> Result<usize, CoreIoError> {
         let len = self.read_unary()?;
 
@@ -50,6 +51,7 @@ pub trait CodeVarLength: CodeUnary + CodeFixedLength {
     }
 
     #[inline]
+    /// Write a Variable Length code to the stream
     fn write_var_length<const K: usize>(&mut self, value: usize) -> Result<(), CoreIoError> {
         use core::intrinsics::ceilf64;
 

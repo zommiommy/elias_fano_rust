@@ -1,5 +1,9 @@
 use crate::traits::CoreIoError;
 
+/// General trait for objects that can write and read values with a fixed number
+/// of bytes from a stream. This has no default implementation because it's a
+/// fundamental primitive so the performance of the other codes heavely depends
+/// on the optimizzation of these routins.
 pub trait CodeFixedLength {
     /// Read  fixed length code from the stream.
     /// 

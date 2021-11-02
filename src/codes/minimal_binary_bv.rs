@@ -59,6 +59,7 @@ fn reverse_bits(value: usize, number_of_bits: usize) -> usize {
 ///
 pub trait CodeMinimalBinaryBV: CodeFixedLength + ReadBit {
     #[inline]
+    /// Read a minimal binary value (BV) from the stream
     fn read_minimal_binary_bv(&mut self, max: usize) -> Result<usize, CoreIoError> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
@@ -76,6 +77,7 @@ pub trait CodeMinimalBinaryBV: CodeFixedLength + ReadBit {
     }
 
     #[inline]
+    /// Write a minimal binary (BV) value from the stream
     fn write_minimal_binary_bv(&mut self, value: usize, max: usize) -> Result<(), CoreIoError> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);

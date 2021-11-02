@@ -3,16 +3,19 @@ use super::*;
 /// # Getters
 impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     #[inline]
+    /// Return how many zeros are present in the SparseIndexBitmap
     pub fn count_zeros(&self) -> usize {
         self.number_of_zeros
     }
     
     #[inline]
+    /// Return how many ones are present in the SparseIndexBitmap
     pub fn count_ones(&self) -> usize {
         self.number_of_ones
     }
 
     #[inline]
+    /// Reutrn how long is the SparseIndexBitmap
     pub fn len(&self) -> usize {
         self.len
     }

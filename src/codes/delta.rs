@@ -35,12 +35,14 @@ use super::{CodeUnary, CodeGamma};
 pub trait CodeDelta: CodeUnary + CodeGamma {
 
     #[inline]
+    /// Read a delta code from the stream
     fn read_delta(&mut self) -> Result<usize, CoreIoError> {
         let len = self.read_gamma()?;
         self.read_fixed_length(len)
     }
 
     #[inline]
+    /// Write a delta code to the stream
     fn write_delta(&mut self, value: usize) -> Result<(), CoreIoError> {
         // TODO!: figure out if the +1 is actually needed
         let number_of_blocks_to_write = fast_log2_ceil(value + 1);

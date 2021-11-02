@@ -42,12 +42,14 @@ use super::{
 pub trait CodeGamma: CodeUnary + CodeFixedLength {
 
     #[inline]
+    /// Read a gamma code from the stream
     fn read_gamma(&mut self) -> Result<usize, CoreIoError> {
         let len = self.read_unary()?;
         Ok(self.read_fixed_length(len)? + (1 << len) - 1)
     }
 
     #[inline]
+    /// Write a gamma code to the stream
     fn write_gamma(&mut self, mut value: usize) -> Result<(), CoreIoError> {
         value += 1;
         let number_of_blocks_to_write = fast_log2_floor(value);

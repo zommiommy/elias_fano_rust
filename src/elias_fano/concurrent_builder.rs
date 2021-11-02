@@ -31,6 +31,7 @@ impl<const QUANTUM_LOG2: usize> Default for ConcurrentEliasFanoBuilder<QUANTUM_L
 }
 
 impl<const QUANTUM_LOG2: usize> ConcurrentEliasFanoBuilder<QUANTUM_LOG2> {
+    /// Initialize a new concurrent builder for ELias-Fano
     pub fn new(number_of_elements: usize, universe: usize) -> Result<ConcurrentEliasFanoBuilder<QUANTUM_LOG2>, String> {
         // If the user says that there will be no elements, the builder will 
         // only use the high-bits to store the eventual values

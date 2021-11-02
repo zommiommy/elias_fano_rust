@@ -30,9 +30,12 @@ const USE_INTERVALIZZATION: bool = false;
 const MIN_INTERVALIZZATION_LEN: usize = 3;
 // If during the compression we should employ the swap_remove trick
 // which requires then sorting the current_dsts possibly multiple times
-// TODO!: FOR SOME REASON ENABLING THIS WORSEN THE COMPRESSIO, WTF 
+// TODO!: Finish validating this
 const SWAP_REMOVE: bool = false;
 
+/// Builder for WebGraph, the only difference to webgraph is that this uses a 
+/// vecotr of usizes to index the nodes, while actual webgraph uses a compressed
+/// array.
 pub struct WebGraphBuilder<BACKEND: WebGraphBackend> {
     current_src: usize,
     current_dsts: Vec<usize>,
@@ -52,6 +55,7 @@ impl<BACKEND: WebGraphBackend> crate::traits::MemoryFootprint for WebGraphBuilde
 
 
 impl<BACKEND: WebGraphBackend> WebGraphBuilder<BACKEND> {
+    /// Create a new builder over the given backend
     pub fn new(backend: BACKEND) -> WebGraphBuilder<BACKEND> {
         WebGraphBuilder {
             current_src: 0,
@@ -472,7 +476,7 @@ impl<BACKEND: WebGraphBackend> WebGraphBuilder<BACKEND> {
         Ok(())
     }
 
-
+    /// Compress the node index and bvuild the last indices
     pub fn build(mut self) -> Result<WebGraph<BACKEND>, CoreIoError> {
         // add a fake node that will not be written to the
         // stream, but forces the flush of the current data

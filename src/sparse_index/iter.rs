@@ -25,6 +25,7 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 }
 
 #[derive(Debug)]
+/// Iterator over a SparseIndex
 pub struct SparseIndexIterator<'a, const QUANTUM_LOG2: usize> {
     /// reference to the SparseIndex which is being iter
     /// this is needed to get the reference to the high-bits

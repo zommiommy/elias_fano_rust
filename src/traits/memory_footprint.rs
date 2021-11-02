@@ -32,9 +32,9 @@ impl_memory_footprint_for_primitives!{usize isize u8 u16 u32 u64 u128 i8 i16 i32
 impl<T: MemoryFootprintConst> MemoryFootprint for alloc::vec::Vec<T> {
     fn total_size(&self) -> usize {
         // the allocaiton size
-        self.capacity() * T::total_size_const() 
+        self.len() * T::total_size_const() 
         // plus the metadata (ptr to the heap alloc, len, capacity)
-        + size_of::<usize>() * 3
+        + (size_of::<usize>() * 3)
     }
 }
 

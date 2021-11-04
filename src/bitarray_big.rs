@@ -5,6 +5,7 @@ use crate::codes::{CodeUnary, CodeFixedLength};
 use crate::constants::*;
 use core::mem::size_of;
 use core::intrinsics::unlikely;
+use core::num;
 use alloc::vec::Vec;
 
 /// A general BitArrayBig wrapper over some word reader and writers.
@@ -44,11 +45,11 @@ use alloc::vec::Vec;
 /// // rewind completely the BitArrayBig
 /// ba.clear();
 /// let max = 9;
-/// for i in 0..1 << max {
+/// for i in (0..1 << max).rev() {
 ///     ba.write_fixed_length(max, i).unwrap();
 /// }  
 /// ba.seek_bits(0);
-/// for i in 0..1 << max {
+/// for i in (0..1 << max).rev() {
 ///     assert_eq!(ba.read_fixed_length(max).unwrap(), i);
 /// } 
 /// 
@@ -221,27 +222,40 @@ impl CodeFixedLength for BitArrayBig {
     /// Read `number_of_bits` from the stream.
     /// THIS SHOULD NOT BE CALLED WITH `number_of_bits` equal to 0.
     fn read_fixed_length(&mut self, number_of_bits: usize) -> Result<usize, CoreIoError> {
+        // Compute how many bits we are going to write to each word
+        let space_left = WORD_BIT_SIZE - self.bit_index;
+        let first_word_number_of_bits = number_of_bits.min(space_left as usize);
+        let second_word_number_of_bits = number_of_bits - first_word_number_of_bits;
+        println!("{:064b} {:064b}", self.data[0], self.data[1]);
+        
         // read the data from the current word
-        let code = self.data[self.word_index] << self.bit_index;
+        let mut first_word_bits = self.data[self.word_index] >> 
+            WORD_BIT_SIZE.saturating_sub(
+                self.bit_index + number_of_bits
+            );
+        first_word_bits &= power_of_two_to_mask(first_word_number_of_bits);
         // read the next word, this implies that we will always have one
         // extra word in the data stream
-        let next = self.data[self.word_index + 1];
+        let mut second_word_bits = self.data[self.word_index + 1].checked_shr( 
+            (WORD_BIT_SIZE - second_word_number_of_bits) as _
+        ).unwrap_or(0);
+        second_word_bits &= power_of_two_to_mask(second_word_number_of_bits);
 
-        // compute how many bits did we read and how many are left
-        let bits_read = WORD_BIT_SIZE - self.bit_index as usize;
-
-        // concatenate the data from the two words
-        let aligned_data = code | (
-            next.checked_shr(bits_read as u32).unwrap_or(0)
-        );
+        // concatenate the data from the two wordsnext
+        let aligned_data = (first_word_bits << second_word_number_of_bits) 
+            | second_word_bits;
 
         // clear off the excess bits.
         // we shall keep only the lower `number_of_bits` bits.
         let result = aligned_data & power_of_two_to_mask(number_of_bits as _);
 
+        println!("{} {:064b} {:064b}", result, first_word_bits, second_word_bits);
+        println!("{} {} {} {} {}", 
+        self.bit_index, number_of_bits, space_left, first_word_number_of_bits, 
+        second_word_number_of_bits);
         // Update the pointers to where we read
         self.skip_bits(number_of_bits as usize)?;
-
+        
         Ok(result)
     }
 
@@ -270,10 +284,10 @@ impl CodeFixedLength for BitArrayBig {
         let second_word_number_of_bits = number_of_bits - first_word_number_of_bits;
 
         // write the data in the first word
-        let first_word_bits = value 
+        let first_word_bits = (value >> second_word_number_of_bits) 
             & power_of_two_to_mask(first_word_number_of_bits as usize);
         // write the data in the second word
-        let second_word_bits = (value >> first_word_number_of_bits) 
+        let second_word_bits = value 
             & power_of_two_to_mask(second_word_number_of_bits as usize);
 
         // this solve the assumptions in read_bits that we always have an extra word
@@ -281,14 +295,18 @@ impl CodeFixedLength for BitArrayBig {
         if self.word_index + 1 >= self.data.len() {
             self.data.resize(self.data.len() + 1, 0);
         }
-
         unsafe{
             *self.data.get_unchecked_mut(self.word_index) |= 
-                first_word_bits << (self.bit_index & WORD_BIT_SIZE_MASK);
+                first_word_bits << (
+                    space_left.saturating_sub(number_of_bits) 
+                    & WORD_BIT_SIZE_MASK
+                );
 
-            *self.data.get_unchecked_mut(self.word_index + 1) |= second_word_bits;
+            *self.data.get_unchecked_mut(self.word_index + 1) |= 
+                second_word_bits.checked_shl(
+                    (WORD_BIT_SIZE - 1).saturating_sub(second_word_bits) as _
+                ).unwrap_or(0);
         }
-
         // Update the pointers to after where we wrote
         self.skip_bits(number_of_bits as usize)
     }

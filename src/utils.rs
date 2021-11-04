@@ -13,7 +13,7 @@ pub fn shr(value: usize, offset: usize) -> usize {
 }
 
 #[inline(always)]
-/// based on https://bugzilla.mozilla.org/show_bug.cgi?id=327129
+/// based on <https://bugzilla.mozilla.org/show_bug.cgi?id=327129>
 /// 
 /// On `x86_64` this should compile to:
 /// ```asm
@@ -27,7 +27,7 @@ pub const fn fast_log2_floor(value: usize) -> usize {
 }
 
 #[inline(always)]
-/// based on https://bugzilla.mozilla.org/show_bug.cgi?id=327129
+/// based on <https://bugzilla.mozilla.org/show_bug.cgi?id=327129>
 /// 
 /// On `x86_64` this should compile to:
 /// ```asm

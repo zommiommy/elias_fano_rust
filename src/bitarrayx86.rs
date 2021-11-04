@@ -14,8 +14,8 @@ use core::arch::x86_64::{
                       // because the shift has to be an immediate 
 };
 
-/// Optimized BitArray that exploits SSE instructions for faster reads
-pub struct BitArrayX86_64 {
+/// Optimized BitArrayLittle that exploits SSE instructions for faster reads
+pub struct BitArrayLittleX86_64 {
     /// The actual word reader / writer
     pub data: Vec<u64>,
     /// Index that keeps track in which word we currently are
@@ -24,17 +24,17 @@ pub struct BitArrayX86_64 {
     pub bit_index: usize,
 }
 
-impl MemoryFootprint for BitArray {
+impl MemoryFootprint for BitArrayLittle {
     fn total_size(&self) -> usize {
         self.data.total_size()
         + 2 * size_of::<usize>()
     }
 }
 
-impl BitArray {
+impl BitArrayLittle {
     /// Create a new empty bitarray
-    pub fn new() -> BitArray {
-        BitArray{
+    pub fn new() -> BitArrayLittle {
+        BitArrayLittle{
             data: vec![0],
             word_index: 0,
             bit_index: 0,
@@ -43,11 +43,11 @@ impl BitArray {
 
     /// Create a new empty bitarray that will be able to write `capacity` bits
     /// without having to allocate memory.
-    pub fn with_capacity(capacity: usize) -> BitArray {
+    pub fn with_capacity(capacity: usize) -> BitArrayLittle {
         let mut data = Vec::with_capacity(capacity / (8 * size_of::<usize>()));
         data.push(0);
         
-        BitArray{
+        BitArrayLittle{
             data,
             word_index: 0,
             bit_index: 0,
@@ -55,7 +55,7 @@ impl BitArray {
     }
 
     #[inline]
-    /// Destroy the BitArray wrapper and return the inner backend
+    /// Destroy the BitArrayLittle wrapper and return the inner backend
     pub fn into_inner(self) -> Vec<usize> {
         self.data
     }
@@ -63,7 +63,7 @@ impl BitArray {
 
 /// Optimized implementation that exploit the fact that all the data is already
 /// in memory
-impl CodeFixedLength for BitArray {
+impl CodeFixedLength for BitArrayLittle {
     #[inline]
     /// Read `number_of_bits` from the stream.
     /// THIS SHOULD NOT BE CALLED WITH `number_of_bits` equal to 0.

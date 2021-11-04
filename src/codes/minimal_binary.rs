@@ -8,7 +8,7 @@ use crate::traits::*;
 /// ```rust
 /// use elias_fano_rust::prelude::*;
 /// 
-/// let mut ba = BitArray::new();
+/// let mut ba = BitArrayLittle::new();
 /// 
 /// let max = 1_000;
 /// // write values to the stream

@@ -14,7 +14,7 @@ use super::{
 /// ```rust
 /// use elias_fano_rust::prelude::*;
 /// 
-/// let mut ba = BitArray::new();
+/// let mut ba = BitArrayLittle::new();
 /// 
 /// // write values to the stream
 /// for i in 0..100 {

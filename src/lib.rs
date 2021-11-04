@@ -68,12 +68,15 @@ pub use codes::*;
 pub mod webgraph;
 // mod bitstream;
 // use bitstream::BitStream;
-mod bitarray;
-pub use bitarray::BitArray;
+mod bitarray_little;
+pub use bitarray_little::BitArrayLittle;
+mod bitarray_big;
+pub use bitarray_big::BitArrayBig;
 
 /// Simple prelude module that import everything
 pub mod prelude {
-    pub use super::BitArray;
+    pub use super::BitArrayLittle;
+    pub use super::BitArrayBig;
     pub use super::traits::*;
     pub use super::codes::*;
     pub use super::compact_array::CompactArray;

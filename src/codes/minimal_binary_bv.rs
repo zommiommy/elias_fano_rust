@@ -27,7 +27,7 @@ fn reverse_bits(value: usize, number_of_bits: usize) -> usize {
 /// ```rust
 /// use elias_fano_rust::prelude::*;
 /// 
-/// let mut ba = BitArray::new();
+/// let mut ba = BitArrayLittle::new();
 /// 
 /// let max = 1_000;
 /// // write values to the stream

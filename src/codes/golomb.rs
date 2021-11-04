@@ -31,7 +31,7 @@ pub fn compute_optimal_golomb_block_size(p: f64) -> usize {
 /// ```rust
 /// use elias_fano_rust::prelude::*;
 /// 
-/// let mut ba = BitArray::new();
+/// let mut ba = BitArrayLittle::new();
 /// 
 /// // write values to the stream
 /// for i in 0..100 {

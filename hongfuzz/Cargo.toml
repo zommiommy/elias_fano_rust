@@ -6,7 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-honggfuzz = "=0.5.52"
+honggfuzz = "=0.5.54"
 elias_fano_rust = {path="..", features = ["fuzz"]}
 
 [profile.release]

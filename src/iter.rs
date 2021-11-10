@@ -27,16 +27,20 @@ impl EliasFano {
         } = range;
         
         let offset = self.unchecked_rank(start);
-        let high_end   = self.unchecked_rank(end).saturating_add(end >> self.low_bit_count);
         let high_start = offset.saturating_add(start >> self.low_bit_count);
 
-        self.high_bits.iter_in_range(high_start..high_end).enumerate()
+        self.high_bits.iter_in_range(high_start..u64::MAX).enumerate()
             .map(move |(index, high_bit_index)| {
                 let index = index as u64 + offset;
                 let high_value = high_bit_index - index;
                 let low_bits = self.read_lowbits(index);
-                (high_value << self.low_bit_count) | low_bits
-            })
+                let result = (high_value << self.low_bit_count) | low_bits;
+                if result >= end {
+                    None
+                } else {
+                    Some(result)
+                }
+            }).take_while(Option::is_some).map(Option::unwrap)
     }
 
     /// Return iterator for the values in elias fano.

@@ -20,13 +20,18 @@ impl EliasFano {
     }
 
     #[inline]
-    pub fn iter_in_range(&self, range: Range<u64>) -> impl Iterator<Item=u64> + '_ {
+    /// Iter over the values in a given range.
+    /// The argument offset, if provided, have to be equal to `rank(range.start)`
+    /// otherwise this will lead to undefined results. Its function is to avoid
+    /// a rank operation if the user already have that information.
+    pub fn iter_in_range(&self, range: Range<u64>, offset: Option<u64>) -> impl Iterator<Item=u64> + '_ {
         let Range{
             start,
             end
         } = range;
         
-        let offset = self.unchecked_rank(start);
+        let offset = offset.unwrap_or_else(|| self.unchecked_rank(start));
+        assert!(offset <= self.len() as u64);
         let high_start = offset.saturating_add(start >> self.low_bit_count);
 
         self.high_bits.iter_in_range(high_start..u64::MAX).enumerate()
@@ -34,13 +39,8 @@ impl EliasFano {
                 let index = index as u64 + offset;
                 let high_value = high_bit_index - index;
                 let low_bits = self.read_lowbits(index);
-                let result = (high_value << self.low_bit_count) | low_bits;
-                if result >= end {
-                    None
-                } else {
-                    Some(result)
-                }
-            }).take_while(Option::is_some).map(Option::unwrap)
+                (high_value << self.low_bit_count) | low_bits
+            }).take_while(move |result| *result < end)
     }
 
     /// Return iterator for the values in elias fano.

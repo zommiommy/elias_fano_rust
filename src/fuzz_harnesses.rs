@@ -134,7 +134,7 @@ pub fn iter_in_range_harness(data: &[u8]) {
     
     let truth = indices.iter().filter(|i| (start..end).contains(&i)).cloned().collect::<Vec<u64>>();
 
-    let ours = ef.iter_in_range(start..end).collect::<Vec<u64>>();
+    let ours = ef.iter_in_range(start..end, None).collect::<Vec<u64>>();
 
     for (a, b) in truth.iter().zip(ours.iter()) {
         assert_eq!(*a, *b, "The values inside elias-fano");

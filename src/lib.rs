@@ -12,7 +12,7 @@
 //! ```rust
 //! use elias_fano_rust::elias_fano::EliasFano;
 //!
-//! 
+//!
 //! ```
 //!
 //! # SparseIndex
@@ -31,7 +31,7 @@
 //!
 //! In this contest, Redunant size is how much memory is used for indices to speed-up the **rank** and **select** operations.
 //! The Redundant size is **included** in the Memory usage.
-//! 
+//!
 //! Comparisons against other succint datastructures: (TODO: figure out memory measurements)
 //!
 //! | Data-Structure | Rank Time (ns)    | Select Time (ns)   | Memory Usage (MiB) |
@@ -42,7 +42,9 @@
 //! | [succint::jacobson](https://docs.rs/succinct/0.5.2/succinct/)  | 17.966 +/- 0.223 | 509.892 +/- 6.706 | ? |
 //! | [succint::rank9](https://docs.rs/succinct/0.5.2/succinct/)     | 9.068 +/- 0.245  | 324.839 +/-1.784  | ? |
 #![feature(is_sorted)]
+#![feature(concat_idents)]
 #![feature(core_intrinsics)]
+#![feature(adt_const_params)]
 #![feature(const_generics_defaults)]
 #![deny(missing_docs)]
 #![deny(clippy::missing_docs_in_private_items)]
@@ -57,41 +59,29 @@
 #[macro_use]
 extern crate alloc;
 
-pub(crate) mod constants;
-pub mod utils;
-pub mod compact_array;
-pub mod sparse_index;
-pub mod elias_fano;
+mod errors;
+pub use errors::*;
 pub mod codes;
+pub mod compact_array;
+pub(crate) mod constants;
+pub mod elias_fano;
+pub mod sparse_index;
 pub mod traits;
+pub mod utils;
 pub use codes::*;
-pub mod webgraph;
-// mod bitstream;
-// use bitstream::BitStream;
-mod bitarray_little;
-pub use bitarray_little::BitArrayLittle;
-mod bitarray_big;
-pub use bitarray_big::BitArrayBig;
+//pub mod backends;
+//pub mod webgraph;
 
 /// Simple prelude module that import everything
 pub mod prelude {
-    pub use super::BitArrayLittle;
-    pub use super::BitArrayBig;
-    pub use super::traits::*;
+    //pub use super::backends::*;
     pub use super::codes::*;
     pub use super::compact_array::CompactArray;
+    pub use super::elias_fano::{ConcurrentEliasFanoBuilder, EliasFano};
     pub use super::sparse_index::SparseIndex;
-    pub use super::elias_fano::{
-        EliasFano,
-        ConcurrentEliasFanoBuilder,
-    };
-    pub use super::webgraph::{
-        WebGraph,
-        WebGraphBackend,
-        WebGraphBuilder,
-    };
+    pub use super::traits::*;
     pub use super::utils;
 }
 
-#[cfg(feature="fuzz")]
+#[cfg(feature = "fuzz")]
 pub mod fuzz;

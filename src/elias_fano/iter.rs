@@ -12,27 +12,31 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// Return iterator for the values in elias fano.
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
-        self.high_bits.iter().enumerate().map(move |(index, high_bit_index)|{
-            let high_value = high_bit_index - index as usize;
-            let low_bits = self.low_bits.read(index as usize);
-            (high_value << self.low_bits.word_size()) | low_bits
-        })
+        self.high_bits
+            .iter()
+            .enumerate()
+            .map(move |(index, high_bit_index)| {
+                let high_value = high_bit_index - index as usize;
+                let low_bits = self.low_bits.read(index as usize);
+                (high_value << self.low_bits.word_size()) | low_bits
+            })
     }
 
     #[inline]
     /// Return a new iterator that is optimized to return only the values in the
     /// given range
-    pub fn iter_in_range(&self, range: Range<usize>) -> impl Iterator<Item=usize> + '_ {
-        let Range{
-            start,
-            end
-        } = range;
-        
+    pub fn iter_in_range(&self, range: Range<usize>) -> impl Iterator<Item = usize> + '_ {
+        let Range { start, end } = range;
+
         let offset = self.unchecked_rank(start);
-        let high_end   = self.unchecked_rank(end).saturating_add(end >> self.low_bits.word_size());
+        let high_end = self
+            .unchecked_rank(end)
+            .saturating_add(end >> self.low_bits.word_size());
         let high_start = offset.saturating_add(start >> self.low_bits.word_size());
 
-        self.high_bits.iter_in_range(high_start..high_end).enumerate()
+        self.high_bits
+            .iter_in_range(high_start..high_end)
+            .enumerate()
             .map(move |(index, high_bit_index)| {
                 let index = index as usize + offset;
                 let high_value = high_bit_index - index;
@@ -46,16 +50,15 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     pub fn iter_uniques(&self) -> impl Iterator<Item = usize> + '_ {
         let mut last_value = 0;
         let mut first = true;
-        self.iter().filter_map(move |value| {
-            match first || last_value != value {
+        self.iter()
+            .filter_map(move |value| match first || last_value != value {
                 true => {
                     first = false;
                     last_value = value;
                     Some(value)
                 }
                 false => None,
-            }
-        })
+            })
     }
 
     /// Return iterator for the values in elias fano.

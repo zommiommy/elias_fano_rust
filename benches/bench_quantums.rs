@@ -3,22 +3,19 @@
 
 extern crate rand;
 
-use rand::{Rng, SeedableRng};
-use rand::{RngCore};
 use rand::rngs::SmallRng;
+use rand::RngCore;
+use rand::{Rng, SeedableRng};
 
 extern crate test;
-use test::{Bencher, black_box};
+use test::{black_box, Bencher};
 
 const TRIALS: u64 = 1_000;
 const SIZE: u64 = 32_000_000;
-const MAX : u64 = 450_000 * 450_000;
+const MAX: u64 = 450_000 * 450_000;
 
 const SEED: [u8; 16] = [
-    0xde, 0xad, 0xbe, 0xef,
-    0xc0, 0xfe, 0xbe, 0xbe,
-    0xde, 0xad, 0xbe, 0xef,
-    0xc0, 0xfe, 0xbe, 0xbe   
+    0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe,
 ];
 
 pub(crate) fn test_vector() -> (Vec<u64>, SmallRng) {
@@ -35,7 +32,7 @@ macro_rules! bench_ef {
     ($module:ident, $gen:literal) => {
         mod $module {
             use super::*;
-                
+
             #[bench]
             fn rank(b: &mut Bencher) {
                 let (v, mut rng) = test_vector();
@@ -79,7 +76,7 @@ macro_rules! bench_si {
     ($module:ident, $gen:literal) => {
         mod $module {
             use super::*;
-                
+
             #[bench]
             fn rank(b: &mut Bencher) {
                 let (v, mut rng) = test_vector();

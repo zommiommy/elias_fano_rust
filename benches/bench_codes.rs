@@ -4,7 +4,7 @@
 use elias_fano_rust::*;
 
 extern crate test;
-use test::{Bencher, black_box};
+use test::{black_box, Bencher};
 
 const MAX: u64 = 10_000;
 const MAX_LOG_2: u64 = utils::fast_log2_ceil(MAX);

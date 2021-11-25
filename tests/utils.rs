@@ -21,7 +21,7 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<usize> {
 
 #[allow(dead_code)]
 /// Test that we can build successfully run all methods in elias fano.
-pub fn default_test_suite(size:usize, max:u64) -> Result<(), String>{
+pub fn default_test_suite(size: usize, max: u64) -> Result<(), String> {
     let vector = build_random_sorted_vector(size, max);
     let ef = EliasFano::<10>::from_vec(&vector)?;
     vector.iter().enumerate().for_each(|(i, v)| {

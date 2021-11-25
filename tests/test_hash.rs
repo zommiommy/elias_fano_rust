@@ -1,9 +1,9 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use elias_fano_rust::elias_fano::EliasFano;
 use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 pub const SEED: [u8; 16] = [
     0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe,
@@ -20,7 +20,6 @@ pub fn build_random_sorted_vector(size: usize, max: usize) -> Vec<usize> {
     vector.sort();
     vector
 }
-
 
 #[test]
 /// Test that we can build successfully run all methods in elias fano.

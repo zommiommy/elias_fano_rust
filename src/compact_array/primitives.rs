@@ -1,7 +1,4 @@
-use crate::{
-    constants::*,
-    utils::*,
-};
+use crate::{constants::*, utils::*};
 use alloc::vec::Vec;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
@@ -96,12 +93,13 @@ pub fn unsafe_read(array: &[usize], index: usize, value_size: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::Rng;
     use rand::rngs::SmallRng;
+    use rand::Rng;
     use rand::SeedableRng;
 
     pub const SEED: [u8; 16] = [
-        0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe,
+        0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe,
+        0xbe,
     ];
 
     /// Test that everything runs properly in the PPI graph.
@@ -116,43 +114,35 @@ mod tests {
         vector
     }
 
-    fn test_safe_low_bits(n_bits: usize, size: usize){
+    fn test_safe_low_bits(n_bits: usize, size: usize) {
         let max_values = (1 << n_bits) - 1;
         let mut low_bits = vec![0; get_vec_size(n_bits, size) as usize];
 
-        
         let vector = build_random_sorted_vector(size, max_values);
         let values: Vec<usize> = vector.iter().map(|x| x % max_values).collect();
-        
+
         for (i, v) in values.iter().enumerate() {
             safe_write(&mut low_bits, i as usize, *v, n_bits);
         }
 
         for (i, v) in values.iter().enumerate() {
-            assert_eq!(
-                *v,
-                safe_read(&low_bits, i as usize, n_bits)
-            );
+            assert_eq!(*v, safe_read(&low_bits, i as usize, n_bits));
         }
     }
 
-    fn test_unsafe_low_bits(n_bits: usize, size: usize){
+    fn test_unsafe_low_bits(n_bits: usize, size: usize) {
         let max_values = (1 << n_bits) - 1;
         let mut low_bits = vec![0; get_vec_size(n_bits, size) as usize];
 
-        
         let vector = build_random_sorted_vector(size, max_values);
         let values: Vec<usize> = vector.iter().map(|x| x % max_values).collect();
-        
+
         for (i, v) in values.iter().enumerate() {
             unsafe_write(&mut low_bits, i as usize, *v, n_bits);
         }
 
         for (i, v) in values.iter().enumerate() {
-            assert_eq!(
-                *v,
-                unsafe_read(&low_bits, i as usize, n_bits)
-            );
+            assert_eq!(*v, unsafe_read(&low_bits, i as usize, n_bits));
         }
     }
 
@@ -165,5 +155,4 @@ mod tests {
             test_unsafe_low_bits(rng.gen_range(1, 64), rng.gen_range(1, 1000));
         }
     }
-
 }

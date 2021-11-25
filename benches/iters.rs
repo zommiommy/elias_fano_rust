@@ -3,21 +3,18 @@
 
 extern crate rand;
 
-use rand::{Rng, SeedableRng};
-use rand::{RngCore};
 use rand::rngs::SmallRng;
+use rand::RngCore;
+use rand::{Rng, SeedableRng};
 
 extern crate test;
-use test::{Bencher, black_box};
+use test::{black_box, Bencher};
 
 const SIZE: u64 = 100_000;
 const MAX: u64 = 2 * SIZE;
 
 const SEED: [u8; 16] = [
-    0xde, 0xad, 0xbe, 0xef,
-    0xc0, 0xfe, 0xbe, 0xbe,
-    0xde, 0xad, 0xbe, 0xef,
-    0xc0, 0xfe, 0xbe, 0xbe   
+    0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe,
 ];
 
 pub(crate) fn test_vector() -> (Vec<u64>, SmallRng) {
@@ -32,23 +29,19 @@ pub(crate) fn test_vector() -> (Vec<u64>, SmallRng) {
 
 mod ef {
     use super::*;
-        
+
     #[bench]
     fn iter_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let ef = elias_fano_rust::elias_fano::EliasFano::<10>::from_vec(&v).unwrap();
-        b.iter(|| {
-            ef.iter_select().collect::<Vec<_>>()
-        })
+        b.iter(|| ef.iter_select().collect::<Vec<_>>())
     }
 
     #[bench]
     fn iter_new(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let ef = elias_fano_rust::elias_fano::EliasFano::<10>::from_vec(&v).unwrap();
-        b.iter(|| {
-            ef.iter().collect::<Vec<_>>()
-        })
+        b.iter(|| ef.iter().collect::<Vec<_>>())
     }
 }
 
@@ -59,9 +52,7 @@ mod sparse_index {
     fn iter(b: &mut Bencher) {
         let (v, rng) = test_vector();
         let ss = elias_fano_rust::sparse_index::SparseIndex::<10>::from_vec(v);
-        b.iter(|| {
-            ss.iter().collect::<Vec<_>>()
-        })
+        b.iter(|| ss.iter().collect::<Vec<_>>())
     }
 
     //#[bench]

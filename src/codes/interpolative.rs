@@ -12,17 +12,17 @@ use crate::utils::fast_log2_ceil;
 /// TODO!: Finish the implementation and figure out how to encode metadata
 pub trait CodeInterpolative: CodeMinimalBinary + CodeFixedLength {
     #[inline]
-    fn read_interpolative(&mut self) -> Result<Vec<usize>, CoreIoError> {
+    fn read_interpolative(&mut self) -> Result<Vec<usize>, Error> {
 
     }
 
     #[inline]
     fn write_interpolative(&mut self, values: Vec<usize>) 
-        -> Result<(), CoreIoError> {
+        -> Result<(), Error> {
         debug_assert!(values.is_sorted());
 
         match values.len() {
-            0 => Err(CoreIoError::InterpolativeCodeWithEmptyArray),
+            0 => Err(Error::InterpolativeCodeWithEmptyArray),
             1 => self.write_fixed_length(values[0], fast_log2_ceil(values[0])),
             length @ _ => {
                 let min = *values.first().unwrap();
@@ -46,7 +46,7 @@ where
 /// encoding.
 fn recursive_interpolative_write<BACKEND>(backend: BACKEND, values: &[usize], 
     index: usize, lower_bound: usize, higher_bound: usize)
-    -> Result<(), CoreIoError> 
+    -> Result<(), Error> 
 where
     BACKEND: CodeMinimalBinary
 {

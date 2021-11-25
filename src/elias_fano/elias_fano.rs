@@ -3,12 +3,12 @@ use alloc::string::String;
 
 #[derive(Clone, Debug, PartialEq)]
 /// Elias-Fano Quasi-Succint Index by Sebastiano Vigna.
-/// 
+///
 /// This index can store a sequence of non-decreasing positive integers using
 /// space close to the theoretical minimum.
-/// More precisely, given a sequence of values of length $n$ with upperbound 
+/// More precisely, given a sequence of values of length $n$ with upperbound
 /// (universe) $u$ this datastructure will use:
-/// $$ 2 e + e \left \lceil \log_2 \frac{u}{n} \right \rceil$$ 
+/// $$ 2 e + e \left \lceil \log_2 \frac{u}{n} \right \rceil$$
 pub struct EliasFano<const QUANTUM_LOG2: usize> {
     /// The lowbits are sotred contiguously using a fixed-length binary encoding
     pub(crate) low_bits: CompactArray,
@@ -23,14 +23,13 @@ pub struct EliasFano<const QUANTUM_LOG2: usize> {
 
     // Builder arguments
     // TODO!: we should split the builder form the actual datastructure
-
     /// The last encountered high-bits value, this is used to ensure sorting
     pub(crate) last_high_value: usize,
     /// The last value encountered, this is used to ensure sorting
     pub(crate) last_value: usize,
     /// The index of the last value, this is used to ensure sorting
     pub(crate) last_index: usize,
-    /// Number of elements currently pushed, this is used to ensure that 
+    /// Number of elements currently pushed, this is used to ensure that
     /// the number of elements inserted matches the one expected.
     pub(crate) current_number_of_elements: usize,
 }
@@ -190,10 +189,10 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     pub fn select(&self, index: usize) -> Result<usize, String> {
         match index < self.number_of_elements {
             true => Ok(self.unchecked_select(index)),
-            false =>Err(format!(
+            false => Err(format!(
                 "Given index {} is out of bound on a collection with {} elements.",
                 index, self.number_of_elements
-                ))
+            )),
         }
     }
 

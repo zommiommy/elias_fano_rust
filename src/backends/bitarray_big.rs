@@ -1,22 +1,20 @@
-
-use crate::traits::{CoreIoError, MemoryFootprint, ReadBit, WriteBit};
-use crate::utils::{fast_log2_ceil, power_of_two_to_mask};
-use crate::codes::{CodeUnary, CodeFixedLength};
 use crate::constants::*;
-use core::mem::size_of;
-use core::intrinsics::unlikely;
-use core::num;
+use crate::traits::*;
+use crate::utils::{fast_log2_ceil, power_of_two_to_mask};
+use crate::Result;
 use alloc::vec::Vec;
+use core::intrinsics::unlikely;
+use core::mem::size_of;
 
 /// A general BitArrayBig wrapper over some word reader and writers.
 /// This assumes that the words of memory are read and write in little-endian;
-/// 
+///
 /// # Example
 /// ```rust
 /// use elias_fano_rust::prelude::*;
-/// 
+///
 /// let mut ba = BitArrayBig::new();
-/// 
+///
 /// // write a pattern of single bits to the array
 /// for _ in 0..513 {
 ///     ba.write_bit(true);
@@ -27,10 +25,10 @@ use alloc::vec::Vec;
 /// for i in 0..513 {
 ///     ba.write_bit(i % 2 == 0);
 /// }
-/// 
+///
 /// // rewind completely the BitArrayBig
 /// ba.seek_bits(0);
-/// 
+///
 /// // Ensure that we read back exacly the same pattern
 /// for _ in 0..513 {
 ///     assert_eq!(ba.read_bit().unwrap(), true);
@@ -41,7 +39,7 @@ use alloc::vec::Vec;
 /// for i in 0..513 {
 ///     assert_eq!(ba.read_bit().unwrap(), i % 2 == 0);
 /// }  
-/// 
+///
 /// // rewind completely the BitArrayBig
 /// ba.clear();
 /// let max = 9;
@@ -51,8 +49,8 @@ use alloc::vec::Vec;
 /// ba.seek_bits(0);
 /// for i in (0..1 << max).rev() {
 ///     assert_eq!(ba.read_fixed_length(max).unwrap(), i);
-/// } 
-/// 
+/// }
+///
 /// // rewind completely the BitArrayBig
 /// ba.clear();
 /// for i in 0..513 {
@@ -72,17 +70,18 @@ pub struct BitArrayBig {
     pub bit_index: usize,
 }
 
+impl IsBigEndian<true> for BitArrayBig {}
+
 impl MemoryFootprint for BitArrayBig {
     fn total_size(&self) -> usize {
-        self.data.total_size()
-        + 2 * size_of::<usize>()
+        self.data.total_size() + 2 * size_of::<usize>()
     }
 }
 
 impl BitArrayBig {
     /// Create a new empty bitarray
     pub fn new() -> BitArrayBig {
-        BitArrayBig{
+        BitArrayBig {
             data: vec![0],
             word_index: 0,
             bit_index: 0,
@@ -94,8 +93,8 @@ impl BitArrayBig {
     pub fn with_capacity(capacity: usize) -> BitArrayBig {
         let mut data = Vec::with_capacity(capacity / (8 * size_of::<usize>()));
         data.push(0);
-        
-        BitArrayBig{
+
+        BitArrayBig {
             data,
             word_index: 0,
             bit_index: 0,
@@ -120,16 +119,17 @@ impl BitArrayBig {
 impl ReadBit for BitArrayBig {
     #[inline]
     /// Read a single bit
-    fn read_bit(&mut self) -> Result<bool, CoreIoError> {
+    fn read_bit(&mut self) -> Result<bool> {
         // TODO!; optimize?
-        let res = (self.data[self.word_index] << self.bit_index) & WORD_HIGHEST_BIT_MASK;
+        let code = self.data[self.word_index];
+        let res = (code << self.bit_index) & WORD_HIGHEST_BIT_MASK;
         self.skip_bits(1)?;
         Ok(res != 0)
     }
 
     #[inline]
     /// Seek to the given bit_index
-    fn seek_bits(&mut self, bit_index: usize) -> Result<(), CoreIoError> {
+    fn seek_bits(&mut self, bit_index: usize) -> Result<()> {
         self.word_index = bit_index >> WORD_SHIFT;
         self.bit_index = bit_index & WORD_BIT_SIZE_MASK;
         Ok(())
@@ -137,25 +137,25 @@ impl ReadBit for BitArrayBig {
 
     #[inline]
     /// Return the current position (bit index) in the bit array
-    fn tell_bits(&self) -> Result<usize, CoreIoError> {
+    fn tell_bits(&self) -> Result<usize> {
         Ok((self.word_index << WORD_SHIFT) | self.bit_index)
     }
 
     #[inline]
     /// Overriding optimized version
-    fn skip_bits(&mut self, bit_offset: usize) -> Result<(), CoreIoError> {
+    fn skip_bits(&mut self, bit_offset: usize) -> Result<()> {
         // TODO!: is this faster than a tell + seek?
         self.bit_index += bit_offset;
         self.word_index += self.bit_index >> WORD_SHIFT;
         self.bit_index &= WORD_BIT_SIZE_MASK;
         Ok(())
-    }    
+    }
 }
 
 impl WriteBit for BitArrayBig {
     #[inline]
     /// Read a single bit
-    fn write_bit(&mut self, value: bool) -> Result<(), CoreIoError>{
+    fn write_bit(&mut self, value: bool) -> Result<()> {
         // TODO!: optimize brenchless?
         if value {
             self.data[self.word_index] |= WORD_HIGHEST_BIT_MASK >> self.bit_index;
@@ -176,7 +176,7 @@ impl WriteBit for BitArrayBig {
 /// Optimal for gemetric distribution of ratio 1/2
 impl CodeUnary for BitArrayBig {
     #[inline]
-    fn read_unary(&mut self) -> Result<usize, CoreIoError>  {
+    fn read_unary(&mut self) -> Result<usize> {
         let mut res = 0;
         loop {
             let word = self.data[self.word_index] << self.bit_index;
@@ -187,7 +187,7 @@ impl CodeUnary for BitArrayBig {
                 self.word_index += 1;
                 self.bit_index = 0;
                 res += bound;
-                continue
+                continue;
             }
 
             // the code finish here
@@ -197,23 +197,21 @@ impl CodeUnary for BitArrayBig {
     }
 
     #[inline]
-    fn write_unary(&mut self, value: usize) -> Result<(), CoreIoError> {
+    fn write_unary(&mut self, value: usize) -> Result<()> {
         // Update the reminder
         let idx = value + self.tell_bits()?;
 
-        let bit_index  = idx & WORD_BIT_SIZE_MASK; 
+        let bit_index = idx & WORD_BIT_SIZE_MASK;
         let word_index = idx >> WORD_SHIFT;
 
         self.data.resize(word_index + 2, 0);
 
         // Write the bit
         self.data[word_index] |= WORD_HIGHEST_BIT_MASK >> bit_index;
-        
+
         self.seek_bits(idx + 1)
     }
-
 }
-
 
 /// Optimized implementation that exploit the fact that all the data is already
 /// in memory
@@ -221,50 +219,47 @@ impl CodeFixedLength for BitArrayBig {
     #[inline]
     /// Read `number_of_bits` from the stream.
     /// THIS SHOULD NOT BE CALLED WITH `number_of_bits` equal to 0.
-    fn read_fixed_length(&mut self, number_of_bits: usize) -> Result<usize, CoreIoError> {
+    fn read_fixed_length(&mut self, number_of_bits: usize) -> Result<usize> {
         // Compute how many bits we are going to write to each word
         let space_left = WORD_BIT_SIZE - self.bit_index;
         let first_word_number_of_bits = number_of_bits.min(space_left as usize);
         let second_word_number_of_bits = number_of_bits - first_word_number_of_bits;
-        println!("{:064b} {:064b}", self.data[0], self.data[1]);
-        
+
         // read the data from the current word
-        let mut first_word_bits = self.data[self.word_index] >> 
-            WORD_BIT_SIZE.saturating_sub(
-                self.bit_index + number_of_bits
-            );
+        let mut first_word_bits = self.data[self.word_index]
+            >> WORD_BIT_SIZE.saturating_sub(self.bit_index + number_of_bits);
         first_word_bits &= power_of_two_to_mask(first_word_number_of_bits);
         // read the next word, this implies that we will always have one
         // extra word in the data stream
-        let mut second_word_bits = self.data[self.word_index + 1].checked_shr( 
-            (WORD_BIT_SIZE - second_word_number_of_bits) as _
-        ).unwrap_or(0);
+        let mut second_word_bits = self.data[self.word_index + 1]
+            .checked_shr((WORD_BIT_SIZE - second_word_number_of_bits) as _)
+            .unwrap_or(0);
         second_word_bits &= power_of_two_to_mask(second_word_number_of_bits);
 
         // concatenate the data from the two wordsnext
-        let aligned_data = (first_word_bits << second_word_number_of_bits) 
-            | second_word_bits;
+        let aligned_data = (first_word_bits << second_word_number_of_bits) | second_word_bits;
 
         // clear off the excess bits.
         // we shall keep only the lower `number_of_bits` bits.
         let result = aligned_data & power_of_two_to_mask(number_of_bits as _);
 
-        println!("{} {:064b} {:064b}", result, first_word_bits, second_word_bits);
-        println!("{} {} {} {} {}", 
-        self.bit_index, number_of_bits, space_left, first_word_number_of_bits, 
-        second_word_number_of_bits);
         // Update the pointers to where we read
         self.skip_bits(number_of_bits as usize)?;
-        
+
         Ok(result)
     }
 
     #[inline]
     /// Write `value` using `number_of_bits` in the stream.
-    fn write_fixed_length(&mut self, number_of_bits: usize, value: usize) -> Result<(), CoreIoError> {
-        debug_assert!(number_of_bits >= fast_log2_ceil(value), "value: {} n: {}", value, number_of_bits);
+    fn write_fixed_length(&mut self, number_of_bits: usize, value: usize) -> Result<()> {
+        debug_assert!(
+            number_of_bits >= fast_log2_ceil(value),
+            "value: {} n: {}",
+            value,
+            number_of_bits
+        );
 
-        // We want to append a given number of bits to the stream, the values 
+        // We want to append a given number of bits to the stream, the values
         // can span two words:
         //
         //  M  Word 1       L M       Word 2  L
@@ -275,8 +270,7 @@ impl CodeFixedLength for BitArrayBig {
         // So we need to compute how many bits we can write in the current Word
         // and then how many bits are left to write in the second one
         //
-        // Then we can compose the words 
-    
+        // Then we can compose the words
 
         // Compute how many bits we are going to write to each word
         let space_left = WORD_BIT_SIZE - self.bit_index;
@@ -284,29 +278,25 @@ impl CodeFixedLength for BitArrayBig {
         let second_word_number_of_bits = number_of_bits - first_word_number_of_bits;
 
         // write the data in the first word
-        let first_word_bits = (value >> second_word_number_of_bits) 
+        let first_word_bits = (value >> second_word_number_of_bits)
             & power_of_two_to_mask(first_word_number_of_bits as usize);
         // write the data in the second word
-        let second_word_bits = value 
-            & power_of_two_to_mask(second_word_number_of_bits as usize);
+        let second_word_bits = value & power_of_two_to_mask(second_word_number_of_bits as usize);
 
         // this solve the assumptions in read_bits that we always have an extra word
         // and also we can avoid bound checking
         if self.word_index + 1 >= self.data.len() {
             self.data.resize(self.data.len() + 1, 0);
         }
-        unsafe{
-            *self.data.get_unchecked_mut(self.word_index) |= 
-                first_word_bits << (
-                    space_left.saturating_sub(number_of_bits) 
-                    & WORD_BIT_SIZE_MASK
-                );
+        unsafe {
+            *self.data.get_unchecked_mut(self.word_index) |=
+                first_word_bits << (space_left.saturating_sub(number_of_bits) & WORD_BIT_SIZE_MASK);
 
-            *self.data.get_unchecked_mut(self.word_index + 1) |= 
-                second_word_bits.checked_shl(
-                    (WORD_BIT_SIZE - 1).saturating_sub(second_word_bits) as _
-                ).unwrap_or(0);
+            *self.data.get_unchecked_mut(self.word_index + 1) |= second_word_bits
+                .checked_shl(WORD_BIT_SIZE.saturating_sub(second_word_number_of_bits) as _)
+                .unwrap_or(0);
         }
+
         // Update the pointers to after where we wrote
         self.skip_bits(number_of_bits as usize)
     }

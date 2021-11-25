@@ -9,7 +9,10 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     }
 
     /// return an Iterator over the indices of the bits set to one in the SparseIndex.
-    pub fn iter_in_range_double_ended(&'a self, range: Range<usize>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+    pub fn iter_in_range_double_ended(
+        &'a self,
+        range: Range<usize>,
+    ) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
         SparseIndexDobuleEndedIterator::new_in_range(self, range)
     }
 }
@@ -28,7 +31,9 @@ pub struct SparseIndexDobuleEndedIterator<'a, const QUANTUM_LOG2: usize> {
     pub(crate) len: usize,
 }
 
-impl<'a,const QUANTUM_LOG2: usize> core::fmt::Debug for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+impl<'a, const QUANTUM_LOG2: usize> core::fmt::Debug
+    for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2>
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("SparseIndexDobuleEndedIterator")
             .field("start_code", &format!("{:064b}", self.start_code))
@@ -40,31 +45,35 @@ impl<'a,const QUANTUM_LOG2: usize> core::fmt::Debug for SparseIndexDobuleEndedIt
     }
 }
 
-
 impl<'a, const QUANTUM_LOG2: usize> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
     /// Create a new double-ended iterator for a given sparse index
-    pub fn new(father: &'a SparseIndex<QUANTUM_LOG2>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
-        SparseIndexDobuleEndedIterator{
+    pub fn new(
+        father: &'a SparseIndex<QUANTUM_LOG2>,
+    ) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+        SparseIndexDobuleEndedIterator {
             start_code: *father.high_bits.get(0).unwrap_or(&0),
             start_index: 0,
             end_code: *father.high_bits.last().unwrap_or(&0),
             end_index: father.high_bits.len().saturating_sub(1),
             len: father.count_ones() as _,
-            father, 
+            father,
         }
     }
 
-    /// Create a new double-ended iterator for a given sparse index optimized 
+    /// Create a new double-ended iterator for a given sparse index optimized
     /// to only return the values in the given range
-    pub fn new_in_range(father: &'a SparseIndex<QUANTUM_LOG2>, range: Range<usize>) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+    pub fn new_in_range(
+        father: &'a SparseIndex<QUANTUM_LOG2>,
+        range: Range<usize>,
+    ) -> SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
         if range.start >= father.len() {
-            return SparseIndexDobuleEndedIterator{
+            return SparseIndexDobuleEndedIterator {
                 start_code: 0,
                 start_index: 0,
                 end_code: 0,
                 end_index: 0,
                 len: 0,
-                father, 
+                father,
             };
         }
         // if the range starts and ends inside the same word of memory we need
@@ -76,17 +85,17 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndexDobuleEndedIterator<'a, QUANTUM_L
             // clean the higher and lwoer bits according to the range values
             code &= usize::MAX << (range.start & WORD_BIT_SIZE_MASK);
             code &= !(!0_usize << (WORD_BIT_SIZE - range.start & WORD_BIT_SIZE_MASK));
-            
-            return SparseIndexDobuleEndedIterator{
+
+            return SparseIndexDobuleEndedIterator {
                 len: code.count_ones() as usize,
                 start_code: code,
                 start_index: idx,
                 end_code: 0,
                 end_index: idx,
-                father, 
+                father,
             };
         }
-        
+
         // general well behaved case
         let start_index = range.start >> WORD_SHIFT;
         let start_in_word_reminder = range.start & WORD_BIT_SIZE_MASK;
@@ -98,19 +107,16 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndexDobuleEndedIterator<'a, QUANTUM_L
         let mut end_code = father.high_bits[end_index as usize];
         end_code &= !(!0_usize << end_in_word_reminder);
 
-        SparseIndexDobuleEndedIterator{
+        SparseIndexDobuleEndedIterator {
             start_code,
             start_index: start_index as usize,
             end_code,
             end_index: end_index as usize,
-            len: (
-                father.rank1(range.end) - father.rank1(range.start)
-            ) as usize,
-            father, 
+            len: (father.rank1(range.end) - father.rank1(range.start)) as usize,
+            father,
         }
     }
 }
-
 
 impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
     type Item = usize;
@@ -123,7 +129,7 @@ impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexDobuleEndedIterator<
                 if unlikely(self.end_code == 0) {
                     return None;
                 }
-                
+
                 // get the index of the first one (we are guaranteed to have
                 // at least one bit set to 1)
                 let t = self.end_code.trailing_zeros();
@@ -159,9 +165,14 @@ impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexDobuleEndedIterator<
     }
 }
 
-impl<'a, const QUANTUM_LOG2: usize> ExactSizeIterator for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {}
+impl<'a, const QUANTUM_LOG2: usize> ExactSizeIterator
+    for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2>
+{
+}
 
-impl<'a, const QUANTUM_LOG2: usize> DoubleEndedIterator for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+impl<'a, const QUANTUM_LOG2: usize> DoubleEndedIterator
+    for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2>
+{
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         while unlikely(self.end_code == 0) {
@@ -172,11 +183,11 @@ impl<'a, const QUANTUM_LOG2: usize> DoubleEndedIterator for SparseIndexDobuleEnd
                 if unlikely(self.start_code == 0) {
                     return None;
                 }
-                        
+
                 // get the index of the last one (we are guaranteed to have
                 // at least one bit set to 1)
                 let t = (WORD_BIT_SIZE - 1) - self.start_code.leading_zeros() as usize;
-                
+
                 // clear it from the current code
                 self.start_code ^= 1 << t;
 
@@ -194,7 +205,7 @@ impl<'a, const QUANTUM_LOG2: usize> DoubleEndedIterator for SparseIndexDobuleEnd
         // get the index of the last one (we are guaranteed to have
         // at least one bit set to 1)
         let t = (WORD_BIT_SIZE - 1) - self.end_code.leading_zeros() as usize;
-        
+
         // clear it from the current code
         self.end_code ^= 1 << t;
 

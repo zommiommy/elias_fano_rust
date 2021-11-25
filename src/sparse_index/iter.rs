@@ -17,7 +17,7 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     pub fn iter_in_range(&'a self, range: Range<usize>) -> SparseIndexIterator<'a, QUANTUM_LOG2> {
         SparseIndexIterator::new_in_range(self, range)
     }
-    
+
     /// return an Iterator over the indices of the bits set to one in the SparseIndex.
     pub fn iter(&'a self) -> SparseIndexIterator<'a, QUANTUM_LOG2> {
         self.into_iter()
@@ -40,21 +40,22 @@ pub struct SparseIndexIterator<'a, const QUANTUM_LOG2: usize> {
     max: Option<usize>,
 }
 
-
 impl<'a, const QUANTUM_LOG2: usize> SparseIndexIterator<'a, QUANTUM_LOG2> {
-
     /// Create a structure that iter over all the indices of the bits set to one
     /// which are inside the provided range.
     #[inline]
-    pub fn new_in_range(father: &SparseIndex<QUANTUM_LOG2>, range: Range<usize>) -> SparseIndexIterator<QUANTUM_LOG2> {
+    pub fn new_in_range(
+        father: &SparseIndex<QUANTUM_LOG2>,
+        range: Range<usize>,
+    ) -> SparseIndexIterator<QUANTUM_LOG2> {
         if unlikely(range.start >= father.len()) {
-            return SparseIndexIterator{
-                father:father,
+            return SparseIndexIterator {
+                father: father,
                 current_code: 0,
                 index: 0,
                 max_index: 0,
                 max: None,
-            };    
+            };
         }
 
         let block_id = range.start >> WORD_SHIFT;
@@ -64,21 +65,20 @@ impl<'a, const QUANTUM_LOG2: usize> SparseIndexIterator<'a, QUANTUM_LOG2> {
         // clean the "already parsed lower bits"
         code &= usize::MAX << in_word_reminder;
 
-        SparseIndexIterator{
-            father:father,
+        SparseIndexIterator {
+            father: father,
             current_code: code,
             index: block_id as usize,
             max_index: father.high_bits.len(),
             max: Some(range.end),
         }
-        
     }
-    
+
     /// Create a structure that iter over all the indices of the bits set to one.
     #[inline]
     pub fn new(father: &SparseIndex<QUANTUM_LOG2>) -> SparseIndexIterator<QUANTUM_LOG2> {
-        SparseIndexIterator{
-            father:father,
+        SparseIndexIterator {
+            father: father,
             current_code: *father.high_bits.get(0).unwrap_or(&0),
             index: 0,
             max_index: father.high_bits.len(),
@@ -98,7 +98,7 @@ impl<'a, const QUANTUM_LOG2: usize> Iterator for SparseIndexIterator<'a, QUANTUM
             if unlikely(self.index >= self.max_index) {
                 return None;
             }
-            self.current_code = self.father.high_bits[self.index];   
+            self.current_code = self.father.high_bits[self.index];
         }
 
         // get the index of the first one (we are guaranteed to have

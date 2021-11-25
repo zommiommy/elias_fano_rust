@@ -3,27 +3,24 @@
 
 extern crate rand;
 
-use rand::{Rng, SeedableRng};
-use rand::{RngCore};
 use rand::rngs::SmallRng;
+use rand::RngCore;
+use rand::{Rng, SeedableRng};
 
 extern crate test;
-use test::{Bencher, black_box};
+use test::{black_box, Bencher};
 
 const TRIALS: u64 = 1_000;
 const SIZE: u64 = 32_000_000;
-const MAX : u64 = 450_000 * 450_000;
+const MAX: u64 = 450_000 * 450_000;
 
 const SEED: [u8; 16] = [
-    0xde, 0xad, 0xbe, 0xef,
-    0xc0, 0xfe, 0xbe, 0xbe,
-    0xde, 0xad, 0xbe, 0xef,
-    0xc0, 0xfe, 0xbe, 0xbe   
+    0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe, 0xde, 0xad, 0xbe, 0xef, 0xc0, 0xfe, 0xbe, 0xbe,
 ];
 
 mod ef {
     use super::*;
-        
+
     #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
@@ -51,7 +48,7 @@ mod ef {
 
 mod si {
     use super::*;
-        
+
     #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
@@ -77,10 +74,9 @@ mod si {
     }
 }
 
-
 mod vec {
     use super::*;
-    
+
     #[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
@@ -106,13 +102,14 @@ mod vec {
 mod hashmap {
     use super::*;
     use std::collections::HashMap;
-    
+
     #[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let m : HashMap<usize, u64> = v.iter().enumerate().map(|(i, v)| (i, *v)).collect();
+        let m: HashMap<usize, u64> = v.iter().enumerate().map(|(i, v)| (i, *v)).collect();
         use std::mem::size_of;
-        let m_total = (m.capacity() as f64 * 1.1) * (size_of::<usize>() + size_of::<u64>() + size_of::<usize>()) as f64;
+        let m_total = (m.capacity() as f64 * 1.1)
+            * (size_of::<usize>() + size_of::<u64>() + size_of::<usize>()) as f64;
         println!("{:?} Mib", m_total / 1024.0 / 1024.0);
         b.iter(|| {
             for _ in 0..TRIALS {
@@ -120,7 +117,7 @@ mod hashmap {
             }
         })
     }
-    
+
     /*
     #[bench]
     fn rank(b: &mut Bencher) {
@@ -161,8 +158,8 @@ mod fid {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);
@@ -174,14 +171,14 @@ mod fid {
             }
         })
     }
-    
+
     //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVector::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);
@@ -205,8 +202,8 @@ mod rsdict {
         let (v, mut rng) = test_vector();
         let mut bv = RsDict::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);
@@ -218,14 +215,14 @@ mod rsdict {
             }
         })
     }
-    
+
     //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = RsDict::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);
@@ -242,44 +239,41 @@ mod rsdict {
 mod succint {
     use super::*;
     extern crate succinct;
-    use succinct::BitVector;
     use succinct::bit_vec::BitVecPush;
-    use succinct::rank::{
-        Rank9,
-        JacobsonRank
-    }; 
-    use succinct::rank::BitRankSupport;
-    use succinct::BinSearchSelect;
-    use succinct::select::Select1Support;
     use succinct::broadword::Broadword;
+    use succinct::rank::BitRankSupport;
+    use succinct::rank::{JacobsonRank, Rank9};
+    use succinct::select::Select1Support;
+    use succinct::BinSearchSelect;
+    use succinct::BitVector;
 
     //#[bench]
     fn rank9_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
         let mut last_v = 0;
-            for val  in v {
-                for _ in  last_v..val {
-                    bv.push_bit(false);
-                }
-                bv.push_bit(true);
-                last_v = val;
+        for val in v {
+            for _ in last_v..val {
+                bv.push_bit(false);
             }
+            bv.push_bit(true);
+            last_v = val;
+        }
         let r = Rank9::new(bv);
         b.iter(|| {
             for _ in 0..super::TRIALS {
                 black_box(r.rank1(rng.gen_range(0, SIZE)));
             }
         })
-    }   
+    }
 
     //#[bench]
     fn rank9_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push_bit(false);
             }
             bv.push_bit(true);
@@ -292,15 +286,15 @@ mod succint {
                 black_box(s.select1(rng.gen_range(0, SIZE)));
             }
         })
-    }   
+    }
 
     //#[bench]
     fn jacobson_rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push_bit(false);
             }
             bv.push_bit(true);
@@ -312,15 +306,15 @@ mod succint {
                 black_box(r.rank1(rng.gen_range(0, SIZE)));
             }
         })
-    }   
-    
+    }
+
     //#[bench]
     fn jacobson_select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv: BitVector<u64> = BitVector::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push_bit(false);
             }
             bv.push_bit(true);
@@ -339,16 +333,16 @@ mod succint {
 mod indexed_bitvec {
     use super::*;
     extern crate indexed_bitvec;
-    use indexed_bitvec::IndexedBits;
     use indexed_bitvec::bits::Bits;
+    use indexed_bitvec::IndexedBits;
 
     //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
+        let mut bv = Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);
@@ -360,15 +354,15 @@ mod indexed_bitvec {
                 black_box(ib.rank_ones(rng.gen_range(0, SIZE)));
             }
         })
-    }   
+    }
 
     //#[bench]
     fn select(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
-        let mut bv =Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
+        let mut bv = Bits::from_bytes(vec![0xFE, 0xFE], 0).unwrap();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);
@@ -380,9 +374,8 @@ mod indexed_bitvec {
                 black_box(ib.select_ones(rng.gen_range(0, SIZE)));
             }
         })
-    }   
+    }
 }
-
 
 mod z_bio {
     use super::*;
@@ -390,15 +383,14 @@ mod z_bio {
     extern crate bv;
     use bio::data_structures::rank_select::RankSelect;
     use bv::BitVec;
-    
 
     //#[bench]
     fn rank(b: &mut Bencher) {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);
@@ -417,8 +409,8 @@ mod z_bio {
         let (v, mut rng) = test_vector();
         let mut bv = BitVec::new();
         let mut last_v = 0;
-        for val  in v {
-            for _ in  last_v..val {
+        for val in v {
+            for _ in last_v..val {
                 bv.push(false);
             }
             bv.push(true);

@@ -14,7 +14,7 @@ pub fn shr(value: usize, offset: usize) -> usize {
 
 #[inline(always)]
 /// based on <https://bugzilla.mozilla.org/show_bug.cgi?id=327129>
-/// 
+///
 /// On `x86_64` this should compile to:
 /// ```asm
 /// or      rdi, 1
@@ -28,7 +28,7 @@ pub const fn fast_log2_floor(value: usize) -> usize {
 
 #[inline(always)]
 /// based on <https://bugzilla.mozilla.org/show_bug.cgi?id=327129>
-/// 
+///
 /// On `x86_64` this should compile to:
 /// ```asm
 /// or      rdi, 1
@@ -49,15 +49,14 @@ pub const fn fast_pow_2(exp: usize) -> usize {
 #[inline(always)]
 /// Centralized way to convert from a power of 2 to a binary mask
 /// to compute the modulo fast
-/// 
+///
 pub const fn power_of_two_to_mask(quantum_log2: usize) -> usize {
     ((1_usize << quantum_log2) - 1) as usize
 
-    // the alternative version changes the behaviour with 
+    // the alternative version changes the behaviour with
     // 0 and WORD_BIT_SIZE
     // `usize::MAX >> (WORD_BIT_SIZE - quantum_log2 as usize)`
 }
-
 
 #[cfg(test)]
 mod test_utils {
@@ -81,7 +80,12 @@ mod test_utils {
     #[test]
     fn test_fast_log2_floor() {
         for i in 0..(1 << 16) {
-            assert_eq!((i as f64).log2().floor() as usize, fast_log2_floor(i), "{}", i);
+            assert_eq!(
+                (i as f64).log2().floor() as usize,
+                fast_log2_floor(i),
+                "{}",
+                i
+            );
         }
     }
 

@@ -1,19 +1,15 @@
-use crate::constants::*;
 use super::*;
-use rayon::iter::plumbing::{
-    //bridge_unindexed, 
-    UnindexedProducer,
-    //bridge,
-    //Producer,
-};
-
+use crate::constants::*;
+use rayon::iter::plumbing::UnindexedProducer;
 
 /// This isn't tested, as for elias-fano we need the indexed version
 /// and for a general parllalel iterator we can use the normal iter
-/// which is slightly faster. 
+/// which is slightly faster.
 ///
 /// Thus, this trait is not really needed, but we have it ¯\_(ツ)_/¯ .
-impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2> {
+impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer
+    for SparseIndexDobuleEndedIterator<'a, QUANTUM_LOG2>
+{
     type Item = usize;
 
     /// Split the file in two approximately balanced streams
@@ -24,8 +20,8 @@ impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEnded
         }
 
         // compute the current parsing index
-        let start_value = (self.start_index as usize * WORD_BIT_SIZE) 
-            + self.start_code.trailing_zeros() as usize;
+        let start_value =
+            (self.start_index as usize * WORD_BIT_SIZE) + self.start_code.trailing_zeros() as usize;
 
         // compute how many ones there where
         let start_rank = self.father.rank1(start_value) as usize;
@@ -37,8 +33,8 @@ impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEnded
         let inword_offset = middle_bit_index & WORD_BIT_SIZE_MASK;
 
         // Create the new iterator for the second half
-        let new_iter = SparseIndexDobuleEndedIterator{
-            father: self.father, 
+        let new_iter = SparseIndexDobuleEndedIterator {
+            father: self.father,
 
             start_code: code & !(usize::MAX << inword_offset),
             start_index: (middle_bit_index >> WORD_SHIFT) as usize,
@@ -49,22 +45,20 @@ impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEnded
             len: self.len() - middle_point,
         };
 
-        // Update the current iterator so that it will work on the 
+        // Update the current iterator so that it will work on the
         // first half
         self.end_index = (middle_bit_index >> WORD_SHIFT) as usize;
         self.end_code = code & (usize::MAX << inword_offset);
         self.len = middle_point;
 
         // return the two halfs
-        (
-            self,
-            Some(new_iter),
-        )   
+        (self, Some(new_iter))
     }
 
     fn fold_with<F>(self, folder: F) -> F
     where
-            F: rayon::iter::plumbing::Folder<Self::Item> {
+        F: rayon::iter::plumbing::Folder<Self::Item>,
+    {
         folder.consume_iter(self)
     }
 }
@@ -73,8 +67,8 @@ impl<'a, const QUANTUM_LOG2: usize> UnindexedProducer for SparseIndexDobuleEnded
 //     fn into_iter(self) -> Self::IntoIter {
 //         self
 //     }
-// 
+//
 //     fn split_at(self, index: usize) -> (Self, Self) {
-//         
+//
 //     }
 // }

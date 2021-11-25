@@ -10,14 +10,13 @@ pub trait MemoryFootprint {
 /// usage is constantly equal to its size
 pub trait MemoryFootprintConst
 where
-    Self: Sized
+    Self: Sized,
 {
     /// Returns the number of bytes it uses
     fn total_size_const() -> usize {
         size_of::<Self>()
     }
 }
-
 
 macro_rules! impl_memory_footprint_for_primitives {
     ($($type:ty)*) => {
@@ -27,21 +26,20 @@ macro_rules! impl_memory_footprint_for_primitives {
     };
 }
 
-impl_memory_footprint_for_primitives!{usize isize u8 u16 u32 u64 u128 i8 i16 i32 i64 i128 f32 f64 char bool}
+impl_memory_footprint_for_primitives! {usize isize u8 u16 u32 u64 u128 i8 i16 i32 i64 i128 f32 f64 char bool}
 
 impl<T: MemoryFootprintConst> MemoryFootprint for alloc::vec::Vec<T> {
     fn total_size(&self) -> usize {
         // the allocaiton size
-        self.len() * T::total_size_const() 
         // plus the metadata (ptr to the heap alloc, len, capacity)
-        + (size_of::<usize>() * 3)
+        self.len() * T::total_size_const() + (size_of::<usize>() * 3)
     }
 }
 
 // impl<T: MemoryFootprint> MemoryFootprint for alloc::vec::Vec<T> {
 //     fn total_size(&self) -> usize {
 //         // Size of the allocated but not used space
-//         (self.capacity() - self.len()) * T::total_size_const() 
+//         (self.capacity() - self.len()) * T::total_size_const()
 //         // size of the allocated and used space
 //         + self.iter().map(|x| x.total_size()).sum()
 //         // plus the metadata (ptr to the heap alloc, len, capacity)
@@ -49,9 +47,9 @@ impl<T: MemoryFootprintConst> MemoryFootprint for alloc::vec::Vec<T> {
 //     }
 // }
 
-impl<T: MemoryFootprintConst, const N:usize > MemoryFootprint for [T; N] {
+impl<T: MemoryFootprintConst, const N: usize> MemoryFootprint for [T; N] {
     fn total_size(&self) -> usize {
-        N * T::total_size_const() 
+        N * T::total_size_const()
     }
 }
 

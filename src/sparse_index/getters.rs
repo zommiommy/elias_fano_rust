@@ -7,7 +7,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
     pub fn count_zeros(&self) -> usize {
         self.number_of_zeros
     }
-    
+
     #[inline]
     /// Return how many ones are present in the SparseIndexBitmap
     pub fn count_ones(&self) -> usize {
@@ -20,7 +20,6 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         self.len
     }
 }
-
 
 /// # Core functionalities
 impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
@@ -55,8 +54,8 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         loop {
             let popcnt = code.count_ones() as usize;
             if popcnt > reminder_to_scan {
-                break
-            } 
+                break;
+            }
             block_id += 1;
             reminder_to_scan -= popcnt;
             code = self.high_bits[block_id as usize];
@@ -96,13 +95,13 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         loop {
             let popcnt = code.count_zeros() as usize;
             if popcnt > reminder_to_scan {
-                break
-            } 
+                break;
+            }
             block_id += 1;
             reminder_to_scan -= popcnt;
             code = self.high_bits[block_id as usize];
         }
- 
+
         // scan the current word
         // Example:
         // code: 01101010110011100011101110
@@ -114,7 +113,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         for _ in 0..reminder_to_scan {
             // set the lowest set bits (BLCS)
             // saddly the BLCS instruction is nolonger
-            // supported in any modern CPU, so select0 
+            // supported in any modern CPU, so select0
             // will be slightly slower than select1
             code |= code + 1;
         }
@@ -122,14 +121,14 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         (block_id * WORD_BIT_SIZE) + code.trailing_ones() as usize
     }
 
-    /// Return the number of bits set to one from the start to the given `index` 
+    /// Return the number of bits set to one from the start to the given `index`
     /// so in the range [0, `index`).
     ///
     /// This is basically a select + a binary search so it should be a bit
     /// slower than a select.
     pub fn rank1(&self, index: usize) -> usize {
         if index >= self.len() {
-            return self.count_ones();   
+            return self.count_ones();
         }
         if self.count_ones() == 0 {
             return 0;
@@ -138,20 +137,18 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         match self.high_bits_index_ones.binary_search(&index) {
             // fast path, luckily the index is one found in the index
             // so we can directly compute the number of ones
-            Ok(idx) => {
-                (idx as usize) << QUANTUM_LOG2
-            },
+            Ok(idx) => (idx as usize) << QUANTUM_LOG2,
             Err(idx) => {
                 // Find the biggest index value smaller than the index
                 let idx = idx.saturating_sub(1);
                 let mut res = (idx as usize) << QUANTUM_LOG2;
-                
+
                 // Read the index to start at a better position for the count
                 let bit_pos = self.high_bits_index_ones[idx];
 
                 // find the word index and the bit index inside the word
                 let mut current_idx = bit_pos >> WORD_SHIFT;
-                let bits_to_ignore  = bit_pos & WORD_BIT_SIZE_MASK;
+                let bits_to_ignore = bit_pos & WORD_BIT_SIZE_MASK;
 
                 // setup the word of memory so that the already counted
                 // bits are cleaned to avoid double counting
@@ -160,7 +157,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
                 // compute how many bits are left to be scanned
                 let mut bits_left = (index + bits_to_ignore).saturating_sub(bit_pos);
-                
+
                 // We can quickly skip words by popcnt-ing them
                 while bits_left >= WORD_BIT_SIZE {
                     res += current_word.count_ones() as usize;
@@ -171,17 +168,14 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
                 // count the ones in the last word.
                 // we will clean out the bits we don't care about and popcnt
-                res += (
-                        current_word 
-                        & !(!0_usize << (bits_left as u32))
-                    ).count_ones() as usize;
+                res += (current_word & !(!0_usize << (bits_left as u32))).count_ones() as usize;
 
                 res
             }
         }
     }
 
-    /// Return the number of bits set to zero from the start to the given `index` 
+    /// Return the number of bits set to zero from the start to the given `index`
     /// so in the range [0, `index`).
     ///
     /// This is basically a select + a binary search so it should be a bit
@@ -197,20 +191,18 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
         match self.high_bits_index_zeros.binary_search(&index) {
             // fast path, luckily the index is one found in the index
             // so we can directly compute the number of ones
-            Ok(idx) => {
-                (idx as usize) << QUANTUM_LOG2
-            },
+            Ok(idx) => (idx as usize) << QUANTUM_LOG2,
             Err(idx) => {
                 // Find the biggest index value smaller than the index
                 let idx = idx.saturating_sub(1);
                 let mut res = (idx as usize) << QUANTUM_LOG2;
-                
+
                 // Read the index to start at a better position for the count
                 let bit_pos = self.high_bits_index_zeros[idx];
 
                 // find the word index and the bit index inside the word
                 let mut current_idx = bit_pos >> WORD_SHIFT;
-                let bits_to_ignore  = bit_pos & WORD_BIT_SIZE_MASK;
+                let bits_to_ignore = bit_pos & WORD_BIT_SIZE_MASK;
 
                 // setup the word of memory so that the already counted
                 // bits are cleaned to avoid double counting
@@ -219,7 +211,7 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
                 // compute how many bits are left to be scanned
                 let mut bits_left = (index + bits_to_ignore).saturating_sub(bit_pos);
-                
+
                 // We can quickly skip words by popcnt-ing them
                 while bits_left >= WORD_BIT_SIZE {
                     res += current_word.count_ones() as usize;
@@ -230,14 +222,10 @@ impl<const QUANTUM_LOG2: usize> SparseIndex<QUANTUM_LOG2> {
 
                 // count the ones in the last word.
                 // we will clean out the bits we don't care about and popcnt
-                res += (
-                        current_word 
-                        & !(!0_usize << (bits_left as u32))
-                    ).count_ones() as usize;
+                res += (current_word & !(!0_usize << (bits_left as u32))).count_ones() as usize;
 
                 res
             }
         }
     }
-    
 }

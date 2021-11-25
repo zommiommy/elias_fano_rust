@@ -1,5 +1,5 @@
 use super::*;
-use rayon::iter::{ParallelIterator, IndexedParallelIterator};
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 use rayon::prelude::*;
 
 impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
@@ -14,7 +14,8 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
     /// Return a parallel iterator for the values in elias fano.
     #[inline]
     pub fn par_iter_uniques(&self) -> impl ParallelIterator<Item = usize> + '_ {
-        (0..self.current_number_of_elements).into_par_iter()
+        (0..self.current_number_of_elements)
+            .into_par_iter()
             .filter_map(move |index| {
                 if index == 0 {
                     return Some(self.unchecked_select(0));
@@ -27,7 +28,6 @@ impl<const QUANTUM_LOG2: usize> EliasFano<QUANTUM_LOG2> {
                 } else {
                     None
                 }
-            }
-        )
+            })
     }
 }

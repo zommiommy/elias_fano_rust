@@ -1,9 +1,9 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use elias_fano_rust::elias_fano::*;
 use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::time::Instant;
 
 pub const SEED: [u8; 16] = [
@@ -22,11 +22,10 @@ pub fn build_random_sorted_vector(size: usize, max: u64) -> Vec<usize> {
     vector
 }
 
-
 const SIZE: usize = 23_751_196;
-const MAX : u64 = 462_304 * 462_304;
+const MAX: u64 = 462_304 * 462_304;
 
-#[cfg(feature="par_iter")]
+#[cfg(feature = "par_iter")]
 #[test]
 /// Test that we can build successfully run all methods in elias fano.
 pub fn test_concurrent_builder() {
@@ -47,11 +46,17 @@ pub fn test_concurrent_builder() {
     let mut ef = builder.build().unwrap();
     println!("Done: {} s", start.elapsed().as_secs_f64());
     ef.shrink_to_fit();
-    println!("Total size = {:.5} Mib", ef.size() as f64 / (1024*1024) as f64);
-    println!("Overhead          = {:.5} {:.5} Mib", ef.overhead_ratio(), ef.overhead() as f64 / (1024*1024) as f64);
+    println!(
+        "Total size = {:.5} Mib",
+        ef.size() as f64 / (1024 * 1024) as f64
+    );
+    println!(
+        "Overhead          = {:.5} {:.5} Mib",
+        ef.overhead_ratio(),
+        ef.overhead() as f64 / (1024 * 1024) as f64
+    );
     println!("Overhead Highbits = {:.5}", ef.overhead_high_bits_ratio());
     println!("{:#4?}", ef.memory_stats());
-
 
     println!("Sequential builder");
     let start = Instant::now();
@@ -62,8 +67,15 @@ pub fn test_concurrent_builder() {
     println!("Done: {} s", start.elapsed().as_secs_f64());
     let seq_hash = hasher.finish();
     seq.shrink_to_fit();
-    println!("Total size = {:.5} Mib", seq.size() as f64 / (1024*1024) as f64);
-    println!("Overhead          = {:.5} {:.5} Mib", seq.overhead_ratio(), seq.overhead() as f64 / (1024*1024) as f64);
+    println!(
+        "Total size = {:.5} Mib",
+        seq.size() as f64 / (1024 * 1024) as f64
+    );
+    println!(
+        "Overhead          = {:.5} {:.5} Mib",
+        seq.overhead_ratio(),
+        seq.overhead() as f64 / (1024 * 1024) as f64
+    );
     println!("Overhead Highbits = {:.5}", seq.overhead_high_bits_ratio());
     println!("{:#4?}", seq.memory_stats());
 
@@ -76,9 +88,14 @@ pub fn test_concurrent_builder() {
     assert_eq!(seq_hash, concurrent_hash);
     assert_eq!(ef.high_bits.high_bits, seq.high_bits.high_bits);
 
-    assert_eq!(ef.high_bits.high_bits_index_ones, seq.high_bits.high_bits_index_ones);
-    assert_eq!(ef.high_bits.high_bits_index_zeros, seq.high_bits.high_bits_index_zeros);
-
+    assert_eq!(
+        ef.high_bits.high_bits_index_ones,
+        seq.high_bits.high_bits_index_ones
+    );
+    assert_eq!(
+        ef.high_bits.high_bits_index_zeros,
+        seq.high_bits.high_bits_index_zeros
+    );
 
     for i in 0..SIZE {
         assert_eq!(vector[i], seq.unchecked_select(i as u64));

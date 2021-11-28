@@ -1,21 +1,32 @@
-use super::fixed_length::*;
-use crate::traits::*;
+//! # Minimal Binary Code
+//! 
+//! Huffman Optimal code for uniform distribution of values between 0 and max.
+//! 
+//! We offer two implementation of this code, one for big endian code that assumes
+//! that values are read form the MSB to the LSB, and a little endian code that
+//! assumes that values are read from the LSB to the MSB. 
+//! The common code is not immediate if reversed so we have two funtionally identical
+//! codes, one for each case. A backend should just implement this trait using
+//! one of the two available implementations, depending on it's endianess.
 use crate::utils::{fast_log2_ceil, fast_log2_floor, fast_pow_2};
-use crate::CodeReadMinimalBinaryBig;
 use crate::Result;
 
-/// Huffman Optimal code for uniform distribution,
-/// as described by Boldi and Vigna
+/// Trait for data strutures that can read minimal binary codes
 pub trait CodeReadMinimalBinary {
     /// Read a minimal binary value (BV) from the stream
     fn read_minimal_binary(&mut self, max: usize) -> Result<usize>;
 }
 
+/// Trait for data strutures that can Write minimal binary codes
 pub trait CodeWriteMinimalBinary {
     /// Write a minimal binary value from the stream
     fn write_minimal_binary(&mut self, value: usize, max: usize) -> Result<()>;
 }
 
+
+/// Trait for data strutures that can compute the size in bits of minimal binary codes
+/// (this should be a constant, but different datastructures might use more memory
+/// for speed sake)
 pub trait CodeSizeMinimalBinary {
     #[inline]
     /// Return how many bits the minimal binary code for the given value is long
@@ -29,41 +40,5 @@ pub trait CodeSizeMinimalBinary {
         } else {
             u
         }
-    }
-}
-
-impl<T> CodeReadMinimalBinary for T
-where
-    T: CodeReadFixedLength + ReadBit + IsBigEndian<true>,
-{
-    fn read_minimal_binary(&mut self, max: usize) -> Result<usize> {
-        self.read_minimal_binary_big(max)
-    }
-}
-
-impl<T> CodeWriteMinimalBinary for T
-where
-    T: CodeWriteFixedLength + WriteBit + IsBigEndian<true>,
-{
-    fn write_minimal_binary(&mut self, max: usize) -> Result<usize> {
-        self.write_minimal_binary_big(max)
-    }
-}
-
-impl<T> CodeReadMinimalBinary for T
-where
-    T: CodeReadFixedLength + ReadBit + IsBigEndian<false>,
-{
-    fn read_minimal_binary(&mut self, max: usize) -> Result<usize> {
-        self.read_minimal_binary_little(max)
-    }
-}
-
-impl<T> CodeWriteMinimalBinary for T
-where
-    T: CodeWriteFixedLength + WriteBit + IsBigEndian<false>,
-{
-    fn write_minimal_binary(&mut self, max: usize) -> Result<usize> {
-        self.write_minimal_binary_little(max)
     }
 }

@@ -1,9 +1,10 @@
+//! This assumes that the values are read from the LSB to the MSB (as in little endian)
 use super::fixed_length::*;
 use crate::traits::*;
 use crate::utils::{fast_log2_ceil, fast_log2_floor, fast_pow_2};
 use crate::Result;
 
-/// This assumes that the values are read from the LSB to the MSB
+/// Read a minimal binary little endian code
 pub trait CodeReadMinimalBinaryLittle: CodeReadFixedLength + ReadBit {
     #[inline]
     /// Read a minimal binary value from the stream
@@ -29,6 +30,7 @@ pub trait CodeReadMinimalBinaryLittle: CodeReadFixedLength + ReadBit {
     }
 }
 
+/// Write a minimal binary little endian code
 pub trait CodeWriteMinimalBinaryLittle: CodeWriteFixedLength {
     #[inline]
     /// Write a minimal binary value from the stream

@@ -1,41 +1,43 @@
+//! # Elias Gamma
+//! Optimal for Zipf of exponent 2
+//! Elias’ γ universal coding of x ∈ N+ is obtained by representing x in binary
+//! preceded by a unary representation of its length (minus one).
+//! More precisely, to represent x we write in unary floor(log(x)) and then in
+//! binary x - 2^ceil(log(x)) (on floor(log(x)) bits)
+//!
+//! # Example
+//! ```rust
+//! use elias_fano_rust::prelude::*;
+//!
+//! let mut ba = BitArrayLittle::new();
+//!
+//! // write values to the stream
+//! for i in 0..100 {
+//!     let idx = ba.tell_bits().unwrap();
+//!
+//!     // write the value
+//!     ba.write_gamma(i).unwrap();
+//!
+//!     // ensure that size is consistent with the seek forwarding
+//!     assert_eq!(ba.tell_bits().unwrap(), idx + ba.size_gamma(i));
+//! }
+//!
+//! // rewind the stream
+//! ba.seek_bits(0).unwrap();
+//!
+//! // read back the values
+//! for i in 0..100 {
+//!     assert_eq!(i, ba.read_gamma().unwrap());
+//! }
+//!
+//! let expected_size: usize = (0..100).map(|x| ba.size_gamma(x)).sum();
+//! assert_eq!(expected_size, ba.tell_bits().unwrap())
+//! ```
 use super::{fixed_length::*, unary::*};
 use crate::utils::fast_log2_floor;
 use crate::Result;
 
-/// Optimal for Zipf of exponent 2
-/// Elias’ γ universal coding of x ∈ N+ is obtained by representing x in binary
-// preceded by a unary representation of its length (minus one).
-// More precisely, to represent x we write in unary floor(log(x)) and then in
-// binary x - 2^ceil(log(x)) (on floor(log(x)) bits)
-///
-/// # Example
-/// ```rust
-/// use elias_fano_rust::prelude::*;
-///
-/// let mut ba = BitArrayLittle::new();
-///
-/// // write values to the stream
-/// for i in 0..100 {
-///     let idx = ba.tell_bits().unwrap();
-///
-///     // write the value
-///     ba.write_gamma(i).unwrap();
-///
-///     // ensure that size is consistent with the seek forwarding
-///     assert_eq!(ba.tell_bits().unwrap(), idx + ba.size_gamma(i));
-/// }
-///
-/// // rewind the stream
-/// ba.seek_bits(0).unwrap();
-///
-/// // read back the values
-/// for i in 0..100 {
-///     assert_eq!(i, ba.read_gamma().unwrap());
-/// }
-///
-/// let expected_size: usize = (0..100).map(|x| ba.size_gamma(x)).sum();
-/// assert_eq!(expected_size, ba.tell_bits().unwrap())
-/// ```
+/// Read a golomb code
 pub trait CodeReadGamma: CodeReadUnary + CodeReadFixedLength {
     #[inline]
     /// Read a gamma code from the stream
@@ -45,6 +47,7 @@ pub trait CodeReadGamma: CodeReadUnary + CodeReadFixedLength {
     }
 }
 
+/// Write a golomb code
 pub trait CodeWriteGamma: CodeWriteUnary + CodeWriteFixedLength {
     #[inline]
     /// Write a gamma code to the stream
@@ -61,6 +64,7 @@ pub trait CodeWriteGamma: CodeWriteUnary + CodeWriteFixedLength {
     }
 }
 
+/// Get the size in bits of a given value encoded using Elias'Gamma
 pub trait CodeSizeGamma: CodeSizeUnary + CodeSizeFixedLength {
     #[inline]
     /// Return how many bits the code for the given value is long

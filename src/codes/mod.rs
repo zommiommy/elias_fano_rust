@@ -49,31 +49,68 @@ pub use zeta::*;
 mod zeta_runtime;
 pub use zeta_runtime::*;
 
-pub use golomb::compute_optimal_golomb_block_size;
 use crate::errors::*;
+pub use golomb::compute_optimal_golomb_block_size;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
+/// Enum for constant dispatching of codes
 pub enum Code {
+    /// Elias Delta Code
     Delta,
+    /// Elias Gamma Code
     Gamma,
+    /// Golomb code
     Golomb(usize),
+    /// TODO!:
     SkewedGolomb,
+    /// Unary Code
     Unary,
+    /// Zeta Code
     Zeta(usize),
+    /// TODO!:
     Nibble,
 }
 
-trait CodesWrite:
-    CodeWriteDelta + CodeWriteGamma + CodeWriteGolomb + CodeWriteUnary + CodeWriteZeta
-{
-    fn write_code<const CODE: Code>(inner: &Self, value: usize) -> Result<()> {
-        match CODE {
-            Code::Delta => inner.write_delta(value),
-            Code::Gamma => inner.write_gamma(value),
-            Code::Golomb(B) => inner.write_golomb::<{B}>(value),
-            Code::Unary => inner.write_unary(value),
-            Code::Zeta(B) => inner.write_zeta::<{B}>(value),
-            _ => unimplemented!("The given code is not implemented yet."),
+macro_rules! impl_code_trait_parametric {
+    ($($c:literal),*) => {
+        /// Generic trait for data tat can write codes
+        pub trait CodesWrite:
+            CodeWriteDelta + CodeWriteGamma + CodeWriteGolomb + CodeWriteUnary + CodeWriteZeta
+        {
+            /// Write a code using constant dispatcing
+            fn write_code<const CODE: Code>(inner: &mut Self, value: usize) -> Result<()> {
+                match CODE {
+                    Code::Delta => inner.write_delta(value),
+                    Code::Gamma => inner.write_gamma(value),
+                    Code::Unary => inner.write_unary(value),
+                    $(
+                        Code::Golomb($c) => inner.write_golomb::<{ $c }>(value),
+                        Code::Zeta($c) => inner.write_zeta::<{ $c }>(value),
+                    )*
+                    _ => unimplemented!("The given code is not implemented yet."),
+                }
+            }
         }
-    }
+
+        /// Generic trait for data tat can read codes
+        pub trait CodesRead:
+            CodeReadDelta + CodeReadGamma + CodeReadGolomb + CodeReadUnary + CodeReadZeta
+        {
+            /// Read a code using constant dispatcing
+            fn read_code<const CODE: Code>(inner: &mut Self) -> Result<usize> {
+                match CODE {
+                    Code::Delta => inner.read_delta(),
+                    Code::Gamma => inner.read_gamma(),
+                    Code::Unary => inner.read_unary(),
+                    $(
+                        Code::Golomb($c) => inner.read_golomb::<{ $c }>(),
+                        Code::Zeta($c) => inner.read_zeta::<{ $c }>(),
+                    )*
+                    _ => unimplemented!("The given code is not implemented yet."),
+                }
+            }
+        }  
+    };
 }
+
+impl_code_trait_parametric!(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);

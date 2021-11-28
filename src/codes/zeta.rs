@@ -1,36 +1,42 @@
+//! # Zeta code
+//! This code is used in webgraph to store the deltas between neighbours, it's 
+//! basically the unary code of the bucket (golomb like but with power of twos),
+//! followed by the minimal binary encoding of which value within the bucket we
+//! have.
+//!
+//! # Example
+//! ```rust
+//! use elias_fano_rust::prelude::*;
+//!
+//! let mut ba = BitArrayLittle::new();
+//!
+//! // write values to the stream
+//! for i in 0..100 {
+//!     let idx = ba.tell_bits().unwrap();
+//!
+//!     // write the value
+//!     ba.write_zeta::<8>(i).unwrap();
+//!
+//!     // ensure that size is consistent with the seek forwarding
+//!     assert_eq!(ba.tell_bits().unwrap(), idx + ba.size_zeta::<8>(i) as usize);
+//! }
+//! // rewind the stream
+//! ba.seek_bits(0).unwrap();
+//!
+//! // read back the values
+//! for i in 0..100 {
+//!     assert_eq!(i, ba.read_zeta::<8>().unwrap());
+//! }
+//!
+//! let expected_size: usize = (0..100).map(|x| ba.size_zeta::<8>(x)).sum();
+//! assert_eq!(expected_size, ba.tell_bits().unwrap())
+//! ```
 use super::*;
 use crate::utils::{fast_log2_floor, fast_pow_2};
 use crate::Result;
 
-///
-///
-/// # Example
-/// ```rust
-/// use elias_fano_rust::prelude::*;
-///
-/// let mut ba = BitArrayLittle::new();
-///
-/// // write values to the stream
-/// for i in 0..100 {
-///     let idx = ba.tell_bits().unwrap();
-///
-///     // write the value
-///     ba.write_zeta::<8>(i).unwrap();
-///
-///     // ensure that size is consistent with the seek forwarding
-///     assert_eq!(ba.tell_bits().unwrap(), idx + ba.size_zeta::<8>(i) as usize);
-/// }
-/// // rewind the stream
-/// ba.seek_bits(0).unwrap();
-///
-/// // read back the values
-/// for i in 0..100 {
-///     assert_eq!(i, ba.read_zeta::<8>().unwrap());
-/// }
-///
-/// let expected_size: usize = (0..100).map(|x| ba.size_zeta::<8>(x)).sum();
-/// assert_eq!(expected_size, ba.tell_bits().unwrap())
-/// ```
+
+/// Trait for reading a zeta code (with K known at compile time)
 pub trait CodeReadZeta: CodeReadUnary + CodeReadMinimalBinary {
     #[inline]
     /// Read a Zeta code from the stream
@@ -43,6 +49,7 @@ pub trait CodeReadZeta: CodeReadUnary + CodeReadMinimalBinary {
     }
 }
 
+/// Trait for writing a zeta code (with K known at compile time)
 pub trait CodeWriteZeta: CodeWriteUnary + CodeWriteMinimalBinary {
     #[inline]
     /// Write a Zeta code to the stream
@@ -60,6 +67,7 @@ pub trait CodeWriteZeta: CodeWriteUnary + CodeWriteMinimalBinary {
     }
 }
 
+/// Trait for the size of a zeta code with K known at compile time
 pub trait CodeSizeZeta: CodeSizeUnary + CodeSizeMinimalBinary {
     #[inline]
     /// Return how many bits the code for the given value is long

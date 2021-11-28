@@ -1,10 +1,10 @@
-use crate::traits::*;
+//!` General traits for objects that can write and read values with a fixed number
+//!` of bytes from a stream. This has no default implementation because it's a
+//!` fundamental primitive so the performance of the other codes heavely depends
+//!` on the optimizzation of these routins.
 use crate::Result;
 
-/// General trait for objects that can write and read values with a fixed number
-/// of bytes from a stream. This has no default implementation because it's a
-/// fundamental primitive so the performance of the other codes heavely depends
-/// on the optimizzation of these routins.
+/// Read a fixed length code
 pub trait CodeReadFixedLength {
     /// Read  fixed length code from the stream.
     ///
@@ -14,6 +14,7 @@ pub trait CodeReadFixedLength {
     fn read_fixed_length(&mut self, number_of_bits: usize) -> Result<usize>;
 }
 
+/// Write a fixed length code
 pub trait CodeWriteFixedLength {
     /// Write fixed length code to the stream.
     ///
@@ -23,6 +24,7 @@ pub trait CodeWriteFixedLength {
     fn write_fixed_length(&mut self, number_of_bits: usize, value: usize) -> Result<()>;
 }
 
+/// Get the legnht in bits of a fixed length code
 pub trait CodeSizeFixedLength {
     #[inline]
     /// Return how many bits the code for the given value is long

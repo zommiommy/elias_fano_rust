@@ -1,6 +1,5 @@
-use std::str::EncodeUtf16;
-
 use crate::*;
+use crate::codes::*;
 
 /// Small implementation of the `std::io::Write` trait that
 /// for `#![no_std]` environments
@@ -13,23 +12,24 @@ pub trait Write {
     fn flush(&mut self);
 }
 
-pub enum Endianess {
-    Big,
-    Little,
-}
 
-pub trait IsBigEndian<const endianess: bool> {}
-
-// TO allow multiple reader we should refactor the backend to implement traits
-// like these:
+/// A trait for a data-structure that can instantiate multiple writers 
+/// (but only one at time can work)
 pub trait BitWriter {
-    type WriterType: WriteBit + IsBigEndian;
+    /// The writer returend
+    type WriterType: WriteBit + CodesWrite;
+    /// Get a newly instantiated writer, there can only be one active at time.
+    /// The writer will be initialized to the end of the stream (append mode)
     fn get_writer(&mut self) -> Self::WriterType;
 }
+
+/// A trait for a datastructure that can instantiate multiple readers
 pub trait BitReader {
-    type ReaderType: ReadBit + IsBigEndian;
+    /// The reader type
+    type ReaderType: ReadBit + CodesRead;
+    /// Get a new reader from the start of the stream
     fn get_reader(&self) -> Self::ReaderType;
-}
+}       
 
 /// Small implementation of the `std::io::Read` trait that
 /// for `#![no_std]` environments

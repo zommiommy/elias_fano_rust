@@ -7,50 +7,31 @@ use core::mem::size_of;
 #[cfg(feature = "par_iter")]
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-/// FLAG if the struct should use differential compression or not.
-pub const USE_REFERENCES: bool = true;
-/// Maximum depth of references, lower values will result in faster
-/// decompression but worse compression
-pub const MAX_REFERENCE_RECURSION: usize = 128;
-/// Maximum distance between the current node and the reference one
-/// an higher value can result in better compression but slows down
-/// the reference finding algorithm, so the compression will be slower
-pub const MAX_REFERENCE_DISTANCE: usize = 1 << 10;
-/// Minimum score that a neighbour has to have to be a reference
-pub const MIN_SCORE_THRESHOLD: f64 = 1.0;
-/// If we should use a bitmap for the copy list or
-/// the runlength encoding of it
-pub const USE_COPY_LIST: bool = false;
-/// If the extra nodes shold be encoded as dense ranges and residuals
-/// or just deltas
-pub const USE_INTERVALIZZATION: bool = false;
-pub const MIN_INTERVALIZZATION_LEN: usize = 3;
-// If during the compression we should employ the swap_remove trick
-// which requires then sorting the current_dsts possibly multiple times
-// TODO!: Finish validating this
-pub const SWAP_REMOVE: bool = false;
-
 /// Builder for WebGraph, the only difference to webgraph is that this uses a
 /// vecotr of usizes to index the nodes, while actual webgraph uses a compressed
 /// array.
-pub struct WebGraphBuilder<BACKEND: WebGraphBackend> {
-    data: WebGraph<BACKEND>,
+pub struct WebGraphBuilder<BACKEND: WebGraphReader + MemoryFootprint> {
+    backend: BACKEND,
 
     neighbours_cache: [(usize, usize, Vec<usize>); MAX_REFERENCE_DISTANCE],
     neighbours_cache_index: usize,
+
+    nodes_index: Vec<usize>,
 }
 
-impl<BACKEND: WebGraphBackend> crate::traits::MemoryFootprint for WebGraphBuilder<BACKEND> {
+impl<BACKEND: WebGraphReader + MemoryFootprint> crate::traits::MemoryFootprint
+    for WebGraphBuilder<BACKEND>
+{
     fn total_size(&self) -> usize {
-        self.data.total_size() //TODO!: add caches sizes
+        self.backend.total_size() //TODO!: add caches sizes
     }
 }
 
-impl<BACKEND: WebGraphBackend> WebGraphBuilder<BACKEND> {
+impl<BACKEND: WebGraphReader + MemoryFootprint> WebGraphBuilder<BACKEND> {
     /// Create a new builder over the given backend
     pub fn new(backend: BACKEND) -> WebGraphBuilder<BACKEND> {
         WebGraphBuilder {
-            data: backend,
+            backend,
             nodes_index: Vec::new(),
             neighbours_cache: vec![(0, 0, Vec::new()); MAX_REFERENCE_DISTANCE]
                 .try_into()
@@ -314,26 +295,26 @@ impl<BACKEND: WebGraphBackend> WebGraphBuilder<BACKEND> {
         Ok(())
     }
 
-    /// Compress the node index and bvuild the last indices
-    pub fn build(mut self) -> Result<WebGraph<BACKEND>> {
-        // add a fake node that will not be written to the
-        // stream, but forces the flush of the current data
-        unsafe { self.push_unchecked(usize::MAX, usize::MAX)? };
-
-        // compact the nodes_index array
-        // let number_of_bits = crate::utils::fast_log2_ceil(self.data.tell_bits()? as _);
-        // let mut compacted_nodes_index = CompactArray::with_capacity(
-        //     number_of_bits as _,
-        //     self.nodes_index.len() as _,
-        // );
-        // for (i, v) in self.nodes_index.iter().enumerate() {
-        //     compacted_nodes_index.write(i as _, *v);
-        // }
-
-        // return the now-ready
-        Ok(WebGraph {
-            data: self.data,
-            nodes_index: self.nodes_index,
-        })
-    }
+    ///// Compress the node index and bvuild the last indices
+    //pub fn build(mut self) -> Result<WebGraph<BACKEND>> {
+    //    // add a fake node that will not be written to the
+    //    // stream, but forces the flush of the current data
+    //    unsafe { self.push_unchecked(usize::MAX, usize::MAX)? };
+    //
+    //    // compact the nodes_index array
+    //    // let number_of_bits = crate::utils::fast_log2_ceil(self.data.tell_bits()? as _);
+    //    // let mut compacted_nodes_index = CompactArray::with_capacity(
+    //    //     number_of_bits as _,
+    //    //     self.nodes_index.len() as _,
+    //    // );
+    //    // for (i, v) in self.nodes_index.iter().enumerate() {
+    //    //     compacted_nodes_index.write(i as _, *v);
+    //    // }
+    //
+    //    // return the now-ready
+    //    Ok(WebGraph {
+    //        data: self.data,
+    //        nodes_index: self.nodes_index,
+    //    })
+    //}
 }

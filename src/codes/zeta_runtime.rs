@@ -18,7 +18,6 @@ pub trait CodeReadZetaRuntime: CodeReadUnary + CodeReadMinimalBinary {
     }
 }
 
-
 /// Write a zeta code with K known at runtime
 pub trait CodeWriteZetaRuntime: CodeWriteUnary + CodeWriteMinimalBinary {
     #[inline]

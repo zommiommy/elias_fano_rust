@@ -44,13 +44,16 @@
 #![feature(is_sorted)]
 #![feature(concat_idents)]
 #![feature(core_intrinsics)]
+#![feature(in_band_lifetimes)]
 #![feature(adt_const_params)]
+#![feature(generic_const_exprs)]
 #![feature(const_generics_defaults)]
-#![deny(missing_docs)]
-#![deny(clippy::missing_docs_in_private_items)]
-#![deny(clippy::missing_safety_doc)]
-#![warn(rustdoc::missing_doc_code_examples)]
-#![warn(clippy::todo)]
+
+//#![deny(missing_docs)]
+//#![deny(clippy::missing_docs_in_private_items)]
+//#![deny(clippy::missing_safety_doc)]
+//#![warn(rustdoc::missing_doc_code_examples)]
+//#![warn(clippy::todo)]
 
 // No std so that all these structures can be used in
 // bare metal environments (not making any assumption about architecture width),
@@ -69,18 +72,36 @@ pub mod sparse_index;
 pub mod traits;
 pub mod utils;
 pub use codes::*;
-//pub mod backends;
-//pub mod webgraph;
+pub mod backends;
+pub mod webgraph;
 
 /// Simple prelude module that import everything
 pub mod prelude {
-    //pub use super::backends::*;
+    pub use super::backends::*;
     pub use super::codes::*;
     pub use super::compact_array::CompactArray;
     pub use super::elias_fano::{ConcurrentEliasFanoBuilder, EliasFano};
     pub use super::sparse_index::SparseIndex;
     pub use super::traits::*;
     pub use super::utils;
+    pub use super::webgraph::*;
+
+    pub fn test() {
+        let wgw = WebGraph::new(RuntimeWebGraphReader::new(
+            CodesSettings::default(),
+            BitArrayBig::new(),
+        ));
+
+        //let wg2 = WebGraph::new(ConstWebGraphReader::<
+        //    TODOFillReaderType
+        //    { Code::Gamma },
+        //    { Code::Gamma },
+        //    { Code::Gamma },
+        //    { Code::Gamma },
+        //    { Code::Gamma },
+        //    { Code::Gamma },
+        //>::new(BitArrayBig::new()));
+    }
 }
 
 #[cfg(feature = "fuzz")]

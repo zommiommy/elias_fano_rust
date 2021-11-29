@@ -1,4 +1,4 @@
-use crate::codes::{CodeFixedLength, CodeUnary};
+use crate::codes::*;
 use crate::constants::*;
 use crate::traits::*;
 use crate::utils::{fast_log2_ceil, power_of_two_to_mask};
@@ -69,8 +69,6 @@ pub struct BitArrayLittle {
     /// Index that keeps track in which bit we are in the current word
     pub bit_index: usize,
 }
-
-impl IsBigEndian<false> for BitArrayLittle {}
 
 impl MemoryFootprint for BitArrayLittle {
     fn total_size(&self) -> usize {
@@ -152,7 +150,7 @@ impl WriteBit for BitArrayLittle {
 }
 
 /// Optimal for gemetric distribution of ratio 1/2
-impl CodeUnary for BitArrayLittle {
+impl CodeReadUnary for BitArrayLittle {
     #[inline]
     fn read_unary(&mut self) -> Result<usize> {
         let mut res = 0;
@@ -173,7 +171,9 @@ impl CodeUnary for BitArrayLittle {
             return Ok(x + res);
         }
     }
+}
 
+impl CodeWriteUnary for BitArrayLittle {
     #[inline]
     fn write_unary(&mut self, value: usize) -> Result<()> {
         // Update the reminder
@@ -193,7 +193,7 @@ impl CodeUnary for BitArrayLittle {
 
 /// Optimized implementation that exploit the fact that all the data is already
 /// in memory
-impl CodeFixedLength for BitArrayLittle {
+impl CodeReadFixedLength for BitArrayLittle {
     #[inline]
     /// Read `number_of_bits` from the stream.
     /// THIS SHOULD NOT BE CALLED WITH `number_of_bits` equal to 0.
@@ -219,7 +219,9 @@ impl CodeFixedLength for BitArrayLittle {
 
         Ok(result)
     }
+}
 
+impl CodeWriteFixedLength for BitArrayLittle {
     #[inline]
     /// Write `value` using `number_of_bits` in the stream.
     fn write_fixed_length(&mut self, number_of_bits: usize, value: usize) -> Result<()> {
@@ -269,5 +271,21 @@ impl CodeFixedLength for BitArrayLittle {
 
         // Update the pointers to after where we wrote
         self.skip_bits(number_of_bits as usize)
+    }
+}
+
+/// Use the little-endian version
+impl CodeReadMinimalBinary for BitArrayLittle {
+    #[inline]
+    fn read_minimal_binary(&mut self, max: usize) -> Result<usize> {
+        self.read_minimal_binary_little(max)
+    }
+}
+
+/// Use the little-endian version
+impl CodeWriteMinimalBinary for BitArrayLittle {
+    #[inline]
+    fn write_minimal_binary(&mut self, value: usize, max: usize) -> Result<()> {
+        self.write_minimal_binary_little(value, max)
     }
 }

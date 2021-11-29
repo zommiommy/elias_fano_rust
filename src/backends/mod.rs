@@ -21,14 +21,15 @@
 //! write words (a file, a socket, ...) and implements all the codes for it.
 //! This allows for full generalizzation, and possibly distributed / over the
 //! network structs, at the cost of more performance overhead.
-mod bitarray_little;
-pub use bitarray_little::*;
+
+// mod bitarray_little;
+// pub use bitarray_little::*;
 
 mod bitarray_big;
 pub use bitarray_big::*;
 
-mod file_backend;
-pub use file_backend::*;
+// mod file_backend;
+// pub use file_backend::*;
 
 // mod bitstream;
 // pub use bitstream::*;

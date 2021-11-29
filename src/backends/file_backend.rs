@@ -1,4 +1,4 @@
-use crate::codes::{CodeFixedLength, CodeUnary};
+use crate::codes::*;
 use crate::constants::*;
 use crate::traits::*;
 use crate::utils::{fast_log2_ceil, power_of_two_to_mask};

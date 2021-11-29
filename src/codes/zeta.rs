@@ -1,5 +1,5 @@
 //! # Zeta code
-//! This code is used in webgraph to store the deltas between neighbours, it's 
+//! This code is used in webgraph to store the deltas between neighbours, it's
 //! basically the unary code of the bucket (golomb like but with power of twos),
 //! followed by the minimal binary encoding of which value within the bucket we
 //! have.
@@ -34,7 +34,6 @@
 use super::*;
 use crate::utils::{fast_log2_floor, fast_pow_2};
 use crate::Result;
-
 
 /// Trait for reading a zeta code (with K known at compile time)
 pub trait CodeReadZeta: CodeReadUnary + CodeReadMinimalBinary {

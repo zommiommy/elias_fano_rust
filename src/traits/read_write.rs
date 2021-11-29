@@ -1,5 +1,7 @@
-use crate::*;
 use crate::codes::*;
+use crate::*;
+
+use super::MemoryFootprint;
 
 /// Small implementation of the `std::io::Write` trait that
 /// for `#![no_std]` environments
@@ -12,24 +14,28 @@ pub trait Write {
     fn flush(&mut self);
 }
 
-
-/// A trait for a data-structure that can instantiate multiple writers 
+/// A trait for a data-structure that can instantiate multiple writers
 /// (but only one at time can work)
-pub trait BitWriter {
+pub trait CodesWriter {
     /// The writer returend
-    type WriterType: WriteBit + CodesWrite;
+    type CodesWriterType: CodesWrite + MemoryFootprint;
     /// Get a newly instantiated writer, there can only be one active at time.
     /// The writer will be initialized to the end of the stream (append mode)
-    fn get_writer(&mut self) -> Self::WriterType;
+    ///
+    /// Here self is borrowed immutabily because the implementer must guarantee
+    /// the thread safety of the implementation. (Tipically we could use a
+    /// RWLock).
+    fn get_codes_writer(&self) -> Self::CodesWriterType;
 }
 
 /// A trait for a datastructure that can instantiate multiple readers
-pub trait BitReader {
+/// Here `'a` it's the lifetime of the borrwed backend.
+pub trait CodesReader<'a> {
     /// The reader type
-    type ReaderType: ReadBit + CodesRead;
-    /// Get a new reader from the start of the stream
-    fn get_reader(&self) -> Self::ReaderType;
-}       
+    type CodesReaderType: CodesRead + MemoryFootprint;
+    /// Get a new reader at the given offset (in bytes) of the stream
+    fn get_codes_reader(&'a self, offset: usize) -> Self::CodesReaderType;
+}
 
 /// Small implementation of the `std::io::Read` trait that
 /// for `#![no_std]` environments

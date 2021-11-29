@@ -10,6 +10,8 @@
 //! | [1.27,1.57] | zeta<2>      |
 //! | [1.57,1.2]  | Elia's Gamma |
 //!
+use crate::traits::*;
+
 mod delta;
 pub use delta::*;
 
@@ -76,6 +78,7 @@ macro_rules! impl_code_trait_parametric {
         /// Generic trait for data tat can write codes
         pub trait CodesWrite:
             CodeWriteDelta + CodeWriteGamma + CodeWriteGolomb + CodeWriteUnary + CodeWriteZeta
+            + CodeWriteUnary + CodeWriteFixedLength + WriteBit
         {
             /// Write a code using constant dispatcing
             fn write_code<const CODE: Code>(inner: &mut Self, value: usize) -> Result<()> {
@@ -95,6 +98,7 @@ macro_rules! impl_code_trait_parametric {
         /// Generic trait for data tat can read codes
         pub trait CodesRead:
             CodeReadDelta + CodeReadGamma + CodeReadGolomb + CodeReadUnary + CodeReadZeta
+            + CodeReadUnary + CodeReadFixedLength + ReadBit
         {
             /// Read a code using constant dispatcing
             fn read_code<const CODE: Code>(inner: &mut Self) -> Result<usize> {
@@ -109,8 +113,34 @@ macro_rules! impl_code_trait_parametric {
                     _ => unimplemented!("The given code is not implemented yet."),
                 }
             }
-        }  
+        }
     };
 }
 
 impl_code_trait_parametric!(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+/// blanket implementation
+impl<T> CodesRead for T where
+    T: CodeReadDelta
+        + CodeReadGamma
+        + CodeReadGolomb
+        + CodeReadUnary
+        + CodeReadZeta
+        + CodeReadUnary
+        + CodeReadFixedLength
+        + ReadBit
+{
+}
+
+/// blanket implementation
+impl<T> CodesWrite for T where
+    T: CodeWriteDelta
+        + CodeWriteGamma
+        + CodeWriteGolomb
+        + CodeWriteUnary
+        + CodeWriteZeta
+        + CodeWriteUnary
+        + CodeWriteFixedLength
+        + WriteBit
+{
+}

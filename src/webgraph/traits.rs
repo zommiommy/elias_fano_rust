@@ -1,40 +1,47 @@
-use crate::codes::*;
+use crate::errors::*;
 use crate::traits::*;
 
-pub trait WebGraphReaderBackend:
-    ReadBit + CodeReadUnary + CodeReadFixedLength + MemoryFootprint
-{
-}
-/// Blanket implementation
-impl<T> WebGraphReaderBackend for T where
-    T: ReadBit + CodeReadUnary + CodeReadFixedLength + MemoryFootprint
-{
-}
+pub trait WebGraphReaderBackend: ReadBit {
+    fn read_outdegree(&mut self) -> Result<usize>;
 
-pub trait WebGraphWriterBackend:
-    WriteBit + CodeWriteUnary + CodeWriteFixedLength + MemoryFootprint
-{
-}
-/// Blanket implementation
-impl<T> WebGraphWriterBackend for T where
-    T: WriteBit + CodeWriteUnary + CodeWriteFixedLength + MemoryFootprint
-{
-}
+    // node reference
+    fn read_reference_offset(&mut self) -> Result<usize>;
 
-pub trait WebGraphReaderCodesBackend: ReadBit {
-    fn read_outdegrees(&mut self) -> Result<usize>;
-    fn read_blocks(&mut self) -> Result<usize>;
-    fn read_residuals(&mut self) -> Result<usize>;
-    fn read_references(&mut self) -> Result<usize>;
+    // run length reference copy
     fn read_block_count(&mut self) -> Result<usize>;
-    fn read_offsets(&mut self) -> Result<usize>;
+    fn read_blocks(&mut self) -> Result<usize>;
+
+    // intervallizzation
+    fn read_interval_count(&mut self) -> Result<usize>;
+    fn read_interval_start(&mut self) -> Result<usize>;
+    fn read_interval_len(&mut self) -> Result<usize>;
+
+    // extra nodes
+    fn read_first_residual(&mut self) -> Result<usize>;
+    fn read_residual(&mut self) -> Result<usize>;
 }
 
-pub trait WebGraphWriterCodesBackend: WriteBit {
-    fn write_outdegrees(&mut self, value: usize) -> Result<()>;
-    fn write_blocks(&mut self, value: usize) -> Result<()>;
-    fn write_residuals(&mut self, value: usize) -> Result<()>;
-    fn write_references(&mut self, value: usize) -> Result<()>;
-    fn write_block_count(&mut self, value: usize) -> Result<()>;
-    fn write_offsets(&mut self, value: usize) -> Result<()>;
+pub trait WebGraphWriterBackend: WriteBit {
+    fn write_outdegree(&mut self) -> Result<usize>;
+
+    // node reference
+    fn write_reference_offset(&mut self) -> Result<usize>;
+
+    // run length reference copy
+    fn write_block_count(&mut self) -> Result<usize>;
+    fn write_blocks(&mut self) -> Result<usize>;
+
+    // intervallizzation
+    fn write_interval_count(&mut self) -> Result<usize>;
+    fn write_interval_start(&mut self) -> Result<usize>;
+    fn write_interval_len(&mut self) -> Result<usize>;
+
+    // extra nodes
+    fn write_first_residual(&mut self) -> Result<usize>;
+    fn write_residual(&mut self) -> Result<usize>;
+}
+
+pub trait WebGraphReader<'a>: MemoryFootprint {
+    type ReaderType: WebGraphReaderBackend + MemoryFootprint;
+    fn get_reader(&'a self, offset: usize) -> Self::ReaderType;
 }

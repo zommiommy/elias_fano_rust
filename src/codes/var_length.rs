@@ -50,7 +50,6 @@ pub trait CodeReadVarLength: CodeReadUnary + CodeReadFixedLength {
     }
 }
 
-
 /// Write a variable length codes
 pub trait CodeWriteVarLength: CodeWriteUnary + CodeWriteFixedLength {
     #[inline]

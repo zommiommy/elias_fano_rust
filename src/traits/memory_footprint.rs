@@ -58,3 +58,14 @@ impl<T: MemoryFootprintConst, const N: usize> MemoryFootprint for [T; N] {
 //         self.iter().map(|x| x.total_size()).sum()
 //     }
 // }
+
+pub trait MemorySlice: core::ops::Index<usize, Output = usize> + MemoryFootprint {
+    fn as_ptr(&self) -> *const usize;
+}
+
+// TODO! implement for vals
+//impl<T: MemoryFootprintConst> MemorySlice for Vec<T> {
+//    fn as_ptr(&self) -> *const usize {
+//        Vec::as_ptr(self) as *const usize
+//    }
+//}

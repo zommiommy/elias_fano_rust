@@ -85,23 +85,6 @@ pub mod prelude {
     pub use super::traits::*;
     pub use super::utils;
     pub use super::webgraph::*;
-
-    pub fn test() {
-        let wgw = WebGraph::new(RuntimeWebGraphReader::new(
-            CodesSettings::default(),
-            BitArrayBig::new(),
-        ));
-
-        //let wg2 = WebGraph::new(ConstWebGraphReader::<
-        //    TODOFillReaderType
-        //    { Code::Gamma },
-        //    { Code::Gamma },
-        //    { Code::Gamma },
-        //    { Code::Gamma },
-        //    { Code::Gamma },
-        //    { Code::Gamma },
-        //>::new(BitArrayBig::new()));
-    }
 }
 
 #[cfg(feature = "fuzz")]

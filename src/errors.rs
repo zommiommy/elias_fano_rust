@@ -26,4 +26,8 @@ pub enum Error {
     /// This error is returned when the opening of a file failed. The inner value
     /// is the path
     UnableToOpenFile(String),
+    OpenError(std::io::Error),
+
+    /// This error is returned when an mmap fails
+    MMapError(String),
 }

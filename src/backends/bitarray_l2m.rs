@@ -7,7 +7,8 @@ use core::intrinsics::unlikely;
 use core::mem::size_of;
 
 /// A general BitArrayLittle wrapper over some word reader and writers.
-/// This assumes that the words of memory are read and write in little-endian;
+/// This assumes that the words of memory are read and write from the LSB to 
+/// the MSB;
 ///
 /// # Example
 /// ```rust

@@ -30,11 +30,11 @@ pub use golomb_runtime::*;
 // mod interpolative;
 // pub use interpolative::CodeInterpolative;
 
-mod minimal_binary_little;
-pub use minimal_binary_little::*;
+mod minimal_binary_l2m;
+pub use minimal_binary_l2m::*;
 
-mod minimal_binary_big;
-pub use minimal_binary_big::*;
+mod minimal_binary_m2l;
+pub use minimal_binary_m2l::*;
 
 mod minimal_binary;
 pub use minimal_binary::*;

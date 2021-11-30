@@ -22,11 +22,14 @@
 //! This allows for full generalizzation, and possibly distributed / over the
 //! network structs, at the cost of more performance overhead.
 
+mod mmapped;
+pub use mmapped::*;
+
 // mod bitarray_little;
 // pub use bitarray_little::*;
 
-mod bitarray_big;
-pub use bitarray_big::*;
+mod bitarray_m2l;
+pub use bitarray_m2l::*;
 
 // mod file_backend;
 // pub use file_backend::*;

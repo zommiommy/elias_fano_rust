@@ -1,14 +1,14 @@
-//! This assumes that the values are read from the LSB to the MSB (as in little endian)
+//! This assumes that the values are read from the LSB to the MSB (as in l2m endian)
 use super::fixed_length::*;
 use crate::traits::*;
 use crate::utils::{fast_log2_ceil, fast_log2_floor, fast_pow_2};
 use crate::Result;
 
-/// Read a minimal binary little endian code
-pub trait CodeReadMinimalBinaryLittle: CodeReadFixedLength + ReadBit {
+/// Read a minimal binary code that's read form the LSB to the MSB
+pub trait CodeReadMinimalBinaryl2m: CodeReadFixedLength + ReadBit {
     #[inline]
     /// Read a minimal binary value from the stream
-    fn read_minimal_binary_little(&mut self, max: usize) -> Result<usize> {
+    fn read_minimal_binary_l2m(&mut self, max: usize) -> Result<usize> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
         let n = self.read_fixed_length(l)?;
@@ -30,11 +30,11 @@ pub trait CodeReadMinimalBinaryLittle: CodeReadFixedLength + ReadBit {
     }
 }
 
-/// Write a minimal binary little endian code
-pub trait CodeWriteMinimalBinaryLittle: CodeWriteFixedLength {
+/// Write a minimal binary code that's read form the LSB to the MSB
+pub trait CodeWriteMinimalBinaryl2m: CodeWriteFixedLength {
     #[inline]
     /// Write a minimal binary value from the stream
-    fn write_minimal_binary_little(&mut self, value: usize, max: usize) -> Result<()> {
+    fn write_minimal_binary_l2m(&mut self, value: usize, max: usize) -> Result<()> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
         let scarto = fast_pow_2(u) - max;
@@ -50,5 +50,5 @@ pub trait CodeWriteMinimalBinaryLittle: CodeWriteFixedLength {
 }
 
 /// blanket implementation
-impl<T: ReadBit + CodeReadFixedLength> CodeReadMinimalBinaryLittle for T {}
-impl<T: CodeWriteFixedLength> CodeWriteMinimalBinaryLittle for T {}
+impl<T: ReadBit + CodeReadFixedLength> CodeReadMinimalBinaryl2m for T {}
+impl<T: CodeWriteFixedLength> CodeWriteMinimalBinaryl2m for T {}

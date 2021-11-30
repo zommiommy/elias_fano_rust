@@ -32,7 +32,7 @@ pub const MIN_SCORE_THRESHOLD: f64 = 1.0;
 pub const USE_COPY_LIST: bool = false;
 /// If the extra nodes shold be encoded as dense ranges and residuals
 /// or just deltas
-pub const USE_INTERVALIZZATION: bool = false;
+pub const USE_INTERVALIZZATION: bool = true;
 pub const MIN_INTERVALIZZATION_LEN: usize = 3;
 // If during the compression we should employ the swap_remove trick
 // which requires then sorting the current_dsts possibly multiple times
@@ -65,16 +65,16 @@ impl<'a, BACKEND> WebGraph<'a, BACKEND>
 where
     BACKEND: WebGraphReader<'a> + MemoryFootprint,
 {
-    pub fn new(backend: BACKEND) -> WebGraph<'a, BACKEND> {
+    pub fn new(backend: BACKEND, nodes_index: Vec<usize>) -> WebGraph<'a, BACKEND> {
         WebGraph {
             backend,
-            nodes_index: Vec::new(),
+            nodes_index,
             phantom: std::marker::PhantomData::default(),
         }
     }
 
     /// Get the degree of a given node
-    pub fn get_degree(&'a mut self, node_id: usize) -> Result<usize> {
+    pub fn get_degree(&'a self, node_id: usize) -> Result<usize> {
         let mut reader = self
             .backend
             .get_reader(self.nodes_index[node_id as usize] as usize);

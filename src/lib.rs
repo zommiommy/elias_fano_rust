@@ -71,10 +71,10 @@ pub(crate) mod constants;
 pub mod elias_fano;
 pub mod sparse_index;
 pub mod traits;
-pub mod utils;
 pub use codes::*;
 pub mod backends;
 pub mod webgraph;
+pub mod utils;
 
 /// Simple prelude module that import everything
 pub mod prelude {

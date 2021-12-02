@@ -14,9 +14,8 @@ fn test_mmap() {
     // check that the first 4 bytes match what we expect
     assert_eq!(&mmap[0].to_ne_bytes()[..4], &[0x37, 0x77, 0x85, 0xa7]);
 
-    println!("{:064b}", mmap[0].to_be());
-    println!("{:064b}", mmap[1].to_be());
-    println!("{:064b}", mmap[9505 / 8].to_be() << (9505 % 8));
+    println!("{:064b} 0x{:016x}", mmap[0].to_be(), mmap[0].to_be());
+    println!("{:064b} 0x{:016x}", mmap[1].to_be(), mmap[1].to_be());
 
     // create a backend that reads codes from the MSB to the LSb
     let backend =  BitArrayM2L::new(mmap);
@@ -69,6 +68,21 @@ fn test_mmap() {
             assert_eq!(offset, reader.tell_bits().unwrap());
         }
     }
+}
+
+use std::time::Instant;
+
+#[test]
+/// Check that elias fano runs considering a lot of possible combinations.
+fn test_cnr_2000() {
+    let start = Instant::now();
+    // memory map the test graph file
+    let mmap = MemoryMappedFileReadOnly::open(
+        "./tests/data/cnr-2000/cnr-2000.graph"
+    ).unwrap();
+
+    // create a backend that reads codes from the MSB to the LSb
+    let backend =  BitArrayM2L::new(mmap);
 
     let mut wg = WebGraph::new(RuntimeWebGraphReader::new(
         CodesSettings::default(),
@@ -96,17 +110,24 @@ fn test_mmap() {
         n
     }).collect::<Vec<Vec<usize>>>();
 
+    let mut edges = 0;
     for node_id in 0..325557 {
-        println!("{:057b}", {
-            let mut reader = (&backend).get_codes_reader(wg.get_last_offset());
-            reader.read_fixed_length(57).unwrap()
-        });
         let (offset, neighbours) = 
             wg.get_neighbours(node_id).unwrap();
-        println!("{:10} {:?} {:10}", node_id + 2, neighbours, offset);
 
         assert_eq!(graph[node_id], neighbours);
-
         wg.push_offset(offset);
+        
+        edges += neighbours.len();
+        if (node_id & 0xffff) == 0 {
+            println!(
+                "[{:13} edges] [{:.3} Medges/sec]", 
+                edges, 
+                (edges as f64 / 1_000_000.0) / start.elapsed().as_secs_f64()
+            );
+        }
     }
+    let elapsed = start.elapsed();
+    println!("cnr-2000 took: {:?}", elapsed);
+    println!("edges/sec: {:.3}", 3216152.0 / elapsed.as_secs_f64());
 }

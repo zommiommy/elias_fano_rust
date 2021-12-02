@@ -8,14 +8,27 @@ mod traits;
 pub use traits::*;
 mod runtime_webgraph_backend;
 pub use runtime_webgraph_backend::*;
-//mod const_webgraph_backend;
-//pub use const_webgraph_backend::*;
+mod const_webgraph_backend;
+pub use const_webgraph_backend::*;
 
 mod bv_compatability;
 pub use bv_compatability::*;
 
 //mod builder;
 //pub use builder::*;
+
+const DEBUG: bool = false;
+
+#[macro_export]
+macro_rules! debug {
+    ($($token:tt)*) => {{
+        if DEBUG {
+            dbg!($($token)*)
+        } else {
+            $($token)*
+        }
+    }};
+}
 
 /// Read only WebGraph
 pub struct WebGraph<
@@ -75,7 +88,7 @@ where
 
         let mut reader = (&self.backend).get_reader(index);
         // read the degree
-        let degree = dbg!(reader.read_outdegree()?);
+        let degree = debug!(reader.read_outdegree()?);
         // if the degree is 0 we are done and don't need to decode anything
         if degree == 0 {
             return Ok((reader.tell_bits()?, vec![]));
@@ -87,7 +100,7 @@ where
 
         // TODO!: if we do a proper merge of intervalizzation and residuals we 
         // can avoid the sorting
-        neighbours.sort();
+        neighbours.sort_unstable();
 
         Ok((reader.tell_bits()?, neighbours))
     }
@@ -100,7 +113,7 @@ where
         mut neighbours: Vec<usize>,
     ) -> Result<Vec<usize>> {
         // figure out the ref
-        let ref_delta = dbg!(reader.read_reference_offset()?);
+        let ref_delta = debug!(reader.read_reference_offset()?);
         if ref_delta == 0 {
             return Ok(neighbours);
         }
@@ -110,17 +123,17 @@ where
 
         // Copy blocks, decode the run length encoding, and then
         // proceed as the copy list read
-        let number_of_blocks = dbg!(reader.read_block_count()?);
-        // this shouldn't happen!!
+        let number_of_blocks = debug!(reader.read_block_count()?);
+
+        // if there are no block -> we copy all the neighbours
         if number_of_blocks == 0 {
-            println!("WIERD");
             neighbours.extend(&self.get_neighbours(ref_node)?.1);
             return Ok(neighbours);
         }
         // decode the run-length copy blocks
-        let mut blocks = vec![dbg!(reader.read_blocks()?)];
+        let mut blocks = vec![debug!(reader.read_blocks()?)];
         for _ in 0..number_of_blocks.saturating_sub(1) {
-            blocks.push(dbg!(reader.read_blocks()? + 1));
+            blocks.push(debug!(reader.read_blocks()? + 1));
         }
 
         // recursive call to decode its neighbours
@@ -159,13 +172,13 @@ where
         if nodes_to_decode == 0 {
             return Ok(neighbours);
         }
-        let interval_count = dbg!(reader.read_interval_count()?);
+        let interval_count = debug!(reader.read_interval_count()?);
         if interval_count > 0 {
 
-            let mut start = (nat2int(dbg!(reader.read_interval_start()?)) 
+            let mut start = (nat2int(debug!(reader.read_interval_start()?)) 
                 + node_id as isize) as usize;
 
-            let mut delta = dbg!(reader.read_interval_len()?) 
+            let mut delta = debug!(reader.read_interval_len()?) 
                 + self.min_interval_length;
 
             neighbours.extend(start..start + delta);
@@ -173,8 +186,8 @@ where
             nodes_to_decode -= delta;
 
             for _ in 0..interval_count.saturating_sub(1) {
-                start += dbg!(reader.read_interval_start()?) + 1;
-                delta = dbg!(reader.read_interval_len()?) + self.min_interval_length;
+                start += debug!(reader.read_interval_start()?) + 1;
+                delta = debug!(reader.read_interval_len()?) + self.min_interval_length;
 
                 neighbours.extend(start..start + delta);
                 
@@ -189,16 +202,16 @@ where
         }
 
         // read the first neighbour
-        let first_neighbour_delta = dbg!(reader.read_first_residual()?);
+        let first_neighbour_delta = debug!(reader.read_first_residual()?);
         // decode the first neighbour
         let first_neighbour = ((node_id as isize) 
-            + dbg!(nat2int(first_neighbour_delta))) as usize;
+            + debug!(nat2int(first_neighbour_delta))) as usize;
         neighbours.push(first_neighbour);
 
         // decode the other extra nodes
         let mut tmp = first_neighbour;
         for _ in 0..nodes_to_decode.saturating_sub(1) {
-            let new_node = dbg!(dbg!(reader.read_residual()?) + tmp + 1);
+            let new_node = debug!(debug!(reader.read_residual()?) + tmp + 1);
             neighbours.push(new_node);
             tmp = new_node;
         }

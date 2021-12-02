@@ -49,6 +49,7 @@ where
     Backend: CodesReader<CodesReaderType>,
     CodesReaderType: CodesRead,
 {
+    #[inline]
     pub fn new(settings: CodesSettings, backend: Backend) -> Self {
         let (outdegree_code, outdegree_param) = match settings.outdegree {
             Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
@@ -154,6 +155,7 @@ where
         }
     }
 
+    #[inline]
     /// wrap a reader so that it dispatch the codes
     pub fn wrap(
         &self,
@@ -190,6 +192,7 @@ where
     Backend: CodesReader<CodesReaderType>,
     CodesReaderType: CodesRead,
 {
+    #[inline]
     fn get_reader(&self, offset: usize) 
         -> RuntimeWebGraphReaderBackend<CodesReaderType> {
         self.wrap((&self.backend).get_codes_reader(offset))
@@ -238,74 +241,92 @@ where
         self.reader.read_delta()
     }
 
+    #[inline]
     fn outdegree_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.outdegree_param)
     }
 
+    #[inline]
     fn outdegree_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.outdegree_param)
     }
 
+    #[inline]
     fn reference_offset_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.reference_offset_param)
     }
 
+    #[inline]
     fn reference_offset_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.reference_offset_param)
     }
 
+    #[inline]
     fn block_count_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.block_count_param)
     }
 
+    #[inline]
     fn block_count_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.block_count_param)
     }
 
+    #[inline]
     fn blocks_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.blocks_param)
     }
 
+    #[inline]
     fn blocks_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.blocks_param)
     }
 
+    #[inline]
     fn interval_count_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.interval_count_param)
     }
 
+    #[inline]
     fn interval_count_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.interval_count_param)
     }
 
+    #[inline]
     fn interval_start_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.interval_start_param)
     }
 
+    #[inline]
     fn interval_start_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.interval_start_param)
     }
 
+    #[inline]
     fn interval_len_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.interval_len_param)
     }
 
+    #[inline]
     fn interval_len_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.interval_len_param)
     }
 
+    #[inline]
     fn first_residual_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.first_residual_param)
     }
 
+    #[inline]
     fn first_residual_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.first_residual_param)
     }
 
+    #[inline]
     fn residual_golomb(&mut self) -> Result<usize> {
         self.reader.read_golomb_runtime(self.residual_param)
     }
 
+    #[inline]
     fn residual_zeta(&mut self) -> Result<usize> {
         self.reader.read_zeta_runtime(self.residual_param)
     }
@@ -315,38 +336,47 @@ impl<READER> WebGraphReaderBackend for RuntimeWebGraphReaderBackend<READER>
 where
     READER: CodesRead,
 {
+    #[inline]
     fn read_outdegree(&mut self) -> Result<usize> {
         (self.outdegree_code)(self)
     }
 
+    #[inline]
     fn read_reference_offset(&mut self) -> Result<usize> {
         (self.reference_offset_code)(self)
     }
 
+    #[inline]
     fn read_block_count(&mut self) -> Result<usize> {
         (self.block_count_code)(self)
     }
 
+    #[inline]
     fn read_blocks(&mut self) -> Result<usize> {
         (self.blocks_code)(self)
     }
 
+    #[inline]
     fn read_interval_count(&mut self) -> Result<usize> {
         (self.interval_count_code)(self)
     }
 
+    #[inline]
     fn read_interval_start(&mut self) -> Result<usize> {
         (self.interval_start_code)(self)
     }
 
+    #[inline]
     fn read_interval_len(&mut self) -> Result<usize> {
         (self.interval_len_code)(self)
     }
 
+    #[inline]
     fn read_first_residual(&mut self) -> Result<usize> {
         (self.first_residual_code)(self)
     }
 
+    #[inline]
     fn read_residual(&mut self) -> Result<usize> {
         (self.residual_code)(self)
     }

@@ -48,19 +48,22 @@ impl std::ops::Drop for MemoryMappedFileReadOnly {
 
 impl MemoryMappedFileReadOnly {
     pub fn open(path: &str) -> Result<Self> {
-        let len = std::fs::metadata(path)
+        // here we add a + 8 to map in an extra zero-filled word so that we can
+        // do unaligned reads for bits
+        let mut len = 1 + std::fs::metadata(path)
             .map_err(|e| Error::OpenError(e))?
-            .len() as usize + 8;
+            .len() as usize;
+        len += 8 - (len % 8);
 
         // check that it's reasonable
-        assert!(
-            len % core::mem::size_of::<usize>() != 0, 
-            concat!(
-                "Cannot mmap a file because its length '{}' because it's not a ",
-                "multiple of the size of word type which has length '{}'",
-            ),
-            len, core::mem::size_of::<usize>(),
-        );
+        //assert!(
+        //    len % core::mem::size_of::<usize>() != 0, 
+        //    concat!(
+        //        "Cannot mmap a file because its length '{}' because it's not a ",
+        //        "multiple of the size of word type which has length '{}'",
+        //    ),
+        //    len, core::mem::size_of::<usize>(),
+        //);
 
         let mut c_string = path.to_string();
         c_string.push('\0');

@@ -41,7 +41,9 @@ pub trait WebGraphWriterBackend: WriteBit {
     fn write_residual(&mut self) -> Result<usize>;
 }
 
-pub trait WebGraphReader<'a>: MemoryFootprint {
-    type ReaderType: WebGraphReaderBackend + MemoryFootprint;
-    fn get_reader(&'a self, offset: usize) -> Self::ReaderType;
+pub trait WebGraphReader<WebGraphReaderType> 
+where
+    WebGraphReaderType: WebGraphReaderBackend,
+{
+    fn get_reader(&self, offset: usize) -> WebGraphReaderType;
 }

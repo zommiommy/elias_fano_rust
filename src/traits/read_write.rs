@@ -1,8 +1,6 @@
 use crate::codes::*;
 use crate::*;
 
-use super::MemoryFootprint;
-
 /// Small implementation of the `std::io::Write` trait that
 /// for `#![no_std]` environments
 pub trait Write {
@@ -18,7 +16,7 @@ pub trait Write {
 /// (but only one at time can work)
 pub trait CodesWriter {
     /// The writer returend
-    type CodesWriterType: CodesWrite + MemoryFootprint;
+    type CodesWriterType: CodesWrite;
     /// Get a newly instantiated writer, there can only be one active at time.
     /// The writer will be initialized to the end of the stream (append mode)
     ///
@@ -29,12 +27,12 @@ pub trait CodesWriter {
 }
 
 /// A trait for a datastructure that can instantiate multiple readers
-/// Here `'a` it's the lifetime of the borrwed backend.
-pub trait CodesReader<'a> {
-    /// The reader type
-    type CodesReaderType: CodesRead + MemoryFootprint;
+pub trait CodesReader<CodesReaderType>
+where
+    CodesReaderType: CodesRead,
+{
     /// Get a new reader at the given offset (in bytes) of the stream
-    fn get_codes_reader(&'a self, offset: usize) -> Self::CodesReaderType;
+    fn get_codes_reader(&self, offset: usize) -> CodesReaderType;
 }
 
 /// Small implementation of the `std::io::Read` trait that

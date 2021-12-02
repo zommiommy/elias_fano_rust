@@ -50,7 +50,7 @@ impl MemoryMappedFileReadOnly {
     pub fn open(path: &str) -> Result<Self> {
         let len = std::fs::metadata(path)
             .map_err(|e| Error::OpenError(e))?
-            .len() as usize;
+            .len() as usize + 8;
 
         // check that it's reasonable
         assert!(

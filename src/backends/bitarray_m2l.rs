@@ -62,17 +62,12 @@ use core::mem::size_of;
 /// ```
 pub struct BitArrayM2L<BACKEND: MemorySlice>(BACKEND);
 
-impl<BACKEND: MemorySlice> MemoryFootprint for BitArrayM2L<BACKEND>
+impl<'a, BACKEND> CodesReader<BitArrayM2LReader<'a, BACKEND>> 
+for &'a BitArrayM2L<BACKEND>
+where
+    BACKEND: MemorySlice,
 {
-    fn total_size(&self) -> usize {
-        self.0.total_size() + size_of::<Self>()
-    }
-}
-
-impl<'a, BACKEND: MemorySlice + 'a> CodesReader<'a> for BitArrayM2L<BACKEND> {
-    type CodesReaderType = BitArrayM2LReader<'a, BACKEND>;
-
-    fn get_codes_reader(&'a self, offset: usize) -> BitArrayM2LReader<'a, BACKEND> {
+    fn get_codes_reader(&self, offset: usize) -> BitArrayM2LReader<'a, BACKEND> {
         BitArrayM2LReader::new(&self.0, offset)
     }
 }
@@ -98,13 +93,6 @@ pub struct BitArrayM2LReader<'a, BACKEND: MemorySlice + 'a> {
 
     /// Index that keeps track of which bit are we at
     pub offset: usize,
-}
-
-impl<'a, BACKEND: MemorySlice + 'a> MemoryFootprint 
-    for BitArrayM2LReader<'a, BACKEND> {
-    fn total_size(&self) -> usize {
-        size_of::<Self>()
-    }
 }
 
 impl<'a, BACKEND: MemorySlice + 'a> BitArrayM2LReader<'a, BACKEND> {
@@ -170,18 +158,18 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadUnary
         let bit_index = self.get_bit_index();
 
         let mut word = self.data[word_index].to_be() << bit_index;
-        let mut n_of_zeros = word.leading_zeros() as usize;
         let bits_in_word = WORD_BIT_SIZE - bit_index;
-        self.skip_bits(n_of_zeros)?;
+        let mut n_of_zeros = word.leading_zeros() as usize;
 
         // Unary codes are meant to be distrubted geometrically, so most codes
         // will fit in a singol word, thus we should make this the fast case
         if likely(n_of_zeros < bits_in_word) {
             // skip the 1
-            self.skip_bits(1)?;
+            self.skip_bits(n_of_zeros + 1)?;
             return Ok(n_of_zeros);
         }
 
+        self.skip_bits(bits_in_word)?;
         let mut acc = bits_in_word;
         word_index += 1;
 

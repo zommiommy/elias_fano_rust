@@ -1,5 +1,7 @@
 //! Collection of fast utilities that are used in all the crate
 
+use crate::constants::{WORD_HIGHEST_BIT_MASK, WORD_BIT_SIZE};
+
 #[inline(always)]
 /// Shift left x86_64 instruction
 pub fn shl(value: usize, offset: usize) -> usize {
@@ -56,6 +58,26 @@ pub const fn power_of_two_to_mask(quantum_log2: usize) -> usize {
     // the alternative version changes the behaviour with
     // 0 and WORD_BIT_SIZE
     // `usize::MAX >> (WORD_BIT_SIZE - quantum_log2 as usize)`
+}
+
+/// Bijective mapping from isize to usize as defined in [https://github.com/vigna/dsiutils/blob/master/src/it/unimi/dsi/bits/Fast.java]
+pub const fn int2nat(x: isize) -> usize {
+    //(x << 1) ^ (x >> (WORD_BIT_SIZE - 1))
+    if x >= 0 {
+        (x as usize) << 1
+    } else {
+        ((-x as usize) << 1) - 1
+    }
+}
+
+/// Bijective mapping from usize to isize as defined in [https://github.com/vigna/dsiutils/blob/master/src/it/unimi/dsi/bits/Fast.java]
+pub const fn nat2int(x: usize) -> isize {
+    //(x >> 1) ^ !((x & 1) - 1)
+    if x & 1 == 0 {
+        (x >> 1) as isize
+    } else {
+        -(((x + 1) >> 1) as isize)
+    }
 }
 
 #[cfg(test)]

@@ -83,7 +83,7 @@ impl Default for CodesSettings {
             interval_start: Code::Gamma,
             interval_len: Code::Gamma,
 
-            first_residual: Code::Gamma,
+            first_residual: Code::Zeta(3),
             residual: Code::Zeta(3),
         }
     }

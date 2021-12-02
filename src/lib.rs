@@ -45,6 +45,7 @@
 #![feature(concat_idents)]
 #![feature(core_intrinsics)]
 #![feature(in_band_lifetimes)]
+#![feature(generic_associated_types)]
 #![feature(adt_const_params)]
 #![feature(generic_const_exprs)]
 #![feature(const_generics_defaults)]

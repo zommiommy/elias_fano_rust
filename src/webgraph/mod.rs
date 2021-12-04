@@ -84,8 +84,6 @@ where
         // move to the node data
         let index = self.nodes_index[node_id];
 
-        let mut neighbours = Vec::new();
-
         let mut reader = (&self.backend).get_reader(index);
         // read the degree
         let degree = debug!(reader.read_outdegree()?);
@@ -95,12 +93,13 @@ where
         }
 
         // actually decode the neighbours
-        neighbours = self.decode_references(&mut reader, node_id, neighbours)?;
-        neighbours = self.dencode_extra_nodes(&mut reader, node_id, degree, neighbours)?;
+        let copied_neighbours = self.decode_references(&mut reader, node_id)?;
+        let (intervals, extra_nodes) = 
+            self.dencode_extra_nodes(&mut reader, node_id, 
+                degree - copied_neighbours.len()
+        )?;
 
-        // TODO!: if we do a proper merge of intervalizzation and residuals we 
-        // can avoid the sorting
-        neighbours.sort_unstable();
+        let neighbours = three_way_merge(copied_neighbours, intervals, extra_nodes);
 
         Ok((reader.tell_bits()?, neighbours))
     }
@@ -110,12 +109,12 @@ where
         &'a self,
         reader: &mut WebGraphReaderType,
         node_id: usize,
-        mut neighbours: Vec<usize>,
     ) -> Result<Vec<usize>> {
+        let mut copied_neighbours = vec![];
         // figure out the ref
         let ref_delta = debug!(reader.read_reference_offset()?);
         if ref_delta == 0 {
-            return Ok(neighbours);
+            return Ok(copied_neighbours);
         }
 
         // compute which node we are refering to
@@ -127,8 +126,8 @@ where
 
         // if there are no block -> we copy all the neighbours
         if number_of_blocks == 0 {
-            neighbours.extend(&self.get_neighbours(ref_node)?.1);
-            return Ok(neighbours);
+            copied_neighbours.extend(&self.get_neighbours(ref_node)?.1);
+            return Ok(copied_neighbours);
         }
         // decode the run-length copy blocks
         let mut blocks = vec![debug!(reader.read_blocks()?)];
@@ -149,13 +148,13 @@ where
             }
 
             if curr_bit_value && counter > 0 {
-                neighbours.push(node);
+                copied_neighbours.push(node);
             }
 
             counter -= 1;
         }
         
-        Ok(neighbours)
+        Ok(copied_neighbours)
     }
 
     #[inline]
@@ -164,13 +163,13 @@ where
         &self,
         reader: &mut WebGraphReaderType,
         node_id: usize,
-        degree: usize,
-        mut neighbours: Vec<usize>,
-    ) -> Result<Vec<usize>> {
-        let mut nodes_to_decode = degree - neighbours.len() as usize;
+        mut nodes_left_to_decode: usize,
+    ) -> Result<(Vec<usize>, Vec<usize>)> {
+        let mut interval_nodes = vec![];
+        let mut extra_nodes = vec![];
         // early stop
-        if nodes_to_decode == 0 {
-            return Ok(neighbours);
+        if nodes_left_to_decode == 0 {
+            return Ok((interval_nodes, extra_nodes));
         }
         let interval_count = debug!(reader.read_interval_count()?);
         if interval_count > 0 {
@@ -181,24 +180,24 @@ where
             let mut delta = debug!(reader.read_interval_len()?) 
                 + self.min_interval_length;
 
-            neighbours.extend(start..start + delta);
+            interval_nodes.extend(start..start + delta);
             start += delta;
-            nodes_to_decode -= delta;
+            nodes_left_to_decode -= delta;
 
             for _ in 0..interval_count.saturating_sub(1) {
                 start += debug!(reader.read_interval_start()?) + 1;
                 delta = debug!(reader.read_interval_len()?) + self.min_interval_length;
 
-                neighbours.extend(start..start + delta);
+                interval_nodes.extend(start..start + delta);
                 
                 start += delta;
-                nodes_to_decode -= delta;
+                nodes_left_to_decode -= delta;
             }
         }
 
         // early stop if all the neighbours were in intervals
-        if nodes_to_decode == 0 {
-            return Ok(neighbours);
+        if nodes_left_to_decode == 0 {
+            return Ok((interval_nodes, extra_nodes));
         }
 
         // read the first neighbour
@@ -206,15 +205,54 @@ where
         // decode the first neighbour
         let first_neighbour = ((node_id as isize) 
             + debug!(nat2int(first_neighbour_delta))) as usize;
-        neighbours.push(first_neighbour);
+        extra_nodes.push(first_neighbour);
 
         // decode the other extra nodes
         let mut tmp = first_neighbour;
-        for _ in 0..nodes_to_decode.saturating_sub(1) {
+        for _ in 0..nodes_left_to_decode.saturating_sub(1) {
             let new_node = debug!(debug!(reader.read_residual()?) + tmp + 1);
-            neighbours.push(new_node);
+            extra_nodes.push(new_node);
             tmp = new_node;
         }
-        Ok(neighbours)
+        Ok((interval_nodes, extra_nodes))
+    }
+}
+
+#[inline]
+fn three_way_merge(first: Vec<usize>, second: Vec<usize>, third: Vec<usize>) -> Vec<usize> {
+    let mut result = Vec::with_capacity(first.len() + second.len() + third.len());
+    let mut first_i = 0;
+    let mut second_i = 0;
+    let mut third_i = 0;
+
+    loop {
+        match (first.get(first_i), second.get(second_i), third.get(third_i)) {
+            (None, None, None) => {
+                return result;
+            }
+            (f, s, t) => {
+                let f = f.copied().unwrap_or(usize::MAX);
+                let s = s.copied().unwrap_or(usize::MAX);
+                let t = t.copied().unwrap_or(usize::MAX);
+
+                if f < s {
+                    if t < f {
+                        result.push(t);
+                        third_i += 1;
+                    } else {
+                        result.push(f);
+                        first_i += 1;
+                    }
+                } else {
+                    if t < s {
+                        result.push(t);
+                        third_i += 1;
+                    } else {
+                        result.push(s);
+                        second_i += 1;
+                    }
+                }
+            }
+        }
     }
 }

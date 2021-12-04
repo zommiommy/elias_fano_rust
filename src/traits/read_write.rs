@@ -77,12 +77,12 @@ pub trait WriteBit {
 
 /// Trait for structs that can read singular bits from a stream
 pub trait ReadBit {
-    /// write a word of memory at the current offset, and seek forward by
+    /// read a word of memory at the current offset, and seek forward by
     /// 1 bit.
     ///
-    /// This method is mutable because it will seek forward and this is fundamentally
-    /// a mutable operation which might lead to data races or general concurrency
-    /// problems.
+    /// This method is mutable because it will seek forward and this is 
+    /// fundamentally a mutable operation which might lead to data races or 
+    /// general concurrency problems.
     fn read_bit(&mut self) -> Result<bool>;
 
     /// Seek to the given bit offset

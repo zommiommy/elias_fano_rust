@@ -11,8 +11,6 @@ use std::time::Instant;
 const EDGES: usize = 42_574_107_469;
 const NODES: usize = 978_408_098;
 
-use libc::*;
-
 #[test]
 /// Check that elias fano runs considering a lot of possible combinations.
 fn bench_clueweb12() {
@@ -20,7 +18,6 @@ fn bench_clueweb12() {
     // memory map the test graph file
     let mmap = MemoryMappedFileReadOnly::open(
         "/home/zommiommy/Downloads/clueweb12.graph",
-        MAP_PRIVATE | MAP_HUGE_1GB
     ).unwrap();
 
     // create a backend that reads codes from the MSB to the LSb
@@ -66,7 +63,6 @@ fn test_clueweb12() {
     // memory map the test graph file
     let mmap = MemoryMappedFileReadOnly::open(
         "/home/zommiommy/Downloads/clueweb12.graph",
-        MAP_PRIVATE | MAP_HUGE_1GB
     ).unwrap();
 
     // create a backend that reads codes from the MSB to the LSb

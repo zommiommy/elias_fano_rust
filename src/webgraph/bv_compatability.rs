@@ -47,7 +47,6 @@ impl From<Code> for u8 {
 #[derive(Debug, Clone)]
 /// Code settings for WebGraph
 pub struct CodesSettings {
-    /// Which code to use to encode the outdegrees
     pub outdegree: Code,
 
     pub reference_offset: Code,
@@ -61,12 +60,6 @@ pub struct CodesSettings {
 
     pub first_residual: Code,
     pub residual: Code,
-}
-
-impl MemoryFootprint for CodesSettings {
-    fn total_size(&self) -> usize {
-        std::mem::size_of::<Code>() * 6
-    }
 }
 
 impl Default for CodesSettings {
@@ -86,5 +79,11 @@ impl Default for CodesSettings {
             first_residual: Code::Zeta(3),
             residual: Code::Zeta(3),
         }
+    }
+}
+
+impl MemoryFootprint for CodesSettings {
+    fn total_size(&self) -> usize {
+        std::mem::size_of::<Code>() * 6
     }
 }

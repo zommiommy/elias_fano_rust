@@ -22,8 +22,8 @@
 //! This allows for full generalizzation, and possibly distributed / over the
 //! network structs, at the cost of more performance overhead.
 
-mod mmapped;
-pub use mmapped::*;
+mod mmap;
+pub use mmap::*;
 
 // mod bitarray_little;
 // pub use bitarray_little::*;

@@ -47,7 +47,7 @@ impl std::ops::Drop for MemoryMappedFileReadOnly {
 }
 
 impl MemoryMappedFileReadOnly {
-    pub fn open(path: &str, flags: i32) -> Result<Self> {
+    pub fn open(path: &str) -> Result<Self> {
         // here we add a + 8 to map in an extra zero-filled word so that we can
         // do unaligned reads for bits
         let mut len = 1 + std::fs::metadata(path)
@@ -84,7 +84,7 @@ impl MemoryMappedFileReadOnly {
             PROT_READ,
             // We don't want the eventual modifications to get propagated
             // to the underlying file
-            flags,
+            MAP_PRIVATE,// |MAP_HUGE_1GB,
             // the file descriptor of the file to mmap
             fd,
             // the offset in bytes from the start of the file, we want to mmap

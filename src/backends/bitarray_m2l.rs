@@ -129,11 +129,14 @@ impl<'a, BACKEND: MemorySlice + 'a> ReadBit for BitArrayM2LReader<'a, BACKEND> {
     fn peek_byte(&mut self) -> Result<u8> {
         // this is horrible, TODO: find a safe way to to the same thing
         Ok(unsafe{
-            *(
-                (self.data.as_ptr() as *const u8)
-                    .add(self.offset >> 1)
-                    as * const u16
-            ) as u8
+            let ptr =  (self.data.as_ptr() as *const u8)
+                .add(self.offset >> 3)
+                as * const u16;
+
+            let mut value = (*ptr).to_be();
+            value <<= self.offset & 7;
+            value >>= 8;
+            value as u8
         })
     }
 

@@ -32,19 +32,32 @@
 //! assert_eq!(expected_size, ba.tell_bits().unwrap())
 //! ```
 use super::*;
+use super::tables::ZETA3_M2L_TABLE;
 use crate::utils::{fast_log2_floor, fast_pow_2};
 use crate::Result;
 
 /// Trait for reading a zeta code (with K known at compile time)
-pub trait CodeReadZeta: CodeReadUnary + CodeReadMinimalBinary {
+pub trait CodeReadZeta: CodeReadUnary + CodeReadMinimalBinary + ReadBit {
     #[inline]
     /// Read a Zeta code from the stream
     fn read_zeta<const K: usize>(&mut self) -> Result<usize> {
+        // check if the value is in one of the tables
+        #[cfg(feature = "code_tables")]
+        if K == 3 {
+            let (res, len) = ZETA3_M2L_TABLE[self.peek_byte()? as usize];
+            // if the value was in the table, return it and offset
+            if len != 0 {
+                self.skip_bits(len as usize)?;
+                return Ok(res as usize)
+            }
+    
+        }
+        // fallback to the actual implementation
         let h = self.read_unary()?;
         let u = fast_pow_2((h + 1) * K);
         let l = fast_pow_2(h * K);
         let r = self.read_minimal_binary(u - l)?;
-        Ok(fast_pow_2(h * K) + r - 1)
+        Ok(l + r - 1)
     }
 }
 
@@ -62,7 +75,7 @@ pub trait CodeWriteZeta: CodeWriteUnary + CodeWriteMinimalBinary {
         debug_assert!(value < u, "{} < {}", value, u);
 
         self.write_unary(h)?;
-        self.write_minimal_binary(value - fast_pow_2(h * K), u - l)
+        self.write_minimal_binary(value - l, u - l)
     }
 }
 
@@ -75,7 +88,7 @@ pub trait CodeSizeZeta: CodeSizeUnary + CodeSizeMinimalBinary {
         let h = fast_log2_floor(value) / K;
         let u = fast_pow_2((h + 1) * K);
         let l = fast_pow_2(h * K);
-        self.size_unary(h) + self.size_minimal_binary(value - fast_pow_2(h * K), u - l)
+        self.size_unary(h) + self.size_minimal_binary(value - l, u - l)
     }
 }
 

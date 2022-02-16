@@ -1,5 +1,6 @@
 use crate::traits::*;
 use crate::Result;
+use super::tables::UNARY_TABLE;
 
 /// Trait for reading unary codes
 pub trait CodeReadUnary: ReadBit {
@@ -9,6 +10,17 @@ pub trait CodeReadUnary: ReadBit {
     /// it's **heavely suggested** to override it with a version optimized for
     /// your datastructure.
     fn read_unary(&mut self) -> Result<usize> {
+        // check if the value is in one of the tables
+        #[cfg(feature = "code_tables")]
+        {
+            let (res, len) = UNARY_TABLE[self.peek_byte()? as usize];
+            // if the value was in the table, return it and offset
+            if len != 0 {
+                self.skip_bits(len as usize)?;
+                return Ok(res as usize)
+            }
+        }
+        // fallback to the implementation
         let mut value = 0;
         loop {
             if self.read_bit()? {

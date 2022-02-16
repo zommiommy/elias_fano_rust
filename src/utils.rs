@@ -1,6 +1,6 @@
 //! Collection of fast utilities that are used in all the crate
 
-use crate::constants::{WORD_HIGHEST_BIT_MASK, WORD_BIT_SIZE};
+use crate::constants::*;
 
 #[inline(always)]
 /// Shift left x86_64 instruction
@@ -23,23 +23,20 @@ pub fn shr(value: usize, offset: usize) -> usize {
 /// lzcnt   rax, rdi
 /// xor     rax, 63
 /// ```
+/// or
+/// ```asm
+/// or      rdi, 1
+/// bsr     rax, rdi
+/// ```
 pub const fn fast_log2_floor(value: usize) -> usize {
-    const WORD_SIZE_MINUS_ONE: usize = 8 * core::mem::size_of::<usize>() - 1;
     WORD_SIZE_MINUS_ONE - (value | 1).leading_zeros() as usize
 }
 
 #[inline(always)]
-/// based on <https://bugzilla.mozilla.org/show_bug.cgi?id=327129>
-///
-/// On `x86_64` this should compile to:
-/// ```asm
-/// or      rdi, 1
-/// lzcnt   rax, rdi
-/// xor     rax, 63
-/// ```
 pub const fn fast_log2_ceil(value: usize) -> usize {
-    const WORD_SIZE: usize = 8 * core::mem::size_of::<usize>();
-    WORD_SIZE - (value.saturating_sub(1)).leading_zeros() as usize
+    let base = fast_log2_floor(value); 
+    let offset = if value & (value.wrapping_sub(1)) != 0 {1} else {0};
+    base + offset
 }
 
 #[inline(always)]
@@ -62,28 +59,40 @@ pub const fn power_of_two_to_mask(quantum_log2: usize) -> usize {
 
 /// Bijective mapping from isize to usize as defined in [https://github.com/vigna/dsiutils/blob/master/src/it/unimi/dsi/bits/Fast.java]
 pub const fn int2nat(x: isize) -> usize {
-    //(x << 1) ^ (x >> (WORD_BIT_SIZE - 1))
     if x >= 0 {
         (x as usize) << 1
     } else {
         ((-x as usize) << 1) - 1
     }
+
+    // interpret the isize bits as an usize
+    // let x = usize::from_ne_bytes(x.to_ne_bytes());
+    // x << 1 ^ (x >> WORD_SIZE_MINUS_ONE)
 }
 
 /// Bijective mapping from usize to isize as defined in [https://github.com/vigna/dsiutils/blob/master/src/it/unimi/dsi/bits/Fast.java]
 pub const fn nat2int(x: usize) -> isize {
-    //(x >> 1) ^ !((x & 1) - 1)
     if x & 1 == 0 {
         (x >> 1) as isize
     } else {
         -(((x + 1) >> 1) as isize)
     }
+
+    //let result = (x >> 1) ^ !((x & 1) - 1);
+    //isize::from_ne_bytes(result.to_ne_bytes())
 }
 
 #[cfg(test)]
 mod test_utils {
     use super::*;
     use crate::constants::*;
+
+    #[test]
+    fn test_nat2int_int2nat() {
+        for i in 0..100_000 {
+            assert_eq!(i, int2nat(nat2int(i)));
+        }
+    }
 
     #[test]
     fn test_fast_pow_2() {

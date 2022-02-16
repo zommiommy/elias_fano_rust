@@ -25,8 +25,9 @@ vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
 rsdict = {version="0.0.4", features = ["simd"]}
 
 [features]
-default = []
+default = ["code_tables"]
 unsafe = []
+code_tables = []
 par_iter = ["rayon"]
 fuzz = ["arbitrary", "fid"]
 

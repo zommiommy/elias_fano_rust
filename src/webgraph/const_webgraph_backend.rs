@@ -229,6 +229,11 @@ impl<
     }
 
     #[inline]
+    fn peek_byte(&mut self) -> Result<u8> {
+        self.0.peek_byte()
+    }
+
+    #[inline]
     fn seek_bits(&mut self, bit_offset: usize) -> Result<()> {
         self.0.seek_bits(bit_offset)
     }

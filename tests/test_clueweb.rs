@@ -11,7 +11,7 @@ use std::time::Instant;
 const EDGES: usize = 42_574_107_469;
 const NODES: usize = 978_408_098;
 
-#[test]
+//#[test]
 /// Check that elias fano runs considering a lot of possible combinations.
 fn bench_clueweb12() {
     let start = Instant::now();

@@ -3,7 +3,6 @@ use crate::constants::*;
 use crate::traits::*;
 use crate::Result;
 use core::intrinsics::likely;
-use core::mem::size_of;
 /// A general BitArrayM2L wrapper over some word reader and writers.
 /// This assumes that the words of memory are read and write from the MSB to the
 /// LSB;
@@ -127,6 +126,18 @@ impl<'a, BACKEND: MemorySlice + 'a> ReadBit for BitArrayM2LReader<'a, BACKEND> {
     }
 
     #[inline]
+    fn peek_byte(&mut self) -> Result<u8> {
+        // this is horrible, TODO: find a safe way to to the same thing
+        Ok(unsafe{
+            *(
+                (self.data.as_ptr() as *const u8)
+                    .add(self.offset >> 1)
+                    as * const u16
+            ) as u8
+        })
+    }
+
+    #[inline]
     /// Seek to the given bit_index
     fn seek_bits(&mut self, bit_index: usize) -> Result<()> {
         self.offset = bit_index;
@@ -154,6 +165,18 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadUnary
     for BitArrayM2LReader<'a, BACKEND> {
     #[inline]
     fn read_unary(&mut self) -> Result<usize> {
+        #[cfg(feature = "code_tables")]
+        {
+            // check if the value is in one of the tables
+            let (res, len) = UNARY_TABLE[self.peek_byte()? as usize];
+            // if the value was in the table, return it and offset
+            if len != 0 {
+                self.skip_bits(len as usize)?;
+                return Ok(res as usize)
+            }
+        }
+        
+        // fallback to the implementation
         let mut word_index = self.get_word_index();
         let bit_index = self.get_bit_index();
 

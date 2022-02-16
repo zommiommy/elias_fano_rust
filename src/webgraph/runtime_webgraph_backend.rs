@@ -390,6 +390,11 @@ where
     fn read_bit(&mut self) -> Result<bool> {
         self.reader.read_bit()
     }
+    
+    #[inline]
+    fn peek_byte(&mut self) -> Result<u8> {
+        self.reader.peek_byte()
+    }
 
     #[inline]
     fn seek_bits(&mut self, bit_offset: usize) -> Result<()> {

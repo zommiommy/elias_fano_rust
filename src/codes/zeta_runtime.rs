@@ -1,6 +1,7 @@
 //! Dinamic version of the zeta code, this is **slower** than the constant version
 //! but can be dispatched at runtime.
 use super::*;
+use super::tables::ZETA3_M2L_TABLE;
 use crate::utils::{fast_log2_floor, fast_pow_2};
 use crate::Result;
 
@@ -10,6 +11,17 @@ pub trait CodeReadZetaRuntime: CodeReadUnary + CodeReadMinimalBinary {
     /// Read a Zeta code from the stream
     #[allow(non_snake_case)]
     fn read_zeta_runtime(&mut self, K: usize) -> Result<usize> {
+        // check if the value is in one of the tables
+        #[cfg(feature = "code_tables")]
+        if K == 3 {
+            let (res, len) = ZETA3_M2L_TABLE[self.peek_byte()? as usize];
+            // if the value was in the table, return it and offset
+            if len != 0 {
+                self.skip_bits(len as usize)?;
+                return Ok(res as usize)
+            }
+    
+        }
         let h = self.read_unary()?;
         let u = fast_pow_2((h + 1) * K);
         let l = fast_pow_2(h * K);

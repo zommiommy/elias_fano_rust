@@ -12,6 +12,9 @@
 //!
 use crate::traits::*;
 
+mod tables;
+pub(crate) use tables::*;
+
 mod delta;
 pub use delta::*;
 

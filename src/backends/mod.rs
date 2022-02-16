@@ -1,10 +1,10 @@
 //! Collection of In-memory structs, or wrappers on which we can write and read
 //! codes.
 //!
-//! `BitArrayLittle` and `BitArrayBig` allow to convert any indexable structure
+//! `BitArrayM2LReader` and `BitArrayBig` allow to convert any indexable structure
 //! to one that can use all the codes.
 //!
-//! `BitArrayLittle` read words from the LSB to the MSB, this is really hard to
+//! `BitArrayM2LReader` read words from the LSB to the MSB, this is really hard to
 //! make compatible across systems (the same data would be represented
 //! differently on systems with different word widths).
 //! Doing so require less logic and this is faster, its main goal is to get

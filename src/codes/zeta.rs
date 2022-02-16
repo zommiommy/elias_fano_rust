@@ -8,7 +8,7 @@
 //! ```rust
 //! use elias_fano_rust::prelude::*;
 //!
-//! let mut ba = BitArrayLittle::new();
+//! let mut ba = BitArrayM2LReader::new();
 //!
 //! // write values to the stream
 //! for i in 0..100 {

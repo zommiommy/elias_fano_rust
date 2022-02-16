@@ -6,7 +6,7 @@ use crate::Result;
 use core::intrinsics::unlikely;
 use core::mem::size_of;
 
-/// A general BitArrayLittle wrapper over some word reader and writers.
+/// A general BitArrayM2LReader wrapper over some word reader and writers.
 /// This assumes that the words of memory are read and write from the LSB to 
 /// the MSB;
 ///
@@ -14,7 +14,7 @@ use core::mem::size_of;
 /// ```rust
 /// use elias_fano_rust::prelude::*;
 ///
-/// let mut ba = BitArrayLittle::new();
+/// let mut ba = BitArrayM2LReader::new();
 ///
 /// // write a pattern of single bits to the array
 /// for _ in 0..513 {
@@ -27,7 +27,7 @@ use core::mem::size_of;
 ///     ba.write_bit(i % 2 == 0);
 /// }
 ///
-/// // rewind completely the BitArrayLittle
+/// // rewind completely the BitArrayM2LReader
 /// ba.seek_bits(0);
 ///
 /// // Ensure that we read back exacly the same pattern
@@ -41,7 +41,7 @@ use core::mem::size_of;
 ///     assert_eq!(ba.read_bit().unwrap(), i % 2 == 0);
 /// }  
 ///
-/// // rewind completely the BitArrayLittle
+/// // rewind completely the BitArrayM2LReader
 /// ba.clear();
 /// let max = 9;
 /// for i in 0..1 << max {
@@ -52,7 +52,7 @@ use core::mem::size_of;
 ///     assert_eq!(ba.read_fixed_length(max).unwrap(), i);
 /// }
 ///
-/// // rewind completely the BitArrayLittle
+/// // rewind completely the BitArrayM2LReader
 /// ba.clear();
 /// for i in 0..513 {
 ///     ba.write_unary(i).unwrap();
@@ -62,7 +62,7 @@ use core::mem::size_of;
 ///     assert_eq!(ba.read_unary().unwrap(), i);
 /// }  
 /// ```
-pub struct BitArrayLittle {
+pub struct BitArrayM2LReader {
     /// The actual word reader / writer
     pub data: Vec<usize>,
     /// Index that keeps track in which word we currently are
@@ -71,16 +71,16 @@ pub struct BitArrayLittle {
     pub bit_index: usize,
 }
 
-impl MemoryFootprint for BitArrayLittle {
+impl MemoryFootprint for BitArrayM2LReader {
     fn total_size(&self) -> usize {
         self.data.total_size() + 2 * size_of::<usize>()
     }
 }
 
-impl BitArrayLittle {
+impl BitArrayM2LReader {
     /// Create a new empty bitarray
-    pub fn new() -> BitArrayLittle {
-        BitArrayLittle {
+    pub fn new() -> BitArrayM2LReader {
+        BitArrayM2LReader {
             data: vec![0, 0],
             word_index: 0,
             bit_index: 0,
@@ -88,13 +88,13 @@ impl BitArrayLittle {
     }
 
     #[inline]
-    /// Destroy the BitArrayLittle wrapper and return the inner backend
+    /// Destroy the BitArrayM2LReader wrapper and return the inner backend
     pub fn into_inner(self) -> Vec<usize> {
         self.data
     }
 }
 
-impl ReadBit for BitArrayLittle {
+impl ReadBit for BitArrayM2LReader {
     #[inline]
     /// Read a single bit
     fn read_bit(&mut self) -> Result<bool> {
@@ -129,7 +129,7 @@ impl ReadBit for BitArrayLittle {
     }
 }
 
-impl WriteBit for BitArrayLittle {
+impl WriteBit for BitArrayM2LReader {
     #[inline]
     /// Read a single bit
     fn write_bit(&mut self, value: bool) -> Result<()> {
@@ -151,7 +151,7 @@ impl WriteBit for BitArrayLittle {
 }
 
 /// Optimal for gemetric distribution of ratio 1/2
-impl CodeReadUnary for BitArrayLittle {
+impl CodeReadUnary for BitArrayM2LReader {
     #[inline]
     fn read_unary(&mut self) -> Result<usize> {
         let mut res = 0;
@@ -174,7 +174,7 @@ impl CodeReadUnary for BitArrayLittle {
     }
 }
 
-impl CodeWriteUnary for BitArrayLittle {
+impl CodeWriteUnary for BitArrayM2LReader {
     #[inline]
     fn write_unary(&mut self, value: usize) -> Result<()> {
         // Update the reminder
@@ -194,7 +194,7 @@ impl CodeWriteUnary for BitArrayLittle {
 
 /// Optimized implementation that exploit the fact that all the data is already
 /// in memory
-impl CodeReadFixedLength for BitArrayLittle {
+impl CodeReadFixedLength for BitArrayM2LReader {
     #[inline]
     /// Read `number_of_bits` from the stream.
     /// THIS SHOULD NOT BE CALLED WITH `number_of_bits` equal to 0.
@@ -222,7 +222,7 @@ impl CodeReadFixedLength for BitArrayLittle {
     }
 }
 
-impl CodeWriteFixedLength for BitArrayLittle {
+impl CodeWriteFixedLength for BitArrayM2LReader {
     #[inline]
     /// Write `value` using `number_of_bits` in the stream.
     fn write_fixed_length(&mut self, number_of_bits: usize, value: usize) -> Result<()> {
@@ -276,7 +276,7 @@ impl CodeWriteFixedLength for BitArrayLittle {
 }
 
 /// Use the little-endian version
-impl CodeReadMinimalBinary for BitArrayLittle {
+impl CodeReadMinimalBinary for BitArrayM2LReader {
     #[inline]
     fn read_minimal_binary(&mut self, max: usize) -> Result<usize> {
         self.read_minimal_binary_little(max)
@@ -284,7 +284,7 @@ impl CodeReadMinimalBinary for BitArrayLittle {
 }
 
 /// Use the little-endian version
-impl CodeWriteMinimalBinary for BitArrayLittle {
+impl CodeWriteMinimalBinary for BitArrayM2LReader {
     #[inline]
     fn write_minimal_binary(&mut self, value: usize, max: usize) -> Result<()> {
         self.write_minimal_binary_little(value, max)

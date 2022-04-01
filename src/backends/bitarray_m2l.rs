@@ -61,12 +61,10 @@ use core::intrinsics::likely;
 /// ```
 pub struct BitArrayM2L<BACKEND: MemorySlice>(BACKEND);
 
-impl<'a, BACKEND> CodesReader<BitArrayM2LReader<'a, BACKEND>> 
-for &'a BitArrayM2L<BACKEND>
-where
-    BACKEND: MemorySlice,
-{
-    fn get_codes_reader(&self, offset: usize) -> BitArrayM2LReader<'a, BACKEND> {
+impl<'a, BACKEND: MemorySlice> CodesReader for &'a BitArrayM2L<BACKEND> {
+    type CodesReaderType = BitArrayM2LReader<'a, BACKEND>;
+
+    fn get_codes_reader(&self, offset: usize) -> Self::CodesReaderType {
         BitArrayM2LReader::new(&self.0, offset)
     }
 }

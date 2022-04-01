@@ -4,8 +4,7 @@ use super::*;
 /// for homogeneity with the runtime dispatcher. During compilation all this
 /// code will be basically removed. This exists only for user ease.
 pub struct ConstWebGraphReader<
-    Backend: CodesReader<CodesReaderType>,
-    CodesReaderType: CodesRead,
+    Backend: CodesReader,
     const OUTDEGREE_CODE: Code = {Code::Gamma},
     const REFERENCES_OFFSET_CODE: Code = {Code::Unary},
     const BLOCK_COUNT_CODE: Code = {Code::Gamma},
@@ -17,12 +16,10 @@ pub struct ConstWebGraphReader<
     const RESIDUALS_CODE: Code = {Code::Zeta(3)},
 > {
     backend: Backend,
-    _marker: core::marker::PhantomData<CodesReaderType>,
 }
 
 impl<
-    Backend: CodesReader<CodesReaderType>,
-    CodesReaderType: CodesRead,
+    Backend: CodesReader,
     const OUTDEGREE_CODE: Code,
     const REFERENCES_OFFSET_CODE: Code,
     const BLOCK_COUNT_CODE: Code,
@@ -35,7 +32,6 @@ impl<
     >
     ConstWebGraphReader<
         Backend,
-        CodesReaderType,
         OUTDEGREE_CODE,
         REFERENCES_OFFSET_CODE,
         BLOCK_COUNT_CODE,
@@ -51,14 +47,12 @@ impl<
     pub fn new(backend: Backend) -> Self {
         ConstWebGraphReader {
             backend,
-            _marker: core::marker::PhantomData::default(),
         }
     }
 }
 
 impl<
-    Backend: CodesReader<CodesReaderType>,
-    CodesReaderType: CodesRead,
+    Backend: CodesReader,
     const OUTDEGREE_CODE: Code,
     const REFERENCES_OFFSET_CODE: Code,
     const BLOCK_COUNT_CODE: Code,
@@ -68,21 +62,9 @@ impl<
     const INVERVAL_LEN_CODE: Code,
     const FIRST_RESIDUAL_CODE: Code,
     const RESIDUALS_CODE: Code,
-    > WebGraphReader<ConstWebGraphReaderBackend<
-        CodesReaderType,
-        OUTDEGREE_CODE,
-        REFERENCES_OFFSET_CODE,
-        BLOCK_COUNT_CODE,
-        BLOCKS_CODE,
-        INVERVAL_COUNT_CODE,
-        INVERVAL_START_CODE,
-        INVERVAL_LEN_CODE,
-        FIRST_RESIDUAL_CODE,
-        RESIDUALS_CODE,
-    >> 
+    > WebGraphReader 
     for ConstWebGraphReader<
         Backend,
-        CodesReaderType,
         OUTDEGREE_CODE,
         REFERENCES_OFFSET_CODE,
         BLOCK_COUNT_CODE,
@@ -94,9 +76,8 @@ impl<
         RESIDUALS_CODE,
     >
 {
-    #[inline]
-    fn get_reader(&self, offset: usize) -> ConstWebGraphReaderBackend<
-        CodesReaderType,
+    type WebGraphReaderType = ConstWebGraphReaderBackend<
+        Backend::CodesReaderType,
         OUTDEGREE_CODE,
         REFERENCES_OFFSET_CODE,
         BLOCK_COUNT_CODE,
@@ -106,7 +87,10 @@ impl<
         INVERVAL_LEN_CODE,
         FIRST_RESIDUAL_CODE,
         RESIDUALS_CODE,
-    > {
+    >;
+
+    #[inline]
+    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType {
         ConstWebGraphReaderBackend((&self.backend).get_codes_reader(offset))
     }
 }

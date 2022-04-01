@@ -31,10 +31,7 @@ macro_rules! debug {
 }
 
 /// Read only WebGraph
-pub struct WebGraph<
-    Backend: WebGraphReader<WebGraphReaderType>,
-    WebGraphReaderType: WebGraphReaderBackend,
-> {
+pub struct WebGraph<Backend: WebGraphReader> {
     /// The codes.
     pub backend: Backend,
 
@@ -43,23 +40,15 @@ pub struct WebGraph<
     pub nodes_index: Vec<usize>,
     
     min_interval_length: usize,
-
-    /// make the compiler happy
-    _marker: core::marker::PhantomData<WebGraphReaderType>,
 }
 
 
-impl<Backend, WebGraphReaderType> WebGraph<Backend, WebGraphReaderType>
-where
-    WebGraphReaderType: WebGraphReaderBackend,
-    Backend: WebGraphReader<WebGraphReaderType>,
-{
+impl<Backend: WebGraphReader> WebGraph<Backend> {
     pub fn new(backend: Backend, nodes_index: Vec<usize>) -> Self {
         WebGraph {
             backend,
             nodes_index,
             min_interval_length: 4, // TODO!: Expose
-            _marker: core::marker::PhantomData::default(),
         }
     }
 
@@ -107,7 +96,7 @@ where
     #[inline]
     fn decode_references(
         &self,
-        reader: &mut WebGraphReaderType,
+        reader: &mut Backend::WebGraphReaderType,
         node_id: usize,
     ) -> Result<Vec<usize>> {
         let mut copied_neighbours = vec![];
@@ -161,7 +150,7 @@ where
     /// Dencode the list of extra nodes as deltas using zeta3 codes.
     fn dencode_extra_nodes(
         &self,
-        reader: &mut WebGraphReaderType,
+        reader: &mut Backend::WebGraphReaderType,
         node_id: usize,
         mut nodes_left_to_decode: usize,
     ) -> Result<(Vec<usize>, Vec<usize>)> {

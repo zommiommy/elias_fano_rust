@@ -8,10 +8,7 @@ use super::*;
 /// a reader is just a memcpy of the parameters so it should be only slightly
 /// slower than the constant time dispatcher (but indirection always has an
 /// overhead)
-pub struct RuntimeWebGraphReader<
-    Backend: CodesReader<CodesReaderType>,
-    CodesReaderType: CodesRead,
-    > {
+pub struct RuntimeWebGraphReader<Backend: CodesReader> {
     backend: Backend,
     // Virtual table for the instances methods, this allows to do the
     // dispatching exactly once
@@ -25,30 +22,26 @@ pub struct RuntimeWebGraphReader<
     first_residual_param: usize,
     residual_param: usize,
     outdegree_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     reference_offset_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     block_count_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     blocks_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     interval_count_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     interval_start_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     interval_len_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     first_residual_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
     residual_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
 }
 
-impl<Backend, CodesReaderType> RuntimeWebGraphReader<Backend, CodesReaderType>
-where
-    Backend: CodesReader<CodesReaderType>,
-    CodesReaderType: CodesRead,
-{
+impl<Backend: CodesReader> RuntimeWebGraphReader<Backend> {
     #[inline]
     pub fn new(settings: CodesSettings, backend: Backend) -> Self {
         let (outdegree_code, outdegree_param) = match settings.outdegree {
@@ -159,8 +152,8 @@ where
     /// wrap a reader so that it dispatch the codes
     pub fn wrap(
         &self,
-        reader: CodesReaderType,
-    ) -> RuntimeWebGraphReaderBackend<CodesReaderType> {
+        reader: Backend::CodesReaderType,
+    ) -> RuntimeWebGraphReaderBackend<Backend::CodesReaderType> {
         RuntimeWebGraphReaderBackend {
             reader,
             outdegree_param: self.outdegree_param,
@@ -185,16 +178,11 @@ where
     }
 }
 
-impl<Backend, CodesReaderType> 
-    WebGraphReader<RuntimeWebGraphReaderBackend<CodesReaderType>> 
-    for RuntimeWebGraphReader<Backend, CodesReaderType>
-where
-    Backend: CodesReader<CodesReaderType>,
-    CodesReaderType: CodesRead,
-{
+impl<Backend: CodesReader> WebGraphReader for RuntimeWebGraphReader<Backend> {
+    type WebGraphReaderType = RuntimeWebGraphReaderBackend<Backend::CodesReaderType>;
+
     #[inline]
-    fn get_reader(&self, offset: usize) 
-        -> RuntimeWebGraphReaderBackend<CodesReaderType> {
+    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType {
         self.wrap((&self.backend).get_codes_reader(offset))
     }
 }

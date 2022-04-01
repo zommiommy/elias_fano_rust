@@ -17,7 +17,7 @@ fn main() {
     let backend =  BitArrayM2L::new(mmap);
 
     let mut wg = WebGraph::new(
-        ConstWebGraphReader::<_, _>::new(&backend),
+        ConstWebGraphReader::<_>::new(&backend),
         vec![0],
     );
 

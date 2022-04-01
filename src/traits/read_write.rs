@@ -16,12 +16,11 @@ pub trait CodesWriter {
 }
 
 /// A trait for a datastructure that can instantiate multiple readers
-pub trait CodesReader<CodesReaderType>
-where
-    CodesReaderType: CodesRead,
-{
+pub trait CodesReader {
+    /// The writer returend
+    type CodesReaderType: CodesRead;
     /// Get a new reader at the given offset (in bytes) of the stream
-    fn get_codes_reader(&self, offset: usize) -> CodesReaderType;
+    fn get_codes_reader(&self, offset: usize) -> Self::CodesReaderType;
 }
 
 /// Trait for structs that can write singular bits into a stream

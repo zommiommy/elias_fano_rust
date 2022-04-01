@@ -95,7 +95,7 @@ impl<
     >
 {
     #[inline]
-    fn get_reader(&'a self, offset: usize) -> ConstWebGraphReaderBackend<
+    fn get_reader(&self, offset: usize) -> ConstWebGraphReaderBackend<
         CodesReaderType,
         OUTDEGREE_CODE,
         REFERENCES_OFFSET_CODE,

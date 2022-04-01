@@ -72,14 +72,14 @@ where
     }
 
     /// Get the degree of a given node
-    pub fn get_degree(&'a self, node_id: usize) -> Result<usize> {
+    pub fn get_degree(&self, node_id: usize) -> Result<usize> {
         let mut reader = (&self.backend)
             .get_reader(self.nodes_index[node_id as usize] as usize);
         reader.read_outdegree()
     }
 
     /// Get the neighbours of a given node
-    pub fn get_neighbours(&'a self, node_id: usize) -> Result<(usize, Vec<usize>)> {
+    pub fn get_neighbours(&self, node_id: usize) -> Result<(usize, Vec<usize>)> {
 
         // move to the node data
         let index = self.nodes_index[node_id];
@@ -106,7 +106,7 @@ where
 
     #[inline]
     fn decode_references(
-        &'a self,
+        &self,
         reader: &mut WebGraphReaderType,
         node_id: usize,
     ) -> Result<Vec<usize>> {

@@ -1,47 +1,16 @@
-[package]
-name = "elias_fano_rust"
-version = "0.2.0"
-authors = ["Fontana Tommaso <tommaso.fontana.96@gmail.com>"]
-description="An optimized implementation of Sebastiano Vigna's Elis-Fano quasi succint datastructure."
-edition = "2018"
-license = "MIT"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-rayon = { version = "1.1", optional = true }
-arbitrary = { version = "0.4.5", features = ["derive"],  optional = true }
-fid = {version="0.1.7", optional = true}
-libc = "0.2"
-
-[dev-dependencies]
-rand = {version="0.7", features = ["small_rng"] }
-succinct = "0.5.2"
-indexed_bitvec = "4.0.1"
-bio = "0.32.0"
-fid = "0.1.7"
-bv = "0.11.1"
-vec_rand = { git = "https://github.com/zommiommy/vec_rand", branch = "master" }
-rsdict = {version="0.0.4", features = ["simd"]}
-
-[features]
-default = ["code_tables"]
-unsafe = []
-code_tables = []
-par_iter = ["rayon"]
-fuzz = ["arbitrary", "fid"]
-
-
-[profile.release]
-opt-level = 3
-lto = "fat"
-overflow-checks = true     # Disable integer overflow checks.
-debug = true             # Include debug info.
-debug-assertions = true  # Enables debug assertions.
-
-[profile.test]
-default = ["fuzz"]
-overflow-checks = true     # Disable integer overflow checks.
-debug = true             # Include debug info.
-debug-assertions = true  # Enables debug assertions.
-opt-level = 3
+members = [
+    "backends",
+    "benchmark",
+    "codes",
+    "common",
+    "data_structures/allocation_traits",
+    "data_structures/bitvec",
+    "data_structures/compact_array",
+    "data_structures/elias_fano",
+    "data_structures/heaps",
+    "data_structures/mmap",
+    "data_structures/sparse_index",
+    "data_structures/webgraph",
+]

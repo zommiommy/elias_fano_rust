@@ -1,0 +1,8 @@
+[package]
+name = "mmap"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+allocation_traits = {path="../allocation_traits"}
+libc = "0.2"

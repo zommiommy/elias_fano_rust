@@ -3,6 +3,8 @@ use crate::codes::*;
 use crate::traits::*;
 use crate::utils::*;
 use crate::Result;
+use core::iter::Peekable;
+use core::intrinsics::unlikely;
 
 mod traits;
 pub use traits::*;
@@ -42,6 +44,213 @@ pub struct WebGraph<Backend: WebGraphReader> {
     min_interval_length: usize,
 }
 
+pub struct MaskedIterator<'a, Backend: WebGraphReader> {
+    /// The resolved reference node, if present
+    parent: Box<WebGraphLazyIter<'a, Backend>>,
+    /// The copy blocks from the ref node
+    blocks: Vec<usize>,
+    /// The id of block to parse
+    block_idx: usize,
+    /// Caching of the number of values returned, if needed
+    size: usize,
+}
+impl<'a, Backend> MaskedIterator<'a, Backend>
+where 
+    Backend: WebGraphReader 
+{
+    pub fn new(parent: WebGraphLazyIter<'a, Backend>, blocks: Vec<usize>) -> Self {
+        // compute the number of nodes to copy 
+        let size: usize = blocks.iter().enumerate()
+            .filter(|(i, x)| i & 1 == 0)
+            .map(|(_, x)| x)
+            .sum();
+
+        Self {
+            parent: Box::new(parent),
+            blocks,
+            block_idx: 0,
+            size,
+        }
+    }
+}
+
+impl<'a, Backend> Iterator for MaskedIterator<'a, Backend>
+where 
+    Backend: WebGraphReader 
+{
+    type Item = usize;
+    fn next(&mut self) -> Option<Self::Item> {
+        debug_assert!(self.block_idx <= self.blocks.len());
+        // no more copy blocks so we can stop the parsing
+        if unlikely(self.blocks.len() == self.block_idx) {
+            return None;
+        }
+
+        let mut current_block = self.blocks[self.block_idx];
+        // we finished this block so we must skip the next one, if present
+        if unlikely(current_block == 0) {
+            // skip the next block
+            self.block_idx += 1;
+            debug_assert!(self.blocks[self.block_idx] > 0);
+            for _ in 0..self.blocks[self.block_idx] {
+                // should we add `?` and do an early return? 
+                // I don't think it improves speed because it add an 
+                // unpredictable branch and the blocks should be done so that
+                // they are always right.
+                let node = self.parent.next(); 
+                debug_assert!(node.is_some());
+            }
+            self.block_idx += 1;
+            current_block = self.blocks[self.block_idx];
+            debug_assert_ne!(current_block, 0);
+        }
+
+        let result = self.parent.next();
+        self.blocks[self.block_idx] -= 1;
+        result
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.size, Some(self.size))
+    }
+}
+
+pub struct WebGraphLazyIter<'a, Backend: WebGraphReader>{
+    /// The degree of the current node
+    degree: usize,
+
+    copied_nodes_iter: Option<Peekable<MaskedIterator<'a, Backend>>>,
+
+    /// Intervals of extra nodes
+    intervals: Vec<(usize, usize)>,
+    intervals_idx: usize,
+    /// Extra nodes
+    extra_nodes: Vec<usize>,
+    extra_nodes_idx: usize,
+}
+
+impl<'a, Backend> Iterator for WebGraphLazyIter<'a, Backend>
+where 
+    Backend: WebGraphReader 
+{
+    type Item = usize;
+    fn next(&mut self) -> Option<Self::Item> {
+        if 
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.degree, Some(self.degree)) 
+    }
+}
+
+impl<'a, Backend> WebGraphLazyIter<'a, Backend> 
+where 
+    Backend: WebGraphReader 
+{
+    /// Create an empty iterator
+    pub fn empty() -> Self {
+        Self {
+            degree: 0,
+            copied_nodes_iter: None,
+            intervals: vec![],
+            intervals_idx: 0,
+            extra_nodes: vec![],
+            extra_nodes_idx: 0,
+        }
+    }
+
+    pub fn new(reference: &'a WebGraph<Backend>, node_id: usize) -> Result<Self> {
+        // get a stream reader for the current node 
+        let mut reader = (&reference.backend).get_reader(reference.nodes_index[node_id]);
+
+        let degree = reader.read_outdegree()?;       
+        if degree == 0 {
+            // Empty iterator
+            return Ok(Self::empty());
+        }
+        let mut nodes_left_to_decode = degree;
+        
+        // decode the reference
+        let ref_delta = reader.read_reference_offset()?;
+        let copied_nodes_iter = if ref_delta == 0 {
+            None
+        } else {
+            let number_of_blocks = reader.read_block_count()?;
+            let ref_node = node_id - ref_delta;
+            
+            let blocks = if number_of_blocks == 0 {
+                vec![usize::MAX]
+            } else {
+                let mut blocks = Vec::with_capacity(number_of_blocks);
+                blocks.push(reader.read_blocks()?);
+                for _ in 0..number_of_blocks.saturating_sub(1) {
+                    blocks.push(reader.read_blocks()? + 1);
+                }
+                blocks
+            };
+
+            let res = MaskedIterator::new(WebGraphLazyIter::new(reference, ref_node)?, blocks);
+            debug_assert!(nodes_left_to_decode >= res.size);
+            nodes_left_to_decode -= res.size;
+            Some(res.peekable())
+        };
+
+        // decode intervals
+        let intervals = if nodes_left_to_decode == 0 {
+            vec![]
+        } else {
+            let number_of_intervals = reader.read_interval_count()?;
+            // decode the intervals if present
+            if number_of_intervals == 0 {
+                vec![]
+            } else {
+                let mut intervals = Vec::with_capacity(number_of_intervals);
+                let mut start = (nat2int(reader.read_interval_start()?) as isize + node_id as isize) as usize;
+                let mut delta = reader.read_interval_len()? + reference.min_interval_length;
+        
+                intervals.push((start, delta));
+                start += delta;
+                nodes_left_to_decode -= delta;
+
+                for _ in 0..number_of_intervals.saturating_sub(1) {
+                    start += reader.read_interval_start()? + 1;
+                    delta = reader.read_interval_len()? + reference.min_interval_length;
+
+                    intervals.push((start, delta));
+                    start += delta;
+                    nodes_left_to_decode -= delta;
+                }
+                intervals
+            }
+        };
+       
+        // decode the extra nodes
+        let extra_nodes = if nodes_left_to_decode == 0 {
+            vec![]
+        } else {
+            let mut extra_nodes = Vec::with_capacity(nodes_left_to_decode);
+            let mut tmp = (
+                node_id as isize + nat2int(reader.read_first_residual()?)    
+            ) as usize;
+            extra_nodes.push(tmp);
+
+            for _ in 0..nodes_left_to_decode.saturating_sub(1) {
+                tmp = reader.read_residual()? + tmp + 1;
+                extra_nodes.push(tmp);
+            }
+            extra_nodes
+        };
+
+        Ok(Self {
+            degree,
+            copied_nodes_iter,
+            intervals,
+            intervals_idx: 0,
+            extra_nodes,
+            extra_nodes_idx: 0,
+        })
+    }
+}
 
 impl<Backend: WebGraphReader> WebGraph<Backend> {
     pub fn new(backend: Backend, nodes_index: Vec<usize>) -> Self {

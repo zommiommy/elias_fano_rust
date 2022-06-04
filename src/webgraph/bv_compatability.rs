@@ -6,13 +6,16 @@ use core::convert::TryFrom;
 const DEFAULT_ZETA_K: usize = 3;
 const DEFAULT_GOLOMB_B: usize = 3;
 
-const OUTDEGREES_OFFSET: usize = 0;
-const BLOCKS_OFFSET: usize = 4;
-const RESIDUALS_OFFSET: usize = 8;
-const REFERENCES_OFFSET: usize = 12;
-const BLOCK_COUNT_OFFSET: usize = 16;
-const OFFSETS_OFFSET: usize = 20;
-const EXTRA_SPACE_OFFSET: usize = 24;
+#[allow(dead_code)]
+mod constants {
+    pub const OUTDEGREES_OFFSET: usize = 0;
+    pub const BLOCKS_OFFSET: usize = 4;
+    pub const RESIDUALS_OFFSET: usize = 8;
+    pub const REFERENCES_OFFSET: usize = 12;
+    pub const BLOCK_COUNT_OFFSET: usize = 16;
+    pub const OFFSETS_OFFSET: usize = 20;
+    pub const EXTRA_SPACE_OFFSET: usize = 24;
+}
 
 impl TryFrom<u8> for Code {
     type Error = Error;

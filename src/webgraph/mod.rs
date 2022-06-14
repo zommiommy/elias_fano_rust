@@ -54,11 +54,14 @@ pub struct MaskedIterator<'a, Backend: WebGraphReader> {
     /// Caching of the number of values returned, if needed
     size: usize,
 }
+
 impl<'a, Backend> MaskedIterator<'a, Backend>
 where 
     Backend: WebGraphReader 
 {
-    pub fn new(parent: WebGraphLazyIter<'a, Backend>, blocks: Vec<usize>) -> Self {
+
+    pub fn new(parent: WebGraphLazyIter<'a, Backend>, blocks: Vec<usize>) 
+        -> Self {
         // compute the number of nodes to copy 
         let size: usize = blocks.iter().enumerate()
             .filter(|(i, x)| i & 1 == 0)
@@ -134,8 +137,66 @@ where
     Backend: WebGraphReader 
 {
     type Item = usize;
+    /// In this iteration we have to do a 3-way merge, this implies that there 
+    /// are 3! = 6 possible cases (we can ignore equalities), 
+    /// to reduce the complexity, we prefer finding the minimum which can be done
+    /// branchless and then just comparing the min with the values so we can have
+    /// 3 branches, which should reduce code duplication (better instructions 
+    /// cache) and less missing branches. 
     fn next(&mut self) -> Option<Self::Item> {
-        if 
+        // check if we should stop iterating
+        if self.degree == 0 {
+            return None;
+        }
+
+        self.degree -= 1;
+
+        // Get the different nodes or usize::MAX if not present
+        let copied_value = *self.copied_nodes_iter.as_mut().map(|x| 
+            x.peek().unwrap_or(&usize::MAX)
+        ).unwrap_or(&usize::MAX);
+
+        let extra_node = *self.extra_nodes.get(self.extra_nodes_idx)
+            .unwrap_or(&usize::MAX);
+
+        let interval_node = *{
+            let (start, len) = self.intervals.get(self.intervals_idx)
+                .unwrap_or(&(usize::MAX, usize::MAX));
+            debug_assert_ne!(*len, 0, "there should never be an interval with length zero here");
+            start
+        };
+
+        debug_assert!(
+            copied_value != usize::MAX 
+            ||
+            extra_node != usize::MAX
+            ||
+            interval_node != usize::MAX,
+            "At least one of the nodes must present, this should be a problem with the degree.",
+        );
+
+        // find the smallest of the values
+        let min = copied_value.min(extra_node).min(interval_node);
+
+        // depending on from where the node was, forward it
+        if min == copied_value {
+            self.copied_nodes_iter.as_mut().unwrap().next().unwrap();
+        } else if min == extra_node {
+            self.extra_nodes_idx += 1;
+        } else {
+            let (start, len) = &mut self.intervals[self.intervals_idx];
+            debug_assert_ne!(*len, 0, "there should never be an interval with length zero here");
+            // if the interval has other values, just reduce the interval
+            if *len > 1 {
+                *len -= 1;
+                *start += 1;
+            } else {
+                // otherwise just increase the idx to use the next interval
+                self.intervals_idx += 1;
+            }
+        }
+
+        Some(min)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -274,6 +335,11 @@ impl<Backend: WebGraphReader> WebGraph<Backend> {
         let mut reader = (&self.backend)
             .get_reader(self.nodes_index[node_id as usize] as usize);
         reader.read_outdegree()
+    }
+
+    /// Get the neighbours of a given node
+    pub fn iter_neighbours(&self, node_id: usize) -> Result<WebGraphLazyIter<'_, Backend>> {
+        WebGraphLazyIter::new(self, node_id)
     }
 
     /// Get the neighbours of a given node

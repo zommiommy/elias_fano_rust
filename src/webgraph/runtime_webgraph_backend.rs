@@ -22,23 +22,32 @@ pub struct RuntimeWebGraphReader<Backend: CodesReader> {
     first_residual_param: usize,
     residual_param: usize,
     outdegree_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     reference_offset_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     block_count_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     blocks_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     interval_count_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     interval_start_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     interval_len_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     first_residual_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
     residual_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) -> Result<usize>,
+        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
+            -> Result<usize>,
 }
 
 impl<Backend: CodesReader> RuntimeWebGraphReader<Backend> {

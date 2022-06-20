@@ -30,4 +30,18 @@ pub enum Error {
 
     /// This error is returned when an mmap fails
     MMapError(String),
+
+    /// This error is raised when there was a missing property on a webgraph 
+    /// propeties file
+    MissingPropertiyError{
+        key: String,
+    },
+
+    /// This error is raised when there was property in a webgraph 
+    /// propeties file cannot be parsed with the appropriate type
+    PropertiyParsingError{
+        key: String,
+        _type: String,
+        value: String,
+    },
 }

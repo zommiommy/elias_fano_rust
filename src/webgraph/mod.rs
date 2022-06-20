@@ -1,11 +1,16 @@
 #![allow(missing_docs)]
 use crate::codes::*;
+use crate::prelude::BitArrayM2L;
+use crate::prelude::MemoryMappedFileReadOnly;
 use crate::traits::*;
 use crate::utils::*;
 use crate::Result;
 use core::iter::Peekable;
 use core::intrinsics::unlikely;
+use std::path::Path;
 
+mod offsets;
+pub use offsets::*;
 mod traits;
 pub use traits::*;
 mod runtime_webgraph_backend;
@@ -33,13 +38,15 @@ macro_rules! debug {
 }
 
 /// Read only WebGraph
-pub struct WebGraph<Backend: WebGraphReader> {
+pub struct WebGraph<Backend: WebGraphReader, const QUANTUM_LOG2: usize=8> {
+    pub properties: Properties,
+
     /// The codes.
     pub backend: Backend,
 
     /// store the bit-index in the BitStream of each node
     /// Should we use elias-fano here?
-    pub nodes_index: Vec<usize>,
+    pub offsets: Offsets<QUANTUM_LOG2>,
     
     min_interval_length: usize,
 }
@@ -222,7 +229,7 @@ where
 
     pub fn new(reference: &'a WebGraph<Backend>, node_id: usize) -> Result<Self> {
         // get a stream reader for the current node 
-        let mut reader = (&reference.backend).get_reader(reference.nodes_index[node_id]);
+        let mut reader = (&reference.backend).get_reader(reference.offsets[node_id]);
 
         let degree = reader.read_outdegree()?;       
         if degree == 0 {
@@ -312,28 +319,61 @@ where
         })
     }
 }
+impl<const QUANTUM_LOG2: usize> WebGraph<RuntimeWebGraphReader<BitArrayM2L<MemoryMappedFileReadOnly>>, QUANTUM_LOG2> {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
 
-impl<Backend: WebGraphReader> WebGraph<Backend> {
-    pub fn new(backend: Backend, nodes_index: Vec<usize>) -> Self {
-        WebGraph {
+        let properties = Properties::from_file(
+            path.with_extension(".properties"),
+        )?;
+
+        let nodes_indices = Offsets::from_offsets_file(
+            path.with_extension(".offsets"),
+        )?;
+
+        let mmap = MemoryMappedFileReadOnly::open(
+            path.with_extension(".graph"),
+        )?;
+
+        // create a backend that reads codes from the MSB to the LSb
+        let backend_reader =  BitArrayM2L::new(mmap);
+
+        let backend = RuntimeWebGraphReader::new(
+            properties.compression_flags.clone(), 
+            &backend_reader
+        );
+
+        Ok(WebGraph{
+            properties,
             backend,
-            nodes_index,
+            offsets,
+            min_interval_length: 4, // TODO!: Expose
+        })
+    }
+}
+
+impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANTUM_LOG2> {
+    pub unsafe fn from_raw_parts(backend: Backend, properties: Properties, offsets: Offsets<QUANTUM_LOG2>) -> Self {
+        WebGraph {
+            properties,
+            backend,
+            offsets,
             min_interval_length: 4, // TODO!: Expose
         }
     }
 
     pub fn push_offset(&mut self, offset: usize) {
-        self.nodes_index.push(offset);
+        self.offsets.push(offset);
     }
 
     pub fn get_last_offset(&self) -> usize {
-        *self.nodes_index.last().unwrap()
+        *self.offsets.last().unwrap()
     }
 
     /// Get the degree of a given node
     pub fn get_degree(&self, node_id: usize) -> Result<usize> {
         let mut reader = (&self.backend)
-            .get_reader(self.nodes_index[node_id as usize] as usize);
+            .get_reader(self.offsets[node_id as usize] as usize);
         reader.read_outdegree()
     }
 
@@ -346,7 +386,7 @@ impl<Backend: WebGraphReader> WebGraph<Backend> {
     pub fn get_neighbours(&self, node_id: usize) -> Result<(usize, Vec<usize>)> {
 
         // move to the node data
-        let index = self.nodes_index[node_id];
+        let index = self.offsets[node_id];
 
         let mut reader = (&self.backend).get_reader(index);
         // read the degree

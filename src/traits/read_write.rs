@@ -5,22 +5,22 @@ use crate::*;
 /// (but only one at time can work)
 pub trait CodesWriter {
     /// The writer returend
-    type CodesWriterType: CodesWrite;
+    type CodesWriterType<'a>: CodesWrite + 'a where Self: 'a;
     /// Get a newly instantiated writer, there can only be one active at time.
     /// The writer will be initialized to the end of the stream (append mode)
     ///
     /// Here self is borrowed immutabily because the implementer must guarantee
     /// the thread safety of the implementation. (Tipically we could use a
     /// RWLock).
-    fn get_codes_writer(&self) -> Self::CodesWriterType;
+    fn get_codes_writer(&self) -> Self::CodesWriterType<'_>;
 }
 
 /// A trait for a datastructure that can instantiate multiple readers
 pub trait CodesReader {
     /// The writer returend
-    type CodesReaderType: CodesRead;
+    type CodesReaderType<'a>: CodesRead + 'a where Self: 'a;
     /// Get a new reader at the given offset (in bytes) of the stream
-    fn get_codes_reader(&self, offset: usize) -> Self::CodesReaderType;
+    fn get_codes_reader(&self, offset: usize) -> Self::CodesReaderType<'_>;
 }
 
 /// Trait for structs that can write singular bits into a stream

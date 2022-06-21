@@ -11,6 +11,7 @@ use std::path::Path;
 
 mod offsets;
 pub use offsets::*;
+
 mod traits;
 pub use traits::*;
 mod runtime_webgraph_backend;
@@ -24,7 +25,7 @@ pub use bv_compatability::*;
 //mod builder;
 //pub use builder::*;
 
-const DEBUG: bool = false;
+const DEBUG: bool = true;
 
 #[macro_export]
 macro_rules! debug {
@@ -67,13 +68,32 @@ where
     Backend: WebGraphReader 
 {
 
-    pub fn new(parent: WebGraphLazyIter<'a, Backend>, blocks: Vec<usize>) 
+    pub fn new(parent: WebGraphLazyIter<'a, Backend>, mut blocks: Vec<usize>, len: usize) 
         -> Self {
         // compute the number of nodes to copy 
-        let size: usize = blocks.iter().enumerate()
-            .filter(|(i, x)| i & 1 == 0)
-            .map(|(_, x)| x)
-            .sum();
+        
+        // the number of copied nodes
+        let mut size: usize = 0;
+        // the cumulative sum of the blocks
+        let mut cumsum_blocks: usize = 0;
+        for (i, x) in blocks.iter().enumerate(){
+            // branchless add
+            size = if i % 2 == 0{
+                size + x
+            } else {
+                size
+            };            
+            cumsum_blocks += x;
+        }
+
+        // an empty blocks means that we should take all the neighbours
+        let remainder = len - cumsum_blocks;
+    
+        // check if the last block is a copy or skip block
+        if remainder != 0 && blocks.len() % 2 == 0 {
+            size += remainder;
+            blocks.push(remainder);
+        }
 
         Self {
             parent: Box::new(parent),
@@ -91,16 +111,17 @@ where
     type Item = usize;
     fn next(&mut self) -> Option<Self::Item> {
         debug_assert!(self.block_idx <= self.blocks.len());
-        // no more copy blocks so we can stop the parsing
-        if unlikely(self.blocks.len() == self.block_idx) {
-            return None;
-        }
-
         let mut current_block = self.blocks[self.block_idx];
         // we finished this block so we must skip the next one, if present
         if unlikely(current_block == 0) {
             // skip the next block
             self.block_idx += 1;
+
+            // no more copy blocks so we can stop the parsing
+            if unlikely(self.block_idx >= self.blocks.len()) {
+                return None;
+            }
+
             debug_assert!(self.blocks[self.block_idx] > 0);
             for _ in 0..self.blocks[self.block_idx] {
                 // should we add `?` and do an early return? 
@@ -227,11 +248,15 @@ where
         }
     }
 
-    pub fn new(reference: &'a WebGraph<Backend>, node_id: usize) -> Result<Self> {
+    pub fn new<const QUANTUM_LOG2: usize>(reference: &'a WebGraph<Backend, QUANTUM_LOG2>, node_id: usize) -> Result<Self> {
         // get a stream reader for the current node 
-        let mut reader = (&reference.backend).get_reader(reference.offsets[node_id]);
+        let offset = reference.offsets.get(node_id)?;
+        debug!(node_id);
+        debug!(offset);
+        let mut reader = (&reference.backend).get_reader(offset);
 
         let degree = reader.read_outdegree()?;       
+        debug!(degree);
         if degree == 0 {
             // Empty iterator
             return Ok(Self::empty());
@@ -240,25 +265,40 @@ where
         
         // decode the reference
         let ref_delta = reader.read_reference_offset()?;
+        debug!(ref_delta);
         let copied_nodes_iter = if ref_delta == 0 {
             None
         } else {
             let number_of_blocks = reader.read_block_count()?;
             let ref_node = node_id - ref_delta;
-            
+            debug!(ref_node);
+            debug!(number_of_blocks);
+            let ref_outdegree = (&reference.backend).get_reader(
+                reference.offsets.get(ref_node)?
+                ).read_outdegree()?;
+
             let blocks = if number_of_blocks == 0 {
-                vec![usize::MAX]
+                vec![
+                    ref_outdegree,
+                ]
             } else {
                 let mut blocks = Vec::with_capacity(number_of_blocks);
                 blocks.push(reader.read_blocks()?);
                 for _ in 0..number_of_blocks.saturating_sub(1) {
-                    blocks.push(reader.read_blocks()? + 1);
+                    let b = debug!(reader.read_blocks()?);
+                    blocks.push(b + 1);
                 }
                 blocks
             };
+            debug!(&blocks);
 
-            let res = MaskedIterator::new(WebGraphLazyIter::new(reference, ref_node)?, blocks);
+            let res = MaskedIterator::new(
+                WebGraphLazyIter::new(reference, ref_node)?, 
+                blocks, 
+                ref_outdegree
+            );
             debug_assert!(nodes_left_to_decode >= res.size);
+            debug!(res.size);
             nodes_left_to_decode -= res.size;
             Some(res.peekable())
         };
@@ -268,6 +308,7 @@ where
             vec![]
         } else {
             let number_of_intervals = reader.read_interval_count()?;
+            debug!(number_of_intervals);
             // decode the intervals if present
             if number_of_intervals == 0 {
                 vec![]
@@ -288,6 +329,7 @@ where
                     start += delta;
                     nodes_left_to_decode -= delta;
                 }
+                debug!(&intervals);
                 intervals
             }
         };
@@ -306,6 +348,7 @@ where
                 tmp = reader.read_residual()? + tmp + 1;
                 extra_nodes.push(tmp);
             }
+            debug!(&extra_nodes);
             extra_nodes
         };
 
@@ -324,15 +367,18 @@ impl<const QUANTUM_LOG2: usize> WebGraph<RuntimeWebGraphReader<BitArrayM2L<Memor
         let path = path.as_ref();
 
         let properties = Properties::from_file(
-            path.with_extension(".properties"),
+            path.with_extension("properties"),
         )?;
 
+        debug!(&properties);
+
         let nodes_indices = Offsets::from_offsets_file(
-            path.with_extension(".offsets"),
+            path.with_extension("offsets"),
+            properties.clone(),
         )?;
 
         let mmap = MemoryMappedFileReadOnly::open(
-            path.with_extension(".graph"),
+            path.with_extension("graph"),
         )?;
 
         // create a backend that reads codes from the MSB to the LSb
@@ -340,13 +386,13 @@ impl<const QUANTUM_LOG2: usize> WebGraph<RuntimeWebGraphReader<BitArrayM2L<Memor
 
         let backend = RuntimeWebGraphReader::new(
             properties.compression_flags.clone(), 
-            &backend_reader
+            backend_reader
         );
 
         Ok(WebGraph{
             properties,
             backend,
-            offsets,
+            offsets: nodes_indices,
             min_interval_length: 4, // TODO!: Expose
         })
     }
@@ -362,18 +408,10 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
         }
     }
 
-    pub fn push_offset(&mut self, offset: usize) {
-        self.offsets.push(offset);
-    }
-
-    pub fn get_last_offset(&self) -> usize {
-        *self.offsets.last().unwrap()
-    }
-
     /// Get the degree of a given node
     pub fn get_degree(&self, node_id: usize) -> Result<usize> {
         let mut reader = (&self.backend)
-            .get_reader(self.offsets[node_id as usize] as usize);
+            .get_reader(self.offsets.get(node_id)?);
         reader.read_outdegree()
     }
 
@@ -383,10 +421,10 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
     }
 
     /// Get the neighbours of a given node
-    pub fn get_neighbours(&self, node_id: usize) -> Result<(usize, Vec<usize>)> {
+    pub fn get_neighbours_and_offset(&self, node_id: usize) -> Result<(usize, Vec<usize>)> {
 
         // move to the node data
-        let index = self.offsets[node_id];
+        let index = self.offsets.get(node_id)?;
 
         let mut reader = (&self.backend).get_reader(index);
         // read the degree
@@ -403,15 +441,24 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
                 degree - copied_neighbours.len()
         )?;
 
+        debug!(&copied_neighbours);
+        debug!(&intervals);
+        debug!(&extra_nodes);
+
         let neighbours = three_way_merge(copied_neighbours, intervals, extra_nodes);
 
         Ok((reader.tell_bits()?, neighbours))
     }
 
+    /// Get the neighbours of a given node
+    pub fn get_neighbours(&self, node_id: usize) -> Result<Vec<usize>> {
+        Ok(self.get_neighbours_and_offset(node_id)?.1)
+    }
+
     #[inline]
     fn decode_references(
         &self,
-        reader: &mut Backend::WebGraphReaderType,
+        reader: &mut Backend::WebGraphReaderType<'_>,
         node_id: usize,
     ) -> Result<Vec<usize>> {
         let mut copied_neighbours = vec![];
@@ -430,7 +477,7 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
 
         // if there are no block -> we copy all the neighbours
         if number_of_blocks == 0 {
-            copied_neighbours.extend(&self.get_neighbours(ref_node)?.1);
+            copied_neighbours.extend(&self.get_neighbours(ref_node)?);
             return Ok(copied_neighbours);
         }
         // decode the run-length copy blocks
@@ -445,7 +492,7 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
         let mut curr_bit_value = true;
         let mut blocks_iter = blocks.iter();
         let mut counter = *blocks_iter.next().unwrap();
-        for node in ref_neighbours.1 {
+        for node in ref_neighbours {
             if counter == 0 {
                 curr_bit_value ^= true;
                 counter = *blocks_iter.next().unwrap_or(&usize::MAX);
@@ -465,7 +512,7 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
     /// Dencode the list of extra nodes as deltas using zeta3 codes.
     fn dencode_extra_nodes(
         &self,
-        reader: &mut Backend::WebGraphReaderType,
+        reader: &mut Backend::WebGraphReaderType<'_>,
         node_id: usize,
         mut nodes_left_to_decode: usize,
     ) -> Result<(Vec<usize>, Vec<usize>)> {

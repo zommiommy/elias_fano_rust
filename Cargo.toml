@@ -31,7 +31,6 @@ code_tables = []
 par_iter = ["rayon"]
 fuzz = ["arbitrary", "fid"]
 
-
 [profile.release]
 opt-level = 3
 lto = "fat"

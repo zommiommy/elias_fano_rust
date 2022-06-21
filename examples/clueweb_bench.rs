@@ -8,26 +8,16 @@ const NODES: usize = 978_408_098;
 
 fn main() {
     let start = Instant::now();
-    // memory map the test graph file
-    let mmap = MemoryMappedFileReadOnly::open(
-        "/bfd/clueweb12.graph",
-    ).unwrap();
 
-    // create a backend that reads codes from the MSB to the LSb
-    let backend =  BitArrayM2L::new(mmap);
+    let wg = WebGraph::<_, 8>::new("/bfd/clueweb12").unwrap();
+    let elapsed = start.elapsed();
+    println!("loading clueweb12 took: {:?}", elapsed);
 
-    let mut wg = WebGraph::new(
-        ConstWebGraphReader::<_>::new(&backend),
-        vec![0],
-    );
-
+    let start = Instant::now();
     let mut edges = 0;
     for node_id in 0..NODES {
-        let (offset, neighbours) = 
-            wg.get_neighbours(node_id).unwrap();
+        let neighbours = wg.get_neighbours(node_id).unwrap();
 
-        wg.push_offset(offset);
-        
         edges += neighbours.len();
         if (node_id & 0xffff) == 0 {
             let delta = start.elapsed().as_secs_f64();
@@ -48,6 +38,7 @@ fn main() {
     println!("nodes/sec: {:.3}", NODES as f64 / elapsed.as_secs_f64());
     println!("eges encountered {:.3}", edges);
 
+    let start = Instant::now();
     let mut edges = 0;
     for node_id in 0..NODES {
         edges += wg.iter_neighbours(node_id).unwrap().count();

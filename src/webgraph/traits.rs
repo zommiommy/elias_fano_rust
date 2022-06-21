@@ -42,7 +42,7 @@ pub trait WebGraphWriterBackend: WriteBit {
 }
 
 pub trait WebGraphReader {
-    type WebGraphReaderType: WebGraphReaderBackend;
+    type WebGraphReaderType<'a>: WebGraphReaderBackend + 'a where Self: 'a;
     
-    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType;
+    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType<'_>;
 }

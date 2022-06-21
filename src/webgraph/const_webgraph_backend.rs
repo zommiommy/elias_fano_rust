@@ -76,8 +76,8 @@ impl<
         RESIDUALS_CODE,
     >
 {
-    type WebGraphReaderType = ConstWebGraphReaderBackend<
-        Backend::CodesReaderType,
+    type WebGraphReaderType<'a> = ConstWebGraphReaderBackend<
+        Backend::CodesReaderType<'a>,
         OUTDEGREE_CODE,
         REFERENCES_OFFSET_CODE,
         BLOCK_COUNT_CODE,
@@ -87,10 +87,12 @@ impl<
         INVERVAL_LEN_CODE,
         FIRST_RESIDUAL_CODE,
         RESIDUALS_CODE,
-    >;
+    > where
+    Backend: 'a,
+    Self: 'a;
 
     #[inline]
-    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType {
+    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType<'_> {
         ConstWebGraphReaderBackend((&self.backend).get_codes_reader(offset))
     }
 }

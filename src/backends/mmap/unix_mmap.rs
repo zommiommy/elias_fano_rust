@@ -47,7 +47,8 @@ impl std::ops::Drop for MemoryMappedFileReadOnly {
 }
 
 impl MemoryMappedFileReadOnly {
-    pub fn open(path: &str) -> Result<Self> {
+    pub fn open<P: AsRef<std::path::Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
         // here we add a + 8 to map in an extra zero-filled word so that we can
         // do unaligned reads for bits
         let mut len = 1 + std::fs::metadata(path)
@@ -56,7 +57,7 @@ impl MemoryMappedFileReadOnly {
         // padd the vector to be a multiple of 8 bytes
         len += 8 - (len % 8);
 
-        let mut c_string = path.to_string();
+        let mut c_string = path.display().to_string();
         c_string.push('\0');
         // Get a file descriptor to the file
         let fd = unsafe{open(
@@ -69,7 +70,7 @@ impl MemoryMappedFileReadOnly {
             return Err(
                 Error::UnableToOpenFile(
                     format!("Cannot open the file '{}' to mmap it.", 
-                    path)
+                    path.display())
                 )
             );
         }
@@ -101,7 +102,7 @@ impl MemoryMappedFileReadOnly {
                         " Errno: {} for more info see ",
                         "https://man7.org/linux/man-pages/man2/mmap.2.html",
                         ),
-                        path, fd, unsafe{*libc::__errno_location()}
+                        path.display(), fd, unsafe{*libc::__errno_location()}
                     )
                 )
             );

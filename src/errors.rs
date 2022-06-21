@@ -44,4 +44,13 @@ pub enum Error {
         _type: String,
         value: String,
     },
+
+    IndexOutOfBound{
+        index: usize,
+        len: usize,
+    },
+
+    CannotOpenFile{
+        path: String,
+    }
 }

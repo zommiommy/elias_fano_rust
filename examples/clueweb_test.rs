@@ -3,7 +3,6 @@
 
 use std::fs::File;
 use std::io::{self, BufRead};
-use std::path::Path;
 
 use elias_fano_rust::prelude::*;
 use std::time::Instant;
@@ -13,27 +12,18 @@ const NODES: usize = 978_408_098;
 
 fn main() {
     let start = Instant::now();
-    // memory map the test graph file
-    let mmap = MemoryMappedFileReadOnly::open(
-        "/bfd/clueweb12.graph",
-    ).unwrap();
 
-    // create a backend that reads codes from the MSB to the LSb
-    let backend =  BitArrayM2L::new(mmap);
-
-    let mut wg = WebGraph::new(
-        ConstWebGraphReader::<_>::new(&backend),
-        vec![0],
-    );
+    let wg = WebGraph::<_, 8>::new("/bfd/clueweb12").unwrap();
+    let elapsed = start.elapsed();
+    println!("loading clueweb12 took: {:?}", elapsed);
 
     let file = File::open("/bfd/clueweb12_ascii.graph-txt").unwrap();
-    let mut lines = io::BufReader::new(file).lines().skip(1);
+    let mut lines = io::BufReader::with_capacity(1<<20, file).lines().skip(1);
 
+    let mut old_offset = 0;
     let mut edges = 0;
-    for node_id in 0..NODES {
-        let (offset, neighbours) = 
-            wg.get_neighbours(node_id).unwrap();
 
+    for node_id in 0..NODES {
         let truth = lines.next().unwrap().unwrap()
             .split(" ")
             .filter_map(|x| {
@@ -47,10 +37,15 @@ fn main() {
                 }})
             .collect::<Vec<usize>>();
 
-        assert_eq!(truth, neighbours);
+        assert_eq!(truth.len(), wg.get_degree(node_id).unwrap(), "The degree of the node '{}' does not match the truth", node_id);
+        let (new_offset, neighbours) = wg.get_neighbours_and_offset(node_id).unwrap();
+        assert_eq!(old_offset, wg.offsets.get(node_id).unwrap(), "The offsets for node id '{}' do not match", node_id);
+        old_offset = new_offset;
 
-        wg.push_offset(offset);
-        
+        assert_eq!(truth, neighbours, "The neighbours of node id '{}' don't match the truth. Its offset is: '{}'", node_id, old_offset);
+
+        assert_eq!(truth, wg.iter_neighbours(node_id).unwrap().collect::<Vec<_>>(), "The iter neighbours of node id '{}' don't match the truth. Its offset is: '{}'", node_id, old_offset);
+
         edges += neighbours.len();
         if (node_id & 0xffff) == 0 {
             let delta = start.elapsed().as_secs_f64();

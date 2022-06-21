@@ -16,6 +16,7 @@ const RESIDUALS_OFFSET: usize = 8;
 const REFERENCES_OFFSET: usize = 12;
 const BLOCK_COUNT_OFFSET: usize = 16;
 const OFFSETS_OFFSET: usize = 20;
+#[allow(dead_code)]
 const EXTRA_SPACE_OFFSET: usize = 24;
 
 impl TryFrom<u8> for Code {
@@ -182,12 +183,15 @@ pub struct Properties{
 
 impl Properties {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
         let file = std::io::BufReader::new(
-            std::fs::File::open(path.as_ref()).unwrap()
+            std::fs::File::open(path).map_err(|_| {
+                Error::CannotOpenFile{path: path.display().to_string()}
+            })?
         );
 
         let mut map = file.lines()
-            .map(|line| line.unwrap().trim())
+            .map(|line| line.unwrap().trim().to_string())
             .filter(|line| !line.starts_with("#") && !line.is_empty())
             .map(|line| {
                 let (key, value) = line.split_once("=").unwrap();
@@ -203,7 +207,7 @@ impl Properties {
             }};
             ($map:expr, $key:literal, $type:ty) => {{
                 let value = get_value!($map, $key);
-                value.parse::<$type>().map_err(|e| {
+                value.parse::<$type>().map_err(|_| {
                     Error::PropertiyParsingError{
                         key: $key.into(),
                         _type: stringify!($type).into(),

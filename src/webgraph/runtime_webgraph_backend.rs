@@ -10,188 +10,37 @@ use super::*;
 /// overhead)
 pub struct RuntimeWebGraphReader<Backend: CodesReader> {
     backend: Backend,
-    // Virtual table for the instances methods, this allows to do the
-    // dispatching exactly once
-    outdegree_param: usize,
-    reference_offset_param: usize,
-    block_count_param: usize,
-    blocks_param: usize,
-    interval_count_param: usize,
-    interval_start_param: usize,
-    interval_len_param: usize,
-    first_residual_param: usize,
-    residual_param: usize,
-    outdegree_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    reference_offset_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    block_count_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    blocks_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    interval_count_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    interval_start_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    interval_len_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    first_residual_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
-    residual_code:
-        fn(inner: &mut RuntimeWebGraphReaderBackend<Backend::CodesReaderType>) 
-            -> Result<usize>,
+    settings: CodesSettings,
 }
 
 impl<Backend: CodesReader> RuntimeWebGraphReader<Backend> {
     #[inline]
     pub fn new(settings: CodesSettings, backend: Backend) -> Self {
-        let (outdegree_code, outdegree_param) = match settings.outdegree {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::outdegree_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::outdegree_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (reference_offset_code, reference_offset_param) = match settings.reference_offset {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::reference_offset_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::reference_offset_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (block_count_code, block_count_param) = match settings.block_count {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::block_count_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::block_count_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (blocks_code, blocks_param) = match settings.blocks {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::blocks_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::blocks_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (interval_count_code, interval_count_param) = match settings.interval_count {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::interval_count_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::interval_count_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (interval_start_code, interval_start_param) = match settings.interval_start {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::interval_start_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::interval_start_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (interval_len_code, interval_len_param) = match settings.interval_len {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::interval_len_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::interval_len_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (first_residual_code, first_residual_param) = match settings.first_residual {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::first_residual_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::first_residual_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
-        let (residual_code, residual_param) = match settings.residual {
-            Code::Unary => (RuntimeWebGraphReaderBackend::read_unary as _, 0),
-            Code::Gamma => (RuntimeWebGraphReaderBackend::read_gamma as _, 0),
-            Code::Delta => (RuntimeWebGraphReaderBackend::read_delta as _, 0),
-            Code::Golomb(b) => (RuntimeWebGraphReaderBackend::residual_golomb as _, b),
-            Code::Zeta(k) => (RuntimeWebGraphReaderBackend::residual_zeta as _, k),
-            _ => unimplemented!("The wanted code is not implemented yet."),
-        };
-
         RuntimeWebGraphReader {
             backend,
-            outdegree_param,
-            reference_offset_param,
-            block_count_param,
-            blocks_param,
-            interval_count_param,
-            interval_start_param,
-            interval_len_param,
-            first_residual_param,
-            residual_param,
-            outdegree_code,
-            reference_offset_code,
-            block_count_code,
-            blocks_code,
-            interval_count_code,
-            interval_start_code,
-            interval_len_code,
-            first_residual_code,
-            residual_code,
+            settings,
         }
     }
 
     #[inline]
     /// wrap a reader so that it dispatch the codes
-    pub fn wrap(
+    pub fn wrap<'a>(
         &self,
-        reader: Backend::CodesReaderType,
-    ) -> RuntimeWebGraphReaderBackend<Backend::CodesReaderType> {
+        reader: Backend::CodesReaderType<'a>,
+    ) -> RuntimeWebGraphReaderBackend<Backend::CodesReaderType<'a>> {
         RuntimeWebGraphReaderBackend {
             reader,
-            outdegree_param: self.outdegree_param,
-            reference_offset_param: self.reference_offset_param,
-            block_count_param: self.block_count_param,
-            blocks_param: self.blocks_param,
-            interval_count_param: self.interval_count_param,
-            interval_start_param: self.interval_start_param,
-            interval_len_param: self.interval_len_param,
-            first_residual_param: self.first_residual_param,
-            residual_param: self.residual_param,
-            outdegree_code: self.outdegree_code,
-            reference_offset_code: self.reference_offset_code,
-            block_count_code: self.block_count_code,
-            blocks_code: self.blocks_code,
-            interval_count_code: self.interval_count_code,
-            interval_start_code: self.interval_start_code,
-            interval_len_code: self.interval_len_code,
-            first_residual_code: self.first_residual_code,
-            residual_code: self.residual_code,
+            settings: self.settings.clone(), // TODO!: remove this clone
         }
     }
 }
 
 impl<Backend: CodesReader> WebGraphReader for RuntimeWebGraphReader<Backend> {
-    type WebGraphReaderType = RuntimeWebGraphReaderBackend<Backend::CodesReaderType>;
+    type WebGraphReaderType<'a> = RuntimeWebGraphReaderBackend<Backend::CodesReaderType<'a>>
+    where Self: 'a;
 
     #[inline]
-    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType {
+    fn get_reader(&self, offset: usize) -> Self::WebGraphReaderType<'_> {
         self.wrap((&self.backend).get_codes_reader(offset))
     }
 }
@@ -199,184 +48,38 @@ impl<Backend: CodesReader> WebGraphReader for RuntimeWebGraphReader<Backend> {
 /// Actual Reader that without any dispatching can use the right codes
 pub struct RuntimeWebGraphReaderBackend<READER: CodesRead> {
     reader: READER,
-    outdegree_param: usize,
-    reference_offset_param: usize,
-    block_count_param: usize,
-    blocks_param: usize,
-    interval_count_param: usize,
-    interval_start_param: usize,
-    interval_len_param: usize,
-    first_residual_param: usize,
-    residual_param: usize,
-    outdegree_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    reference_offset_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    block_count_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    blocks_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    interval_count_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    interval_start_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    interval_len_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    first_residual_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
-    residual_code: fn(inner: &mut RuntimeWebGraphReaderBackend<READER>) -> Result<usize>,
+    settings: CodesSettings,
 }
 
-impl<READER> RuntimeWebGraphReaderBackend<READER>
-where
-    READER: CodesRead,
-{
-    #[inline]
-    fn read_unary(&mut self) -> Result<usize> {
-        self.reader.read_unary()
-    }
-
-    #[inline]
-    fn read_gamma(&mut self) -> Result<usize> {
-        self.reader.read_gamma()
-    }
-
-    #[inline]
-    fn read_delta(&mut self) -> Result<usize> {
-        self.reader.read_delta()
-    }
-
-    #[inline]
-    fn outdegree_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.outdegree_param)
-    }
-
-    #[inline]
-    fn outdegree_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.outdegree_param)
-    }
-
-    #[inline]
-    fn reference_offset_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.reference_offset_param)
-    }
-
-    #[inline]
-    fn reference_offset_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.reference_offset_param)
-    }
-
-    #[inline]
-    fn block_count_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.block_count_param)
-    }
-
-    #[inline]
-    fn block_count_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.block_count_param)
-    }
-
-    #[inline]
-    fn blocks_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.blocks_param)
-    }
-
-    #[inline]
-    fn blocks_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.blocks_param)
-    }
-
-    #[inline]
-    fn interval_count_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.interval_count_param)
-    }
-
-    #[inline]
-    fn interval_count_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.interval_count_param)
-    }
-
-    #[inline]
-    fn interval_start_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.interval_start_param)
-    }
-
-    #[inline]
-    fn interval_start_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.interval_start_param)
-    }
-
-    #[inline]
-    fn interval_len_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.interval_len_param)
-    }
-
-    #[inline]
-    fn interval_len_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.interval_len_param)
-    }
-
-    #[inline]
-    fn first_residual_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.first_residual_param)
-    }
-
-    #[inline]
-    fn first_residual_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.first_residual_param)
-    }
-
-    #[inline]
-    fn residual_golomb(&mut self) -> Result<usize> {
-        self.reader.read_golomb_runtime(self.residual_param)
-    }
-
-    #[inline]
-    fn residual_zeta(&mut self) -> Result<usize> {
-        self.reader.read_zeta_runtime(self.residual_param)
-    }
+macro_rules! impl_read_match {
+    ($func_name:ident, $attribute:ident) => {
+        #[inline]
+        fn $func_name(&mut self) -> Result<usize> {
+            match self.settings.$attribute {
+                Code::Unary => self.reader.read_unary(),
+                Code::Gamma => self.reader.read_gamma(),
+                Code::Delta => self.reader.read_delta(),
+                Code::Golomb(b) => self.reader.read_golomb_runtime(b),
+                Code::Zeta(k) => self.reader.read_zeta_runtime(k),
+                _ => unimplemented!("The wanted code is not implemented yet."),
+            }
+        }
+    };
 }
 
 impl<READER> WebGraphReaderBackend for RuntimeWebGraphReaderBackend<READER>
 where
     READER: CodesRead,
 {
-    #[inline]
-    fn read_outdegree(&mut self) -> Result<usize> {
-        (self.outdegree_code)(self)
-    }
-
-    #[inline]
-    fn read_reference_offset(&mut self) -> Result<usize> {
-        (self.reference_offset_code)(self)
-    }
-
-    #[inline]
-    fn read_block_count(&mut self) -> Result<usize> {
-        (self.block_count_code)(self)
-    }
-
-    #[inline]
-    fn read_blocks(&mut self) -> Result<usize> {
-        (self.blocks_code)(self)
-    }
-
-    #[inline]
-    fn read_interval_count(&mut self) -> Result<usize> {
-        (self.interval_count_code)(self)
-    }
-
-    #[inline]
-    fn read_interval_start(&mut self) -> Result<usize> {
-        (self.interval_start_code)(self)
-    }
-
-    #[inline]
-    fn read_interval_len(&mut self) -> Result<usize> {
-        (self.interval_len_code)(self)
-    }
-
-    #[inline]
-    fn read_first_residual(&mut self) -> Result<usize> {
-        (self.first_residual_code)(self)
-    }
-
-    #[inline]
-    fn read_residual(&mut self) -> Result<usize> {
-        (self.residual_code)(self)
-    }
+    impl_read_match!(read_outdegree, outdegree);
+    impl_read_match!(read_reference_offset, reference_offset);
+    impl_read_match!(read_block_count, block_count);
+    impl_read_match!(read_blocks, blocks);
+    impl_read_match!(read_interval_count, interval_count);
+    impl_read_match!(read_interval_start, interval_start);
+    impl_read_match!(read_interval_len, interval_len);
+    impl_read_match!(read_first_residual, first_residual);
+    impl_read_match!(read_residual, residual);
 }
 
 impl<READER> crate::traits::ReadBit for RuntimeWebGraphReaderBackend<READER>

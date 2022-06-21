@@ -61,10 +61,20 @@ use core::intrinsics::likely;
 /// ```
 pub struct BitArrayM2L<BACKEND: MemorySlice>(BACKEND);
 
-impl<'a, BACKEND: MemorySlice> CodesReader for &'a BitArrayM2L<BACKEND> {
-    type CodesReaderType = BitArrayM2LReader<'a, BACKEND>;
+impl<BACKEND: MemorySlice> CodesReader for BitArrayM2L<BACKEND> {
+    type CodesReaderType<'a> = BitArrayM2LReader<'a, BACKEND> 
+    where BACKEND: 'a, Self:'a;
 
-    fn get_codes_reader(&self, offset: usize) -> Self::CodesReaderType {
+    fn get_codes_reader(&self, offset: usize) -> Self::CodesReaderType<'_> {
+        BitArrayM2LReader::new(&self.0, offset)
+    }
+}
+
+impl<'a, BACKEND: MemorySlice> CodesReader for &'a BitArrayM2L<BACKEND> {
+    type CodesReaderType<'b> = BitArrayM2LReader<'b, BACKEND> 
+    where BACKEND: 'b, Self:'b, 'a: 'b;
+
+    fn get_codes_reader(&self, offset: usize) -> Self::CodesReaderType<'a> {
         BitArrayM2LReader::new(&self.0, offset)
     }
 }
@@ -243,10 +253,9 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadFixedLength
         // get the offset byte-aligned of the values we want.
         let byte_addr = self.offset >> 3;
         
-        let mut word =  unsafe{
-            *((self.data.as_ptr() as *const u8).add(byte_addr)
-            as *const usize)
-        }.to_be();
+        let mut word =  unsafe{core::ptr::read_unaligned(
+        (self.data.as_ptr() as *const u8).add(byte_addr) as *const usize
+        )}.to_be();
         
         // remove the bits before the start
         word <<= self.offset & 7;

@@ -6,7 +6,7 @@ use crate::utils::{fast_log2_floor, fast_pow_2};
 use crate::Result;
 
 /// Read a zeta code with K known at runtime
-pub trait CodeReadZetaRuntime: CodeReadUnary + CodeReadMinimalBinary {
+pub trait CodeReadZetaRuntime: CodeReadUnary + CodeReadFixedLength + ReadBit{
     #[inline]
     /// Read a Zeta code from the stream
     #[allow(non_snake_case)]
@@ -16,17 +16,23 @@ pub trait CodeReadZetaRuntime: CodeReadUnary + CodeReadMinimalBinary {
         if K == 3 {
             let (res, len) = ZETA3_M2L_TABLE[self.peek_byte()? as usize];
             // if the value was in the table, return it and offset
+            dbg!(res, len);
             if len != 0 {
                 self.skip_bits(len as usize)?;
                 return Ok(res as usize)
             }
-    
         }
+        // implementation taken from github.com/vigna/dsiutils @ InputBitStram.java
         let h = self.read_unary()?;
-        let u = fast_pow_2((h + 1) * K);
-        let l = fast_pow_2(h * K);
-        let r = self.read_minimal_binary(u - l)?;
-        Ok(fast_pow_2(h * K) + r - 1)
+        let left = 1 << h * K;
+        let mut m = self.read_fixed_length(h * K + K - 1)?;
+        Ok(if m < left {
+            m + left - 1
+        } else {
+            m <<= 1;
+            m += self.read_bit()? as usize;
+            m - 1
+        })
     }
 }
 
@@ -50,5 +56,5 @@ pub trait CodeWriteZetaRuntime: CodeWriteUnary + CodeWriteMinimalBinary {
 }
 
 /// blanket implementation
-impl<T: CodeReadUnary + CodeReadMinimalBinary> CodeReadZetaRuntime for T {}
+impl<T: CodeReadUnary + CodeReadFixedLength + ReadBit> CodeReadZetaRuntime for T {}
 impl<T: CodeWriteUnary + CodeWriteMinimalBinary> CodeWriteZetaRuntime for T {}

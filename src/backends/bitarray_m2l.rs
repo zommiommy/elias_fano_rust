@@ -183,6 +183,7 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadUnary
             // if the value was in the table, return it and offset
             if len != 0 {
                 self.skip_bits(len as usize)?;
+                dbg!(self.tell_bits().unwrap());
                 return Ok(res as usize)
             }
         }
@@ -200,6 +201,7 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadUnary
         if likely(n_of_zeros < bits_in_word) {
             // skip the 1
             self.skip_bits(n_of_zeros + 1)?;
+            dbg!(self.tell_bits().unwrap());
             return Ok(n_of_zeros);
         }
 
@@ -218,6 +220,7 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadUnary
             if likely(n_of_zeros < WORD_BIT_SIZE) {
                 // skip the 1
                 self.skip_bits(1)?;
+                dbg!(self.tell_bits().unwrap());
                 return Ok(n_of_zeros + acc);
             }
 
@@ -256,12 +259,13 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadFixedLength
         let mut word =  unsafe{core::ptr::read_unaligned(
         (self.data.as_ptr() as *const u8).add(byte_addr) as *const usize
         )}.to_be();
+        println!("{:064b}", word);
         
         // remove the bits before the start
         word <<= self.offset & 7;
         // move the bits from the MSB to the LSB
         word >>= WORD_BIT_SIZE - number_of_bits;
-
+        println!("{:064b}", word);
         // Update the pointers to where we read
         self.skip_bits(number_of_bits as usize)?;
 

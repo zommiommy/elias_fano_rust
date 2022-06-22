@@ -11,17 +11,16 @@ pub trait CodeReadMinimalBinarym2l: CodeReadFixedLength + ReadBit {
     fn read_minimal_binary_m2l(&mut self, max: usize) -> Result<usize> {
         let u = fast_log2_ceil(max);
         let l = fast_log2_floor(max);
-        let n = self.read_fixed_length(l)?;
+        let mut n = self.read_fixed_length(l)?;
         let scarto = fast_pow_2(u) - max;
 
-        if n < scarto {
-            return Ok(n);
-        }
-        // rewind to read the code again
-        self.rewind_bits(l as _)?;
-        // decode the value
-        let r = self.read_fixed_length(u)?;
-        Ok(r - scarto)
+        Ok(if n < scarto {
+            n
+        } else {
+            n <<= 1;
+            n += self.read_bit()? as usize;
+            n - 1
+        })
     }
 }
 

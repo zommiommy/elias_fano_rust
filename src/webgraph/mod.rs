@@ -345,7 +345,7 @@ where
             extra_nodes.push(tmp);
 
             for _ in 0..nodes_left_to_decode.saturating_sub(1) {
-                tmp = reader.read_residual()? + tmp + 1;
+                tmp += reader.read_residual()? + 1;
                 extra_nodes.push(tmp);
             }
             debug!(&extra_nodes);
@@ -551,6 +551,7 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
             return Ok((interval_nodes, extra_nodes));
         }
 
+        let _ = debug!(reader.tell_bits());
         // read the first neighbour
         let first_neighbour_delta = debug!(reader.read_first_residual()?);
         // decode the first neighbour
@@ -561,9 +562,9 @@ impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANT
         // decode the other extra nodes
         let mut tmp = first_neighbour;
         for _ in 0..nodes_left_to_decode.saturating_sub(1) {
-            let new_node = debug!(debug!(reader.read_residual()?) + tmp + 1);
-            extra_nodes.push(new_node);
-            tmp = new_node;
+            let _ = debug!(reader.tell_bits());
+            tmp += debug!(debug!(reader.read_residual()?) + 1);
+            extra_nodes.push(tmp);
         }
         Ok((interval_nodes, extra_nodes))
     }

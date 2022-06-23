@@ -16,7 +16,6 @@ pub trait CodeReadZetaRuntime: CodeReadUnary + CodeReadFixedLength + ReadBit{
         if K == 3 {
             let (res, len) = ZETA3_M2L_TABLE[self.peek_byte()? as usize];
             // if the value was in the table, return it and offset
-            dbg!(res, len);
             if len != 0 {
                 self.skip_bits(len as usize)?;
                 return Ok(res as usize)

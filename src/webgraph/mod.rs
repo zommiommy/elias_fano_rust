@@ -25,7 +25,7 @@ pub use bv_compatability::*;
 //mod builder;
 //pub use builder::*;
 
-const DEBUG: bool = true;
+const DEBUG: bool = false;
 
 #[macro_export]
 macro_rules! debug {

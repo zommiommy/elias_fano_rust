@@ -7,23 +7,84 @@ use std::io::{self, BufRead};
 use elias_fano_rust::prelude::*;
 use std::time::Instant;
 
-const EDGES: usize = 42_574_107_469;
-const NODES: usize = 978_408_098;
+/// all graph base names sorted by file size
+/// ls -aSr | grep ".graph$" | cut -d "." -f 1 -
+const BASENAMES: &[&str] = &[
+    "wordassociation-2011",
+    "enron",
+    "uk-2007-05@100000",
+    "cnr-2000",
+    "dblp-2010",
+    "in-2004",
+    "amazon-2008",
+    "dblp-2011",
+    "uk-2007-05@1000000",
+    "eu-2005",
+    "imdb-2021",
+    "uk-2014-tpd",
+    "eswiki-2013",
+    "indochina-2004",
+    "itwiki-2013",
+    "uk-2014-host",
+    "frwiki-2013",
+    "dewiki-2013",
+    "hollywood-2009",
+    "uk-2002",
+    "eu-2015-tpd",
+    "ljournal-2008",
+    "hollywood-2011",
+    "arabic-2005",
+    "eu-2015-host",
+    "enwiki-2013",
+    "enwiki-2015",
+    "enwiki-2016",
+    "enwiki-2017",
+    "uk-2005",
+    "enwiki-2018",
+    "enwiki-2019",
+    "enwiki-2020",
+    "enwiki-2021",
+    "it-2004",
+    "enwiki-2022",
+    "webbase-2001",
+    "sk-2005",
+    "uk-2006-06",
+    "uk-2006-10",
+    "gsh-2015-tpd",
+    "uk-2006-07",
+    "uk-2006-05",
+    "uk-2006-12",
+    "uk-2006-08",
+    "uk-2006-11",
+    "uk-2007-05",
+    "uk-2007-04",
+    "uk-2006-09",
+    "uk-2007-03",
+    "uk-2007-01",
+    "uk-2007-02",
+    "gsh-2015-host",
+    "twitter-2010",
+    "uk-2014",
+    "gsh-2015",
+    "clueweb12",
+    "eu-2015",    
+];
 
-fn main() {
+fn test_graph(basename: &str) {
     let start = Instant::now();
 
-    let wg = WebGraph::<_, 8>::new("/bfd/clueweb12").unwrap();
+    let wg = WebGraph::<_, 8>::new(format!("/bfd/webgraph/{}",&basename)).unwrap();
     let elapsed = start.elapsed();
-    println!("loading clueweb12 took: {:?}", elapsed);
+    println!("loading {} took: {:?}", &basename, elapsed);
 
-    let file = File::open("/bfd/clueweb12_ascii.graph-txt").unwrap();
+    let truth_path = format!("/bfd/webgraph/{}_ascii.graph-txt", &basename);
+    let file = File::open(&truth_path).expect(&format!("Cannot open file {}", truth_path));
     let mut lines = io::BufReader::with_capacity(1<<20, file).lines().skip(1);
 
-    let mut old_offset = 0;
     let mut edges = 0;
+    let mut old_offset = 0;
 
-    for node_id in 0..NODES {
+    for node_id in 0..wg.properties.nodes - 1 {
         let truth = lines.next().unwrap().unwrap()
             .split(" ")
             .filter_map(|x| {
@@ -52,17 +113,24 @@ fn main() {
             let eps = edges as f64 / delta;
             println!(
                 "[{:.3}%] [{:.3} M nodes/sec]  [{:.3} M edges/sec] [{:.3} ETA minutes] [{:.3} Elapsed minutes]", 
-                100.0 * (edges as f64 / EDGES as f64), 
+                100.0 * (edges as f64 / wg.properties.arcs as f64), 
                 (node_id as f64 / 1_000_000.0) / delta,
                 eps / 1_000_000.0,
-                ((EDGES - edges) as f64 / eps) / 60.0,
+                ((wg.properties.arcs - edges) as f64 / eps) / 60.0,
                 delta / 60.0,
             );
         }
     }
     let elapsed = start.elapsed();
-    println!("clueweb12 took: {:?}", elapsed);
-    println!("edges/sec: {:.3}", EDGES as f64 / elapsed.as_secs_f64());
-    println!("nodes/sec: {:.3}", NODES as f64 / elapsed.as_secs_f64());
+    println!("{} took: {:?}", basename, elapsed);
+    println!("edges/sec: {:.3}", wg.properties.arcs as f64 / elapsed.as_secs_f64());
+    println!("nodes/sec: {:.3}", wg.properties.nodes as f64 / elapsed.as_secs_f64());
     println!("eges encountered {:.3}", edges);
+}
+
+fn main() {
+    for (i, basename) in BASENAMES.iter().enumerate() {
+        println!("{} / {} - {}", 1 + i, BASENAMES.len(), basename);
+        test_graph(basename);
+    }
 }

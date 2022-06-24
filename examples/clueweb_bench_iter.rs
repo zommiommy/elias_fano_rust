@@ -9,7 +9,7 @@ const NODES: usize = 978_408_098;
 fn main() {
     let start = Instant::now();
 
-    let wg = WebGraph::<_, 8>::new("/bfd/clueweb12").unwrap();
+    let wg = WebGraph::<_, 8>::new("/bfd/webgraph/clueweb12").unwrap();
     let elapsed = start.elapsed();
     println!("loading clueweb12 took: {:?}", elapsed);
 

@@ -84,7 +84,7 @@ fn test_graph(basename: &str) {
     let mut edges = 0;
     let mut old_offset = 0;
 
-    for node_id in 0..wg.properties.nodes - 1 {
+    for node_id in 0..wg.properties.nodes {
         let truth = lines.next().unwrap().unwrap()
             .split(" ")
             .filter_map(|x| {

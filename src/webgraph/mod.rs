@@ -372,13 +372,14 @@ impl<const QUANTUM_LOG2: usize> WebGraph<RuntimeWebGraphReader<BitArrayM2L<Memor
 
         debug!(&properties);
 
+        let mmap = MemoryMappedFileReadOnly::open(
+            path.with_extension("graph"),
+        )?;
+
         let nodes_indices = Offsets::from_offsets_file(
             path.with_extension("offsets"),
             properties.clone(),
-        )?;
-
-        let mmap = MemoryMappedFileReadOnly::open(
-            path.with_extension("graph"),
+            mmap.len(),
         )?;
 
         // create a backend that reads codes from the MSB to the LSb

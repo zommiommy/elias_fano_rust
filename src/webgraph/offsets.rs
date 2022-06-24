@@ -12,18 +12,18 @@ use crate::prelude::MemoryMappedFileReadOnly;
 pub struct Offsets<const QUANTUM_LOG2: usize>(EliasFano<QUANTUM_LOG2>);
 
 impl<const QUANTUM_LOG2: usize> Offsets<QUANTUM_LOG2> {
-    pub fn from_offsets_file<P: AsRef<Path>>(path: P, properties: Properties) -> Result<Self> {
+    pub fn from_offsets_file<P: AsRef<Path>>(path: P, properties: Properties, file_size: usize) -> Result<Self> {
         let mmap = MemoryMappedFileReadOnly::open(path)?;
         let backend_reader =  BitArrayM2L::new(mmap);
         let mut ef = EliasFano::new(
-            0,
+            file_size,
             properties.nodes,
         ).unwrap();
 
         let mut reader = backend_reader.get_codes_reader(0);
 
         let mut cumulative_sum = 0;
-        for _ in 0..properties.nodes.saturating_sub(1) {
+        for _ in 0..properties.nodes {
             let code = reader.read_gamma()?;
             cumulative_sum += code;
             ef.push(cumulative_sum).unwrap();

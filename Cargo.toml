@@ -34,9 +34,10 @@ fuzz = ["arbitrary", "fid"]
 [profile.release]
 opt-level = 3
 lto = "fat"
-overflow-checks = true     # Disable integer overflow checks.
-debug = true             # Include debug info.
-debug-assertions = true  # Enables debug assertions.
+overflow-checks = false     # Disable integer overflow checks.
+debug = false             # Include debug info.
+debug-assertions = false  # Enables debug assertions.
+codegen-units = 1
 
 [profile.test]
 default = ["fuzz"]

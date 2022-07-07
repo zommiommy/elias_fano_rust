@@ -11,7 +11,7 @@ from math import log2, ceil, floor
 # Parameters
 BITS_TO_CONSIDER = 8
 MAX_VALUE = 2**BITS_TO_CONSIDER
-MISS_VALUE = 255
+MISS_VALUE = 2**BITS_TO_CONSIDER - 1
 ZETA_KS = [3]
 
 def to_bin_padded(x: int) -> str:

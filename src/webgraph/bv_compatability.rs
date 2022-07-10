@@ -49,7 +49,7 @@ impl From<Code> for u8 {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Code settings for WebGraph
 pub struct CodesSettings {
     pub outdegree: Code,

@@ -45,6 +45,9 @@ pub trait ReadBit {
 
     /// Read a byte without seeking forward
     fn peek_byte(&mut self) -> Result<u8>;
+    
+    /// Read a byte without seeking forward
+    fn peek_u16(&mut self) -> Result<u16>;
 
     /// Seek to the given bit offset
     fn seek_bits(&mut self, bit_offset: usize) -> Result<()>;

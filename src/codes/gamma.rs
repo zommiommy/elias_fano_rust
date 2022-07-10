@@ -34,7 +34,7 @@
 //! assert_eq!(expected_size, ba.tell_bits().unwrap())
 //! ```
 use super::{fixed_length::*, unary::*};
-use super::tables::GAMMA_TABLE;
+use super::tables::*;
 use crate::traits::ReadBit;
 use crate::utils::fast_log2_floor;
 use crate::Result;
@@ -45,8 +45,8 @@ pub trait CodeReadGamma: CodeReadUnary + CodeReadFixedLength + ReadBit{
     /// Read a gamma code from the stream
     fn read_gamma(&mut self) -> Result<usize> {
         #[cfg(feature = "code_tables")]
-        {
-            let (res, len) = GAMMA_TABLE[self.peek_byte()? as usize];
+        {   
+            let (res, len) = GAMMA_TABLE_u16[self.peek_u16()? as usize];
             // if the value was in the table, return it and offset
             if len != 0 {
                 self.skip_bits(len as usize)?;

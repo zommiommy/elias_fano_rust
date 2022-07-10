@@ -73,7 +73,7 @@ const BASENAMES: &[&str] = &[
 fn test_graph(basename: &str) {
     let start = Instant::now();
 
-    let wg = WebGraph::<_, 8>::new(format!("/bfd/webgraph/{}",&basename)).unwrap();
+    let wg = WebGraph::<_, 4>::new_const(format!("/bfd/webgraph/{}",&basename)).unwrap();
     let elapsed = start.elapsed();
     println!("loading {} took: {:?}", &basename, elapsed);
 

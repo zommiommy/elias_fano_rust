@@ -8,16 +8,16 @@ fn main() {
     
     let start = Instant::now();
 
-    let wg = WebGraph::<_, 8>::new("/bfd/webgraph/clueweb12").unwrap();
+    let wg = WebGraph::<_, 4>::new_const("/bfd/webgraph/clueweb12").unwrap();
     let elapsed = start.elapsed();
     println!("loading clueweb12 took: {:?}", elapsed);
 
     let start = Instant::now();
     let mut edges = 0;
     for node_id in 0..wg.properties.nodes {
-        let neighbours = wg.iter_neighbours(node_id).unwrap();
+        let neighbours = wg.get_neighbours(node_id).unwrap();
 
-        edges += neighbours.count();
+        edges += neighbours.len();
         if (node_id & 0xffff) == 0 {
             let delta = start.elapsed().as_secs_f64();
             let eps = edges as f64 / delta;

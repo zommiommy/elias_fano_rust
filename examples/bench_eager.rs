@@ -10,6 +10,8 @@ const WARMAP: usize = 3;
 const REPEAT: usize = 10;
 
 fn main() {
+    core_affinity::set_for_current(core_affinity::get_core_ids().unwrap()[8]);
+    
     let args: Vec<String> = env::args().collect();
     if args.len() != 3 {
         println!("Please pass a basename, and then a path to a file with a node_idx per line");

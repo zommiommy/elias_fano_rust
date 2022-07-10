@@ -32,32 +32,36 @@
 //! assert_eq!(expected_size, ba.tell_bits().unwrap())
 //! ```
 use super::*;
-use super::tables::ZETA3_M2L_TABLE;
+use super::tables::*;
 use crate::utils::{fast_log2_floor, fast_pow_2};
 use crate::Result;
 
 /// Trait for reading a zeta code (with K known at compile time)
-pub trait CodeReadZeta: CodeReadUnary + CodeReadMinimalBinary + ReadBit {
+pub trait CodeReadZeta: CodeReadUnary + CodeReadFixedLength + ReadBit {
     #[inline]
     /// Read a Zeta code from the stream
     fn read_zeta<const K: usize>(&mut self) -> Result<usize> {
         // check if the value is in one of the tables
         #[cfg(feature = "code_tables")]
         if K == 3 {
-            let (res, len) = ZETA3_M2L_TABLE[self.peek_byte()? as usize];
+            let (res, len) = ZETA3_M2L_TABLE_u16[self.peek_u16()? as usize];
             // if the value was in the table, return it and offset
             if len != 0 {
                 self.skip_bits(len as usize)?;
                 return Ok(res as usize)
             }
-    
         }
-        // fallback to the actual implementation
+        // implementation taken from github.com/vigna/dsiutils @ InputBitStram.java
         let h = self.read_unary()?;
-        let u = fast_pow_2((h + 1) * K);
-        let l = fast_pow_2(h * K);
-        let r = self.read_minimal_binary(u - l)?;
-        Ok(l + r - 1)
+        let left = 1 << h * K;
+        let mut m = self.read_fixed_length(h * K + K - 1)?;
+        Ok(if m < left {
+            m + left - 1
+        } else {
+            m <<= 1;
+            m += self.read_bit()? as usize;
+            m - 1
+        })
     }
 }
 
@@ -93,6 +97,6 @@ pub trait CodeSizeZeta: CodeSizeUnary + CodeSizeMinimalBinary {
 }
 
 /// blanket implementation
-impl<T: CodeReadUnary + CodeReadMinimalBinary> CodeReadZeta for T {}
+impl<T: CodeReadUnary + CodeReadFixedLength> CodeReadZeta for T {}
 impl<T: CodeWriteUnary + CodeWriteMinimalBinary> CodeWriteZeta for T {}
 impl<T: CodeSizeUnary + CodeSizeMinimalBinary> CodeSizeZeta for T {}

@@ -26,7 +26,7 @@ fn main() {
     ).collect::<Vec<usize>>();
 
     let start = Instant::now();
-    let wg = WebGraph::<_, 6>::new(format!("/bfd/webgraph/{}", basename)).unwrap();
+    let wg = WebGraph::<_, 6>::new_const(format!("/bfd/webgraph/{}", basename)).unwrap();
     let elapsed = start.elapsed();
     println!("loading {} took: {:?}", basename, elapsed);
     

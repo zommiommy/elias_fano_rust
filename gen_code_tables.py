@@ -11,7 +11,7 @@ from math import log2, ceil, floor
 # Parameters
 BITS_TO_CONSIDER = 8
 MAX_VALUE = 2**BITS_TO_CONSIDER
-MISS_VALUE = 2**BITS_TO_CONSIDER - 1
+MISS_VALUE = 255
 ZETA_KS = [3]
 
 def to_bin_padded(x: int) -> str:
@@ -32,10 +32,10 @@ CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 TARGET_FILE = os.path.join(CURRENT_DIR, "src", "codes", "tables.rs")
 
 # open the file
-fd = open(TARGET_FILE, "w")
+fd = open(TARGET_FILE, "a")
 
 # Format string of how we are going to generate the tables of (value, bits)
-fmt = """pub const {code_name}_TABLE: [(u8, u8); {size}] = [
+fmt = """pub const {code_name}_TABLE_u8: [(u16, u8); {size}] = [
 {values}
 ];
 

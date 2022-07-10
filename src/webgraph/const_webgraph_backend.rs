@@ -220,6 +220,11 @@ impl<
     }
 
     #[inline]
+    fn peek_u16(&mut self) -> Result<u16> {
+        self.0.peek_u16()
+    }
+
+    #[inline]
     fn seek_bits(&mut self, bit_offset: usize) -> Result<()> {
         self.0.seek_bits(bit_offset)
     }

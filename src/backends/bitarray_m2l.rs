@@ -149,6 +149,21 @@ impl<'a, BACKEND: MemorySlice + 'a> ReadBit for BitArrayM2LReader<'a, BACKEND> {
     }
 
     #[inline]
+    fn peek_u16(&mut self) -> Result<u16> {
+        // this is horrible, TODO: find a safe way to to the same thing
+        Ok(unsafe{
+            let ptr =  (self.data.as_ptr() as *const u8)
+                .add(self.offset >> 3)
+                as * const u32;
+
+            let mut value = (*ptr).to_be();
+            value <<= self.offset & 7;
+            value >>= 16;
+            value as u16
+        })
+    }
+
+    #[inline]
     /// Seek to the given bit_index
     fn seek_bits(&mut self, bit_index: usize) -> Result<()> {
         self.offset = bit_index;
@@ -179,7 +194,7 @@ impl<'a, BACKEND: MemorySlice + 'a> CodeReadUnary
         #[cfg(feature = "code_tables")]
         {
             // check if the value is in one of the tables
-            let (res, len) = UNARY_TABLE[self.peek_byte()? as usize];
+            let (res, len) = UNARY_TABLE_u16[self.peek_u16()? as usize];
             // if the value was in the table, return it and offset
             if len != 0 {
                 self.skip_bits(len as usize)?;

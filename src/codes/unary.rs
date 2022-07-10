@@ -1,6 +1,6 @@
 use crate::traits::*;
 use crate::Result;
-use super::tables::UNARY_TABLE;
+use super::tables::*;
 
 /// Trait for reading unary codes
 pub trait CodeReadUnary: ReadBit {
@@ -13,7 +13,7 @@ pub trait CodeReadUnary: ReadBit {
         // check if the value is in one of the tables
         #[cfg(feature = "code_tables")]
         {
-            let (res, len) = UNARY_TABLE[self.peek_byte()? as usize];
+            let (res, len) = UNARY_TABLE_u16[self.peek_u16()? as usize];
             // if the value was in the table, return it and offset
             if len != 0 {
                 self.skip_bits(len as usize)?;

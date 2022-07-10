@@ -97,6 +97,11 @@ where
     }
 
     #[inline]
+    fn peek_u16(&mut self) -> Result<u16> {
+        self.reader.peek_u16()
+    }
+
+    #[inline]
     fn seek_bits(&mut self, bit_offset: usize) -> Result<()> {
         self.reader.seek_bits(bit_offset)
     }

@@ -11,7 +11,7 @@ const REPEAT: usize = 10;
 
 fn main() {
     core_affinity::set_for_current(core_affinity::get_core_ids().unwrap()[8]);
-    
+
     let args: Vec<String> = env::args().collect();
     if args.len() != 3 {
         println!("Please pass a basename, and then a path to a file with a node_idx per line");
@@ -26,7 +26,7 @@ fn main() {
     ).collect::<Vec<usize>>();
 
     let start = Instant::now();
-    let wg = WebGraph::<_, 6>::new(format!("/bfd/webgraph/{}", basename)).unwrap();
+    let wg = WebGraph::<_, 6>::new_const(format!("/bfd/webgraph/{}", basename)).unwrap();
     let elapsed = start.elapsed();
     println!("loading {} took: {:?}", basename, elapsed);
     
@@ -42,7 +42,8 @@ fn main() {
     for i in 0..WARMAP + REPEAT {
         let start = Instant::now();
         for node_idx in nodes.iter() {
-            z += wg.iter_neighbours(*node_idx).unwrap().count();
+            let neighbours = wg.get_neighbours(*node_idx).unwrap();
+            z += neighbours.len();
         }
 
         if i >= WARMAP {

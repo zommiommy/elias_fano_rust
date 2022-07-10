@@ -362,6 +362,7 @@ where
         })
     }
 }
+
 impl<const QUANTUM_LOG2: usize> WebGraph<RuntimeWebGraphReader<BitArrayM2L<MemoryMappedFileReadOnly>>, QUANTUM_LOG2> {
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
@@ -396,7 +397,45 @@ impl<const QUANTUM_LOG2: usize> WebGraph<RuntimeWebGraphReader<BitArrayM2L<Memor
             offsets: nodes_indices,
             min_interval_length: 4, // TODO!: Expose
         })
-    }
+    } 
+}
+
+impl<const QUANTUM_LOG2: usize> WebGraph<ConstWebGraphReader<BitArrayM2L<MemoryMappedFileReadOnly>>, QUANTUM_LOG2> {
+    pub fn new_const<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
+
+        let properties = Properties::from_file(
+            path.with_extension("properties"),
+        )?;
+
+        dbg!(&properties);
+
+        assert_eq!(properties.compression_flags, CodesSettings::default());
+
+        let mmap = MemoryMappedFileReadOnly::open(
+            path.with_extension("graph"),
+        )?;
+
+        let nodes_indices = Offsets::from_offsets_file(
+            path.with_extension("offsets"),
+            properties.clone(),
+            mmap.len(),
+        )?;
+
+        // create a backend that reads codes from the MSB to the LSb
+        let backend_reader =  BitArrayM2L::new(mmap);
+
+        let backend = ConstWebGraphReader::new(
+            backend_reader
+        );
+
+        Ok(WebGraph{
+            properties,
+            backend,
+            offsets: nodes_indices,
+            min_interval_length: 4, // TODO!: Expose
+        })
+    } 
 }
 
 impl<Backend: WebGraphReader, const QUANTUM_LOG2: usize> WebGraph<Backend, QUANTUM_LOG2> {

@@ -4,6 +4,8 @@ use elias_fano_rust::prelude::*;
 use std::time::Instant;
 
 fn main() {
+    core_affinity::set_for_current(core_affinity::get_core_ids().unwrap()[8]);
+    
     let start = Instant::now();
 
     let wg = WebGraph::<_, 8>::new("/bfd/webgraph/clueweb12").unwrap();
